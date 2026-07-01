@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "prorab",
+  "description": "Prorab — фреймворк агентской разработки: рефайнмент идеи и реализация под ключ",
+  "owner": {
+    "name": "Artem Altukhov",
+    "email": "a.altukhov@hh.kz"
+  },
+  "plugins": [
+    {
+      "name": "prorab",
+      "description": "Команды prorab: refine (проработка сырой идеи до спецификации) и build (мультиагентная реализация готовой идеи под ключ)",
+      "source": "./plugins/prorab",
+      "version": "0.1.0",
+      "category": "development"
+    }
+  ]
+}
