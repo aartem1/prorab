@@ -9,9 +9,9 @@
   "plugins": [
     {
       "name": "prorab",
-      "description": "Команды prorab: refine (проработка сырой идеи до спецификации) и build (мультиагентная реализация готовой идеи под ключ)",
+      "description": "Команды prorab: refine (проработка сырой идеи до спецификации), build (мультиагентная реализация готовой идеи под ключ) и announce (краткий анонс результатов для пересылки)",
       "source": "./plugins/prorab",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "development"
     }
   ]
