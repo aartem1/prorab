@@ -1,13 +1,19 @@
 # prorab
 
 Фреймворк агентской разработки для Claude Code. Набор команд, которые проводят
-идею через весь путь — от сырой формулировки до реализации под ключ.
+идею через весь путь — от сырой формулировки до реализации под ключ, — и отдельная
+ветка непрерывного оздоровления кода.
 
-Репозиторий устроен как **Claude Code marketplace**: команды ставятся глобально
-штатным механизмом плагинов и обновляются из git. Рабочие артефакты (проработанные
-идеи, планы реализации) при этом остаются в том проекте, где команда запущена.
+Репозиторий устроен как **Claude Code marketplace** с **двумя плагинами**: команды
+ставятся глобально штатным механизмом плагинов и обновляются из git. Рабочие артефакты
+(проработанные идеи, аудиты, планы реализации) при этом остаются в том проекте, где
+команда запущена.
 
-## Конвейер
+- **`prorab`** — продуктово-бизнесовая ветка (`/prorab:*`): новая фича от идеи до релиза.
+- **`prorab-tech`** — ветка тех-качества (`/prorab-tech:*`): аудит техдолга и безопасный
+  рефакторинг. Отдельный неймспейс — чтобы тех-команды не путались с продуктовыми.
+
+## Конвейер: продуктовая ветка (`prorab`)
 
 ```
 сырая идея ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──▶ реализация + IMPL ──/prorab:announce──▶ анонс для пересылки
@@ -22,6 +28,22 @@
 Команды можно использовать и по отдельности, но задуманы как конвейер:
 сначала прорабатываем «чертёж», потом строим, потом коротко рассказываем о результате.
 
+## Конвейер: ветка тех-качества (`prorab-tech`)
+
+```
+──/prorab-tech:audit──▶ AUDIT-<slug>.md (бэклог + спека #1) ──/prorab-tech:refactor──▶ рефакторинг + IMPL-refactor ──/prorab:announce──▶ анонс
+```
+
+| Команда | Что делает |
+|---|---|
+| **`/prorab-tech:audit`** | Многоагентный аудит кодовой базы: сканирует по классам смеллов + churn×complexity по git, кластеризует, ранжирует по `польза × безопасность × объём × уверенность`, состязательно верифицирует топ. Выдаёт оптимального кандидата на безопасный рефакторинг. Кода не трогает. Результат — `tasks/audits/AUDIT-<slug>.md`. |
+| **`/prorab-tech:refactor`** | Безопасная починка под ключ через мультиагентный ultracode-Workflow. **Prime directive — сохранение поведения:** сеть характеризационных тестов на старом коде, мелкие шаги, состязательный поиск дрейфа, дифференциальный прогон old-vs-new, измеренное улучшение качества. `refactor <id>` чинит выбранного кандидата; `refactor` без аргумента — auto-pick #1 из свежего аудита. Результат — код + `tasks/IMPL-refactor-<slug>.md`. |
+
+**Инверсия к `build`:** `build` доказывает, что *новое* поведение соответствует требованию;
+`refactor` доказывает, что *старое* поведение **не изменилось**. Разная дисциплина
+верификации — поэтому отдельный исполнитель, а результат `refactor` (`IMPL-refactor-*`)
+анонсируется тем же `/prorab:announce`.
+
 ## Установка
 
 ### Локально (для разработки самого фреймворка)
@@ -29,6 +51,7 @@
 ```
 /plugin marketplace add /Users/a.altukhov/Documents/prorab
 /plugin install prorab@prorab
+/plugin install prorab-tech@prorab
 ```
 
 ### С GitHub (на других машинах)
@@ -38,10 +61,12 @@
 ```
 /plugin marketplace add <owner>/prorab
 /plugin install prorab@prorab
+/plugin install prorab-tech@prorab
 ```
 
-После установки команды доступны глобально во всех проектах как `/prorab:refine`,
-`/prorab:build` и `/prorab:announce`.
+Оба плагина живут в одном marketplace `prorab`; ставятся по отдельности. После установки
+команды доступны глобально во всех проектах: продуктовые — `/prorab:refine`, `/prorab:build`,
+`/prorab:announce`; тех-качества — `/prorab-tech:audit`, `/prorab-tech:refactor`.
 
 ## Обновление
 
@@ -49,9 +74,11 @@
 /plugin marketplace update prorab
 ```
 
-Это подтянет свежую версию из git. При изменении команд не забудь **бампнуть
-`version`** в двух местах — `plugins/prorab/.claude-plugin/plugin.json` и в
+Это подтянет свежую версию из git для обоих плагинов. При изменении команд не забудь
+**бампнуть `version`** в двух местах для затронутого плагина — его
+`plugins/<plugin>/.claude-plugin/plugin.json` и соответствующую запись в
 `.claude-plugin/marketplace.json` — и записать изменение в [CHANGELOG.md](CHANGELOG.md).
+У каждого плагина своя версия (`prorab` и `prorab-tech` версионируются независимо).
 
 ## Контракт артефактов
 
@@ -59,32 +86,46 @@
 - `/prorab:refine` пишет проработанную идею в `tasks/ideas/IDEA-<slug>.md`.
 - `/prorab:build` читает этот IDEA-файл и пишет план реализации в `tasks/IMPL-<slug>.md`
   (там же, в рабочем проекте).
+- `/prorab-tech:audit` пишет аудит-отчёт с ранжированным бэклогом и спекой кандидата в
+  `tasks/audits/AUDIT-<slug>.md`; код не трогает.
+- `/prorab-tech:refactor` читает AUDIT-спеку и пишет план рефакторинга в
+  `tasks/IMPL-refactor-<slug>.md` (тот же `IMPL-*`-контракт, что читает `announce`).
 - `/prorab:announce` читает IMPL/дифф/IDEA и выдаёт анонс текстом в чат (по просьбе —
-  сохраняет в `tasks/ANNOUNCE-<slug>.md`); код/файлы проекта не меняет.
+  сохраняет в `tasks/ANNOUNCE-<slug>.md`); код/файлы проекта не меняет. Анонсирует
+  результаты обеих веток.
 - Эти файлы имеет смысл коммитить в репозиторий проекта — они документируют, что и
   почему было решено.
 
 ## Как добавить новую команду
 
-1. Положи `plugins/prorab/commands/<name>.md` (frontmatter `description` /
-   `argument-hint` + тело промпта).
-2. Бампни `version` в `plugin.json` и `marketplace.json`, добавь запись в `CHANGELOG.md`.
-3. `/plugin marketplace update prorab` — команда станет доступна как `/prorab:<name>`.
+1. Положи `plugins/<plugin>/commands/<name>.md` (frontmatter `description` /
+   `argument-hint` + тело промпта) в нужный плагин (`prorab` — продуктовое, `prorab-tech`
+   — тех-качество).
+2. Бампни `version` в `plugin.json` этого плагина и в его записи в `marketplace.json`,
+   добавь запись в `CHANGELOG.md`.
+3. `/plugin marketplace update prorab` — команда станет доступна как `/<plugin>:<name>`.
 
 ## Структура репозитория
 
 ```
 prorab/
 ├── .claude-plugin/
-│   └── marketplace.json          # манифест marketplace
+│   └── marketplace.json          # манифест marketplace (оба плагина)
 ├── plugins/
-│   └── prorab/
+│   ├── prorab/                    # продуктовая ветка
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json        # манифест плагина + version
+│   │   ├── commands/
+│   │   │   ├── refine.md
+│   │   │   ├── build.md
+│   │   │   └── announce.md
+│   │   └── README.md
+│   └── prorab-tech/               # ветка тех-качества
 │       ├── .claude-plugin/
 │       │   └── plugin.json        # манифест плагина + version
 │       ├── commands/
-│       │   ├── refine.md
-│       │   ├── build.md
-│       │   └── announce.md
+│       │   ├── audit.md
+│       │   └── refactor.md
 │       └── README.md
 ├── README.md
 └── CHANGELOG.md
