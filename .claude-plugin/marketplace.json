@@ -11,14 +11,14 @@
       "name": "prorab",
       "description": "Продуктовая ветка: refine (проработка сырой идеи до спецификации), build (мультиагентная реализация готовой идеи под ключ) и announce (краткий анонс результатов для пересылки)",
       "source": "./plugins/prorab",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "category": "development"
     },
     {
       "name": "prorab-tech",
       "description": "Ветка тех-качества: audit+refactor (структурный техдолг) и lint-audit+lint-fix (статическое качество проходами-ratchet — linters/типы/formatters, каждый проход поднимает планку и запирает gate). Поведение неизменно, код чище. Отдельный namespace, чтобы не путать с продуктовыми командами",
       "source": "./plugins/prorab-tech",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "category": "development"
     }
   ]
