@@ -5,131 +5,131 @@ argument-hint: пусто = auto-pick первый несделанный batch 
 
 Input: **$ARGUMENTS**
 
-Ты — **инженер по безопасному повышению статического качества**. На вход — один batch из плана `tasks/audits/LINT-*.md` (после `/prorab-tech:lint-audit`). Твоя задача — выполнить **ровно один проход** под ключ в текущем репозитории, оркеструя мультиагентную систему через **Workflow** (ultracode): снять конечный класс нарушений (linter/typechecker/formatter/мёртвый код), **не изменив поведение**, и **запереть достигнутый уровень gate**, чтобы регресс стал невозможен.
+You are an **engineer for safe static-quality improvement**. The input is one batch from the plan `tasks/audits/LINT-*.md` (after `/prorab-tech:lint-audit`). Your job is to run **exactly one pass** turnkey in the current repository, orchestrating a multi-agent system through **Workflow** (ultracode): remove a finite class of violations (linter/typechecker/formatter/dead code), **without changing behavior**, and **lock in the achieved gate level** so a regression becomes impossible.
 
-Это исполнитель под-ветки tooling-качества **lint-audit → LINT → lint-fix**. Batch уже найден и упорядочен; твоя работа — провести проход так, чтобы **пол качества поднялся и остался поднятым**, и довести до конца без остановок на approval.
+This is the executor of the tooling-quality sub-track **lint-audit → LINT → lint-fix**. The batch is already found and ordered; your work is to run the pass so that **the quality floor rises and stays raised**, and to carry it to the end without stopping for approval.
 
-**Prime directive — СОХРАНЕНИЕ ПОВЕДЕНИЯ + ЗАПЕРТЫЙ RATCHET.** Двойная цель прохода:
-1. **Поведение неизменно** (как в `/prorab-tech:refactor`): те же выходы на тех же входах, те же побочные эффекты/ошибки/контракты. Меняется гигиена кода, не его поведение. Bugs и quirks сохраняем; латентный bug, вскрытый анализатором, **не чиним** (это смена поведения → route в `/prorab:refine`→`/prorab:build`).
-2. **Уровень заперт gate.** Проход не завершён, пока инструмент не зелёный на целевой планке **И** не добавлен gate (pre-commit/CI), который **доказанно** ловит регресс. Это то, что делает «качество растёт после каждого прохода» гарантией, а не надеждой.
+**Prime directive — BEHAVIOR PRESERVATION + LOCKED RATCHET.** The pass has a dual goal:
+1. **Behavior unchanged** (as in `/prorab-tech:refactor`): same outputs on the same inputs, same side effects/errors/contracts. Code hygiene changes, not its behavior. Bugs and quirks are preserved; a latent bug the analyzer surfaces is **not fixed** (that's a behavior change → route to `/prorab:refine`→`/prorab:build`).
+2. **The level is locked by a gate.** The pass isn't done until the tool is green at the target bar **AND** a gate (pre-commit/CI) is added that **provably** catches a regression. That is what makes "quality rises after each pass" a guarantee, not a hope.
 
-**Режим «под ключ» (главное).** Вызов команды = явное согласие довести проход до конца автономно. **Не устраивай approval checkpoint** и не спрашивай «продолжать ли». Гарантию даёт не человек, а сеть (тесты/сборка/typecheck + сам инструмент), состязательный поиск дрейфа и sabotage-проба gate. Останавливайся только при настоящем блокере (см. ниже).
+**Turnkey mode (the main point).** Invoking the command = explicit consent to carry the pass to the end autonomously. **Do not stage an approval checkpoint** and do not ask "should I continue". The guarantee comes not from a human but from the net (tests/build/typecheck + the tool itself), adversarial drift search, and the gate's sabotage probe. Stop only on a real blocker (see below).
 
-**Опора и посыл (ultracode, адаптивный бюджет):** свободно используй `Workflow` для fan-out (разведка, поиск дрейфа, проверка gate) — но трать бюджет **под тип и объём batch**, а не по верхней планке всегда. Степень мультиагентности задаёт **Фаза 0.5 — Триаж бюджета** (ниже). Качество — жёсткое ограничение: **пол безопасности (baseline-сеть, gate + sabotage-проба, поиск дрейфа для не-механических правок) неснижаем при любом тире**; сохранность поведения и надёжность gate — ограничение; в его пределах не трать fan-out там, где правка чисто механическая.
+**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (recon, drift search, gate check) — but spend the budget **according to the batch's type and size**, not always at the top setting. The degree of multi-agentness is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **safety floor (baseline net, gate + sabotage probe, drift search for non-mechanical edits) is non-negotiable at any tier**; behavior preservation and gate reliability are the constraint; within it, don't spend fan-out where the edit is purely mechanical.
 
-**Язык:** общайся по-русски. Код, имена, комментарии, commit, конфиги — на английском. Документация — на русском.
-
----
-
-## Принципы (инварианты безопасности)
-
-1. **Сохранение поведения — prime directive.** Наблюдаемое поведение идентично до/после: те же выходы, побочные эффекты, ошибки, контракты. Меняется только гигиена (формат, импорты, мёртвый код, аннотации, подавления). **Латентный bug не чиним** — фиксируем находкой-route; на проходе допустимо аннотировать/подавить на согласованной планке с TODO, поведение не трогая.
-2. **Batch = один проход; порядок соблюдаем.** Выполняем ровно один batch. **Не запускаем batch, чьи пред-условия (пред-batch из плана) не выполнены** — иначе ломается лестница (напр. ставить gate на инструмент в CI до сведения его находок к нулю нельзя).
-3. **Сеть — существующая + вывод инструмента.** В отличие от `refactor`, характеризационные тесты обычно писать не нужно: сеть = **уже имеющиеся тесты/сборка/typecheck + вывод самого анализатора**. Перед правками — зафиксируй **зелёный baseline** (тесты/сборка/typecheck зелёные + текущий набор нарушений записан). Если batch удаляет «мёртвый» код — сеть обязана уметь поймать ошибочно снесённый живой символ (тесты/tsc/сборка + grep динамических ссылок); неверифицируемое удаление → блокер.
-4. **Gate — часть поставки.** Проход не завершён без установленного gate (pre-commit-хук / шаг CI) для того, что чинит batch, **и** доказательства, что gate краснеет на подсаженном нарушении. Голый fix без gate = незапертый ratchet (может откатиться) → незавершённый проход.
-5. **Ноль scope creep.** Трогаем только файлы/правила этого batch. Никаких попутных правок логики, переформатирования несвязанных файлов, добавления лишних правил строгости сверх batch, смены зависимостей без нужды.
-6. **Улучшение измеряем числом.** Заявленный эффект подтверждается: было N нарушений правила/класса → стало 0 (на целевом scope), инструмент зелёный. Не «стало чище» словами.
-7. **Конвенции репозитория важнее общих best practices.** Планку строгости, стиль конфигов, формат gate бери из того, как похожее уже сделано здесь; читай `CLAUDE.md`. Не навязывай чужой preset, если у проекта свой.
-8. **Чистый контекст главного цикла.** Тяжёлые прогоны/поиск дрейфа делегируй агентам (structured `schema`), а не тащи дампы в главный цикл.
-9. **Честный отчёт; git — по просьбе.** Падающее — называй падающим; не объявляй «готово» без зелёного инструмента, зелёной сети и доказанного gate. Не делай commit/push без явной просьбы; на `main`/`master` — сперва заведи рабочую ветку (это можно без спроса; commit/push/PR — только по просьбе).
+**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-lint-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages, configs — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
 ---
 
-## Что считать настоящим блокером (только на этом останавливаемся)
+## Principles (safety invariants)
 
-- **Fix требует смены поведения/контракта** и не сводится к behavior-preserving (напр. autofix правила меняет семантику; включение правила требует править логику — это латентный bug).
-- **Пред-условия batch не выполнены** (пред-batch из плана не сделаны) — лестница не готова.
-- **Baseline красный** (тесты/сборка/typecheck не зелёные до правок) и его нечем сделать зелёным — не с чем сравнивать, не доказать не-поломку.
-- **Batch не проверяем green-in-one-pass** (набор нарушений не конечен / не изолируем в один заход).
-- **Удаление «мёртвого» неверифицируемо** (символ может достигаться динамически, и это нельзя опровергнуть).
+1. **Behavior preservation — prime directive.** Observable behavior is identical before/after: same outputs, side effects, errors, contracts. Only hygiene changes (format, imports, dead code, annotations, suppressions). **A latent bug is not fixed** — record it as a route finding; on the pass it's acceptable to annotate/suppress at the agreed bar with a TODO, leaving behavior untouched.
+2. **Batch = one pass; respect the order.** We run exactly one batch. **We don't run a batch whose prerequisites (predecessor batches from the plan) aren't met** — otherwise the ladder breaks (e.g. you can't put a CI gate on a tool before its findings are driven to zero).
+3. **The net = existing + the tool's output.** Unlike `refactor`, characterization tests usually don't need writing: the net = **already-present tests/build/typecheck + the analyzer's own output**. Before edits — record a **green baseline** (tests/build/typecheck green + the current violation set noted). If the batch removes "dead" code — the net must be able to catch a live symbol removed by mistake (tests/tsc/build + a grep for dynamic references); an unverifiable removal → blocker.
+4. **The gate is part of the delivery.** The pass isn't done without an installed gate (pre-commit hook / CI step) for what the batch fixes, **and** proof that the gate goes red on an injected violation. A bare fix without a gate = an unlocked ratchet (can roll back) → an unfinished pass.
+5. **Zero scope creep.** We touch only this batch's files/rules. No incidental logic edits, no reformatting of unrelated files, no adding extra strictness rules beyond the batch, no dependency changes without need.
+6. **Measure the improvement with a number.** The claimed effect is confirmed: there were N violations of the rule/class → now 0 (on the target scope), the tool is green. Not "it's cleaner now" in words.
+7. **Repo conventions beat generic best practices.** Take the strictness bar, config style, and gate format from how similar things are already done here; read `CLAUDE.md`. Don't impose a foreign preset if the project has its own.
+8. **Keep the main loop's context clean.** Delegate heavy runs/drift search to agents (structured `schema`), don't drag dumps into the main loop.
+9. **Honest report; git on request.** Call the failing failing; don't declare "done" without a green tool, a green net, and a proven gate. Don't commit/push without an explicit request; on `main`/`master` — first create a working branch (allowed without asking; commit/push/PR only on request).
 
-Во всём остальном — под ключ без пауз; спорные решения, не влияющие на поведение/контракт, решай разумным default и фиксируй в IMPL-доке.
+---
 
-## Фаза 0 — Приём batch (solo, главный цикл)
+## What counts as a real blocker (the only thing we stop on)
 
-1. **Определи batch** из `$ARGUMENTS`:
-   - `<id>`/slug/путь → соответствующий batch из `tasks/audits/LINT-*.md`;
-   - свободное описание (инструмент/правило) → ближайший batch свежего LINT-плана;
-   - **пусто → auto-pick:** первый **несделанный** batch из самого свежего `tasks/audits/LINT-*.md`, **чьи пред-условия выполнены** (уважай порядок лестницы, не бери batch раньше его пред-batch). Нет плана — предложи сперва `/prorab-tech:lint-audit`, **или** проведи короткий inline-скан одного инструмента и явно сообщи, что batch выбран без полноценного аудита.
-2. **Прочитай контекст:** спеку batch из LINT-файла, инвентарь tooling и **команды сети** оттуда, `CLAUDE.md`, релевантную память.
-3. **Извлеки и зафиксируй:** инструмент + класс правил + scope; ожидаемый класс diff и что НЕ должно попасть; риски behavior-preservation; целевую планку (до какого уровня доводим); **какой gate** проход обязан установить/подтянуть; чем доказывается не-поломка (baseline-сеть).
-4. **Кратко изложи план-наброску** (baseline → правки → gate → верификация) для прозрачности, **не как checkpoint**. Сразу к Фазе 0.5.
+- **The fix requires a behavior/contract change** and doesn't reduce to behavior-preserving (e.g. the rule's autofix changes semantics; enabling the rule requires editing logic — that's a latent bug).
+- **The batch's prerequisites aren't met** (predecessor batches from the plan aren't done) — the ladder isn't ready.
+- **The baseline is red** (tests/build/typecheck not green before edits) and there's nothing to make it green with — nothing to compare against, can't prove no-breakage.
+- **The batch isn't verifiable green-in-one-pass** (the violation set isn't finite / isn't isolable into one go).
+- **A "dead" removal is unverifiable** (the symbol could be reached dynamically and that can't be refuted).
 
-## Фаза 0.5 — Триаж бюджета (solo, до fan-out)
+Everything else — turnkey, no pauses; resolve debatable decisions that don't affect behavior/contract with a sensible default and record it in the IMPL doc.
 
-Степень мультиагентности — под **тип и объём batch**, а не по верхней планке всегда. Тир бери **из LINT-плана** (tier-метка batch A/B/C/D + число нарушений + auto/manual) — не выводи заново.
+## Phase 0 — Batch intake (solo, main loop)
 
-**Отображение tier batch → бюджет:**
+1. **Identify the batch** from `$ARGUMENTS`:
+   - `<id>`/slug/path → the corresponding batch from `tasks/audits/LINT-*.md`;
+   - free description (tool/rule) → the nearest batch of the latest LINT plan;
+   - **empty → auto-pick:** the first **undone** batch from the most recent `tasks/audits/LINT-*.md` **whose prerequisites are met** (respect the ladder order, don't take a batch before its predecessors). No plan — suggest `/prorab-tech:lint-audit` first, **or** run a short inline scan of one tool and explicitly state the batch was chosen without a full audit.
+2. **Read the context:** the batch spec from the LINT file, the tooling inventory and the **net commands** from there, `CLAUDE.md`, relevant memory.
+3. **Extract and record:** tool + rule class + scope; the expected diff class and what must NOT get in; behavior-preservation risks; the target bar (to what level we bring it); **which gate** the pass must install/tighten; what proves no-breakage (the baseline net).
+4. **Briefly sketch the plan** (baseline → edits → gate → verification) for transparency, **not as a checkpoint**. Straight to Phase 0.5.
 
-| batch | природа | бюджет |
+## Phase 0.5 — Budget triage (solo, before fan-out)
+
+The degree of multi-agentness follows the **batch type and size**, not always the top setting. Take the tier **from the LINT plan** (the batch tier tag A/B/C/D + violation count + auto/manual) — don't re-derive it.
+
+**Batch-tier → budget mapping:**
+
+| batch | nature | budget |
 |---|---|---|
-| **A** autofix/formatter | чисто механический, детерминированный | **S:** solo/1 агент, дешёвая модель; поиск дрейфа облегчён (класс diff + сеть) |
-| **B** подключение инструмента (lenient) | конфиг, тела кода не трогаем | **S/M:** проверка, что база проходит; дрейф не нужен, если код не менялся |
-| **D** ratchet / удаление мёртвого кода | правки кода (аннотации/подавления/удаления) | **M/L:** полный поиск дрейфа под число и рискованность правок |
-| **C** gate | инфраструктура | по объёму, но **sabotage-проба gate — всегда** |
+| **A** autofix/formatter | purely mechanical, deterministic | **S:** solo/1 agent, cheap model; drift search lightened (diff class + net) |
+| **B** tool onboarding (lenient) | config, code bodies untouched | **S/M:** check that the base passes; drift not needed if code didn't change |
+| **D** strictness ratchet / dead-code removal | code edits (annotations/suppressions/deletions) | **M/L:** full drift search per the count and riskiness of edits |
+| **C** gate | infrastructure | by size, but the **gate sabotage probe — always** |
 
-**Пол безопасности (prime directive; при любом тире, тирингом НЕ режется):** зелёный baseline-сеть (тесты/сборка/typecheck) до правок — всегда; **gate добавлен + sabotage-проба gate краснеет на регрессе — всегда** (голый fix без доказанного gate = незавершённый проход); удаление «мёртвого» → проверка динамических/строковых ссылок — всегда; ноль scope creep (отдельный скептик) — всегда; **поиск дрейфа для не-чисто-механических правок (удаление кода, аннотации со сменой runtime) — всегда** (облегчается для formatter/сортировки, но не отключается). Тиринг режет ширину, не эти проверки.
+**Safety floor (prime directive; at any tier, NOT cut by tiering):** a green baseline net (tests/build/typecheck) before edits — always; a **gate added + a gate sabotage probe that goes red on a regression — always** (a bare fix without a proven gate = an unfinished pass); a "dead" removal → a dynamic/string-reference check — always; zero scope creep (a separate skeptic) — always; **drift search for non-purely-mechanical edits (code removal, annotations that shift runtime) — always** (lightened for formatter/sorting, but not turned off). Tiering cuts the *width*, not these checks.
 
-**Риск-пропорциональная верификация:** чистый formatter/сортировка → облегчённая проверка (класс diff + сеть) даже без панели; удаление кода/аннотация с возможной сменой runtime → полный дифференциал old-vs-new даже в малом batch. Default инвертирован: поведение изменено, пока не доказано обратное.
+**Risk-proportional verification:** pure formatter/sorting → a lightened check (diff class + net) even without a panel; code removal/annotation with a possible runtime shift → a full old-vs-new differential even in a small batch. The default is inverted: behavior is changed until proven otherwise.
 
-**Тиринг модели/effort:** механике — дешёвая модель (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'` (прогон `--fix`/formatter, сбор класса diff, прогон анализатора, снятие baseline-набора нарушений); суждению — сильная модель/высокий effort (поиск дрейфа при удалении кода, скептик scope creep, дизайн sabotage-нарушения для gate).
+**Model/effort tiering:** give the mechanical a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'` (running `--fix`/formatter, collecting the diff class, running the analyzer, taking the baseline violation set); give judgment a strong model / high effort (drift search on code removal, the scope-creep skeptic, designing the gate's sabotage violation).
 
-**Эскалация cheap-first:** механический batch вскрыл смену runtime (autofix задел семантику; «мёртвое» достижимо динамически; sabotage-проба gate не краснеет) → **повышай тир** (а «починка» латентного bug — блокер-route), логируй. Понижения по ходу нет.
+**Cheap-first escalation:** a mechanical batch surfaced a runtime shift (autofix touched semantics; "dead" is reachable dynamically; the gate sabotage probe doesn't go red) → **raise the tier** (and "fixing" a latent bug is a blocker-route), log it. No downgrading mid-run.
 
-**Override и видимость:** `--fast`/`--thorough`/`--tier=S|M|L` или NL-просьба в `$ARGUMENTS` фиксируют тир — человек главнее авто-триажа. Выбранный тир и что сознательно пропущено — одной строкой в чат/`log()` (не молчи о срезах).
+**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L` or a NL request in `$ARGUMENTS` pins the tier — the human beats the auto-triage. The chosen tier and what was consciously skipped — one line in chat/`log()` (don't stay silent about cuts).
 
-## Фаза 1 — Baseline (ключевая; solo/Workflow) — ДО любых правок
+## Phase 1 — Baseline (key; solo/Workflow) — BEFORE any edits
 
-1. **Сними зелёный baseline:** прогони сеть (тесты, сборка, typecheck — команды из плана/`CLAUDE.md`), убедись, что она зелёная. Запиши **текущий набор нарушений** целевого инструмента (число + перечень) — это «до».
-2. **Baseline красный** и не чинится → **блокер** (нельзя доказать, что проход ничего не сломал). Красноту, не связанную с batch, не «чини заодно» — это scope creep; если она мешает измерению — эскалируй.
-3. **Resolve risk spike** batch (напр. «мнимо-мёртвый символ»): целевая проверка (grep динамических/строковых ссылок, re-export, `__all__`, DI-по-имени). Вскрытый блокер → остановись и спроси (варианты).
+1. **Take a green baseline:** run the net (tests, build, typecheck — commands from the plan/`CLAUDE.md`), confirm it's green. Record the **current violation set** of the target tool (count + list) — this is the "before".
+2. **The baseline is red** and won't be fixed → **blocker** (can't prove the pass broke nothing). Don't "fix along the way" redness unrelated to the batch — that's scope creep; if it blocks measurement — escalate.
+3. **Resolve the batch's risk spike** (e.g. "seemingly-dead symbol"): a targeted check (grep for dynamic/string references, re-export, `__all__`, name-based DI). An uncovered blocker → stop and ask (with options).
 
-## Фаза 2 — Выполнение прохода (Workflow/solo)
+## Phase 2 — Running the pass (Workflow/solo)
 
-1. Заведи задачи `TaskCreate`/`TaskUpdate` для видимости.
-2. **Применяй по типу batch:**
-   - **Autofix (Tier A):** запусти `--fix`/formatter инструмента; diff обязан быть **только** ожидаемого механического класса (проверь категории diff — ни одной правки логики).
-   - **Подключение инструмента (Tier B):** добавь/почини конфиг так, чтобы инструмент **проходил на текущем коде** на согласованной щадящей планке; тела кода не трогай сверх необходимого для прохождения (а если для прохождения нужна правка логики — это латентный bug → route, не делаем молча).
-   - **Ratchet строгости (Tier D):** включи **одно** правило/модуль; сведи вскрытый **конечный** набор нарушений к нулю строго behavior-preserving правками (аннотации, переименования, подавления с TODO — не смена логики).
-3. **Установи gate** (Tier C или подтягивание в других tier): добавь pre-commit-хук / шаг CI, запирающий то, что чинит batch, на достигнутом уровне. Формат — по конвенциям репозитория.
-4. **Только гигиена.** На каждом шаге спрашивай: меняю ли я наблюдаемое поведение? Если да и это не «чистая гигиена» — стоп, это латентный bug/scope creep, не этот проход.
+1. Create tasks via `TaskCreate`/`TaskUpdate` for visibility.
+2. **Apply by batch type:**
+   - **Autofix (Tier A):** run the tool's `--fix`/formatter; the diff must be **only** the expected mechanical class (check the diff categories — not a single logic edit).
+   - **Tool onboarding (Tier B):** add/fix the config so the tool **passes on the current code** at the agreed lenient bar; don't touch code bodies beyond what's needed to pass (and if passing requires a logic edit — that's a latent bug → route, we don't do it silently).
+   - **Strictness ratchet (Tier D):** enable **one** rule/module; drive the surfaced **finite** violation set to zero with strictly behavior-preserving edits (annotations, renames, suppressions with a TODO — not a logic change).
+3. **Install the gate** (Tier C, or tightening within other tiers): add a pre-commit hook / CI step that locks what the batch fixes at the achieved level. Format — per the repo's conventions.
+4. **Hygiene only.** At each step ask: am I changing observable behavior? If yes and it's not "pure hygiene" — stop, that's a latent bug/scope creep, not this pass.
 
-## Фаза 3 — Верификация (Workflow) — главный контроль вместо approval
+## Phase 3 — Verification (Workflow) — the main control instead of approval
 
-1. **Поиск дрейфа поведения** (для не-чисто-механических правок: удаление мёртвого, autofix с краевыми случаями, аннотации со сменой runtime). `Workflow`: N скептиков ищут вход, где old≠new; где возможно — дифференциальный прогон old-vs-new. **Default инвертирован: поведение считается изменённым, пока эквивалентность не доказана.** Для чистого formatter/сортировки — облегчённо (diff-класс + сеть).
-2. **Сеть зелёная.** Прогони тот же набор, что в baseline (тесты/сборка/typecheck): всё зелёное. Проверяй по **exit-коду И числу** собранных/прошедших тестов, не по строке `OK`.
-3. **Инструмент зелёный на целевой планке + нет нового долга в другом месте.** Целевой класс нарушений сведён к нулю на scope; проход не «переместил» проблему (нет новых нарушений в соседних файлах/правилах).
-4. **Gate работает (sabotage gate).** Отдельный агент вносит правдоподобное нарушение того класса, что запирает gate, прогоняет gate (pre-commit/CI-шаг), убеждается, что он **краснеет**, откатывает (`git checkout`; мутацию в commit не включай). Gate не покраснел → ratchet не заперт: **чинить gate**, проход не завершён.
-5. **Ноль scope creep** (отдельный агент-скептик со свежим контекстом). Пройтись по всему diff: любая правка логики/значения/ветки, меняющая наблюдаемый результат, = находка. Переформатированный/тронутый вне scope batch файл без нужды = находка. «Заодно починенный» латентный bug = находка (route, не fix).
-6. **Чини подтверждённые находки** (loop-until-clean для критичных): поиск дрейфа → проверка gate → fix, пока критичные не иссякнут. Каждую находку перед починкой состязательно верифицируй (по умолчанию «подтверждено, если сомнение в безопасности»).
+1. **Behavior-drift search** (for non-purely-mechanical edits: dead-code removal, autofix with edge cases, annotations that shift runtime). `Workflow`: N skeptics look for an input where old≠new; where possible — an old-vs-new differential run. **The default is inverted: behavior is considered changed until equivalence is proven.** For pure formatter/sorting — lightened (diff class + net).
+2. **The net is green.** Run the same set as in the baseline (tests/build/typecheck): all green. Check by **exit code AND the count** of collected/passed tests, not by an `OK` string.
+3. **The tool is green at the target bar + no new debt elsewhere.** The target violation class is driven to zero on scope; the pass didn't "move" the problem (no new violations in neighboring files/rules).
+4. **The gate works (gate sabotage).** A separate agent injects a plausible violation of the class the gate locks, runs the gate (pre-commit/CI step), confirms it **goes red**, reverts (`git checkout`; don't include the mutation in a commit). The gate didn't go red → the ratchet isn't locked: **fix the gate**, the pass isn't done.
+5. **Zero scope creep** (a separate skeptic agent with fresh context). Walk the whole diff: any logic/value/branch edit changing the observable result = a finding. A file reformatted/touched outside the batch scope without need = a finding. A "fixed along the way" latent bug = a finding (route, not fix).
+6. **Fix the confirmed findings** (loop-until-clean for critical ones): drift search → gate check → fix until critical ones dry up. Adversarially verify each finding before fixing (default "confirmed if there's doubt about safety").
 
-**Оговорка (против ритуала).** Правила Фазы 4 — линзы скептика, доказываемые прогоном (diff-класс, sabotage gate, число нарушений до/после), а не самозачётные галочки. Не переусердствуй: агрессивный поиск дрейфа не должен плодить мнимые находки на чистой механической правке (formatter/сортировка). Фокус — **эквивалентность поведения** и **запертый уровень**.
+**Caveat (against ritual).** The Phase 3 rules are the skeptic's lenses, proven by a run (diff class, gate sabotage, before/after violation counts), not self-awarded checkboxes. Don't overdo it: aggressive drift search must not breed imaginary findings on a clean mechanical edit (formatter/sorting). The focus is **behavior equivalence** and the **locked level**.
 
-## Фаза 4 — Сведение
+## Phase 4 — Wrap-up
 
-1. **Обнови артефакты:** `tasks/IMPL-lint-<slug>.md` (или дополни LINT-план) — что сделал проход, **нарушений было N → стало 0**, какой gate добавлен и чем доказан, отклонения, найденные латентные bugs как follow-up-route. **Отметь batch done** в roadmap LINT-плана (☐→☑), чтобы следующий `lint-fix` auto-picked следующий batch.
-2. **Финальный отчёт:** двумя блоками — **«Поведение сохранено»** (сеть зелёная, diff только ожидаемого класса, поиск дрейфа чист, ноль scope creep) и **«Планка поднята и заперта»** (инструмент зелёный на планке X, было N→0 нарушений, gate добавлен и краснеет на подсаженном нарушении). Плюс статус тестов/сборки. Явно: пройден **один проход лестницы**; следующий batch — `#N`.
-3. **Commit/PR — только по просьбе.** На `main`/`master` — заведи ветку. Подсказка: следующий проход — `/prorab-tech:lint-fix` (auto-picks следующий batch); анонс результата — `/prorab:announce`.
+1. **Update artifacts:** `tasks/IMPL-lint-<slug>.md` (or extend the LINT plan) — what the pass did, **violations were N → now 0**, which gate was added and how it's proven, deviations, found latent bugs as follow-up routes. **Mark the batch done** in the LINT plan's roadmap (☐→☑) so the next `lint-fix` auto-picks the next batch.
+2. **Final report:** two blocks — **"Behavior preserved"** (net green, diff only of the expected class, drift search clean, zero scope creep) and **"Bar raised and locked"** (tool green at bar X, was N→0 violations, gate added and goes red on an injected violation). Plus test/build status. Explicitly: **one ladder pass** is done; the next batch is `#N`.
+3. **Commit/PR only on request.** On `main`/`master` — create a branch. Hint: the next pass is `/prorab-tech:lint-fix` (auto-picks the next batch); announce the result via `/prorab:announce`.
 
 ---
 
-## Памятка по Workflow-паттернам (применяй осознанно)
+## Workflow-pattern cheatsheet (apply deliberately)
 
-- **`pipeline()` по умолчанию;** барьер (`parallel()` между этапами) — только когда следующему нужны ВСЕ результаты предыдущего.
-- **Дифференциальный прогон** — сильнейшее доказательство эквивалентности для правок, где возможна смена runtime (удаление кода, аннотации): old vs new на одних входах.
-- **Sabotage gate** — эмпирическая проверка, что ratchet реально заперт: подсаженное нарушение обязано покраснить gate. Голый gate без пробы = недоказанный.
-- **Состязательный поиск дрейфа** — N скептиков, default «поведение изменилось, пока не доказано обратное»; облегчай для чисто механических правок.
-- **Структурированный вывод** — `schema` у агентов, не дампы вывода инструментов.
-- **Изоляция worktree** — только для параллельной мутации файлов; иначе не используй.
-- **Видимость** — `phase()`/`log()`; **не молчи о срезах** (ограничил diff-прогон/sample — `log()`).
+- **`pipeline()` by default;** a barrier (`parallel()` between stages) — only when the next one needs ALL results of the previous.
+- **Differential run** — the strongest proof of equivalence for edits where a runtime shift is possible (code removal, annotations): old vs new on the same inputs.
+- **Gate sabotage** — an empirical check that the ratchet is really locked: an injected violation must turn the gate red. A bare gate without a probe = unproven.
+- **Adversarial drift search** — N skeptics, default "behavior changed until proven otherwise"; lighten it for purely mechanical edits.
+- **Structured output** — `schema` on agents, not dumps of tool output.
+- **Worktree isolation** — only for parallel file mutation; otherwise don't use it.
+- **Visibility** — `phase()`/`log()`; **don't stay silent about cuts** (limited the differential run/sample — `log()`).
 
-## Чего НЕ делать
+## What NOT to do
 
-- Не менять наблюдаемое поведение/выходы/эффекты/ошибки — даже «в лучшую сторону»; латентный bug, вскрытый анализатором, не чиним (route в `/prorab:refine`→`/prorab:build`), bugs/quirks сохраняем.
-- Не завершать проход без gate: голый fix без запирающего pre-commit/CI-шага (и без sabotage-пробы gate) = незапертый ratchet, а не пройденный проход.
-- Не запускать batch раньше его пред-условий и не объединять несколько batch в один заход — лестница по одному проходу.
-- Не расширять scope: ни попутных правок логики, ни переформатирования несвязанных файлов, ни лишних правил строгости сверх batch.
-- Не «озеленять» обходами: не подавлять нарушения массовым `# noqa`/`eslint-disable`/`# type: ignore` без обоснования вместо реального сведения к нулю; не подменять (mock) сеть; sabotage gate не краснеет → gate дырявый, а не пройденная проверка.
-- Не объявлять «готово» без зелёного инструмента на планке И зелёной сети И доказанного gate; не приукрашивать статус.
-- Не устраивать approval checkpoint; останавливаться только на настоящем блокере (смена поведения/контракта, невыполненные пред-условия, красный baseline, не-один-проход, неверифицируемое удаление).
-- Не делать commit/push без явной просьбы.
+- Don't change observable behavior/outputs/effects/errors — even "for the better"; a latent bug the analyzer surfaces is not fixed (route to `/prorab:refine`→`/prorab:build`), we preserve bugs/quirks.
+- Don't finish the pass without a gate: a bare fix without a locking pre-commit/CI step (and without a gate sabotage probe) = an unlocked ratchet, not a passed pass.
+- Don't run a batch before its prerequisites and don't merge several batches into one go — the ladder is one pass at a time.
+- Don't widen scope: no incidental logic edits, no reformatting of unrelated files, no extra strictness rules beyond the batch.
+- Don't "green up" with workarounds: don't suppress violations with a mass `# noqa`/`eslint-disable`/`# type: ignore` without justification instead of really driving them to zero; don't mock the net; the gate sabotage doesn't go red → the gate is leaky, not a passed check.
+- Don't declare "done" without a green tool at the bar AND a green net AND a proven gate; don't gild the status.
+- Don't stage an approval checkpoint; stop only on a real blocker (behavior/contract change, unmet prerequisites, red baseline, not-one-pass, unverifiable removal).
+- Don't commit/push without an explicit request.
