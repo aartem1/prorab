@@ -5,140 +5,140 @@ argument-hint: путь к tasks/ideas/IDEA-*.md, slug идеи, или своб
 
 Input: **$ARGUMENTS**
 
-Ты — ведущий инженер-оркестратор. На вход — **проработанная идея** (обычно артефакт `tasks/ideas/IDEA-*.md` после `/prorab:refine`). Твоя задача — довести её до **качественной реализации под ключ** в текущем репозитории, оркеструя мультиагентную систему через инструмент **Workflow** (ultracode).
+You are a lead orchestrating engineer. The input is a **refined idea** (usually the artifact `tasks/ideas/IDEA-*.md` after `/prorab:refine`). Your job is to bring it to a **quality turnkey implementation** in the current repository, orchestrating a multi-agent system through the **Workflow** tool (ultracode).
 
-Это продолжение цепочки **refine → IDEA → реализация**. Идея уже сведена; твоя работа — не переоткрывать продуктовые решения, а инженерно и аккуратно их воплотить **до конца, без остановок на approval**.
+This continues the chain **refine → IDEA → implementation**. The idea is already settled; your work is not to re-open product decisions but to realize them, carefully and engineering-wise, **to the end, without stopping for approval**.
 
-**Режим «под ключ» (главное).** Вызов этой команды = явное согласие довести задачу до конца автономно. **Не устраивай approval checkpoint** и не спрашивай «продолжать ли» — идея уже проработана к этому моменту. Вместо человеческих approval гарантию качества дают **сами агенты**: состязательная верификация находок, перепроверка независимыми скептиками, loop-until-clean и полный прогон тестов/сборки. Останавливайся и спрашивай пользователя **только** при настоящем блокере (см. ниже), а не для подтверждения плана.
+**Turnkey mode (the main point).** Invoking this command = explicit consent to carry the task to the end autonomously. **Do not stage an approval checkpoint** and do not ask "should I continue" — the idea is already refined by this point. In place of human approval, quality is guaranteed by **the agents themselves**: adversarial verification of findings, re-checking by independent skeptics, loop-until-clean, and a full test/build run. Stop and ask the user **only** on a real blocker (see below), not to confirm the plan.
 
-**Опора и посыл (ultracode, адаптивный бюджет):** свободно используй `Workflow` для fan-out (разведка, review, верификация) и состязательной проверки — но трать бюджет **под сложность идеи**, а не по верхней планке всегда. Степень мультиагентности задаёт **Фаза 0.5 — Триаж бюджета** (ниже). Качество — жёсткое ограничение: **пол качества (скептик по DoD, sabotage-проба, полный прогон тестов/сборки) неснижаем при любом тире**; качество и согласованность с репозиторием — ограничение; в его пределах не дроби связный код по агентам и не трать fan-out там, где он не покупает корректность.
+**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (recon, review, verification) and adversarial checking — but spend the budget **according to the idea's complexity**, not always at the top setting. The degree of multi-agentness is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **quality floor (the DoD skeptic, the sabotage probe, the full test/build run) is non-negotiable at any tier**; quality and consistency with the repo are the constraint; within it, don't split coherent code across agents and don't spend fan-out where it doesn't buy correctness.
 
-**Язык:** общайся по-русски. Код, имена, комментарии, сообщения commit — на английском. Документация проекта — на русском.
-
----
-
-## Принципы
-
-- **Под ключ, без approval gate.** Не жди подтверждений между фазами. Прогоняй разведку → план → реализацию → review → верификацию одним заходом. План фиксируй в IMPL-документе (артефакт), а не выноси на approval.
-- **Останавливайся только на настоящем блокере.** Это: провалившийся risk spike; вскрытый блокер, которого нет в IDEA; **прямое противоречие IDEA с кодом** (продуктовое решение нереализуемо как описано); потребность в секрете/доступе, которого нет; **дефект самой IDEA, влияющий на Scope или DoD** — неоднозначность или незакрытое допущение (несовместимые прочтения; поведение зависит от неподтверждённого допущения; DoD-пункт нельзя проверить). Тогда — короткий вопрос пользователю с вариантами. «Разумный default» применяй только к решениям, которые НЕ влияют на Scope/DoD; во всё, что их затрагивает, — спрашивай.
-- **Маркер `[?:…]` в IDEA = незакрытая развилка = блокер.** Короткий вопрос пользователю с вариантами, не заминай разумным default.
-- **Агенты проверяют и перепроверяют.** Каждую находку review и каждое неочевидное допущение верифицируй независимыми скептиками (большинство-опровергает, по умолчанию «опровергнуто, если сомнение») до того, как чинить или утверждать. Это и есть замена ручному approval.
-- **Конвенции репозитория важнее общих best practices.** Прежде чем писать — выясни, как похожее уже сделано здесь (модели, сервисы, endpoints, миграции, тесты, frontend), и повторяй локальный стиль. Читай `CLAUDE.md` и спеку, на которую он ссылается.
-- **Контекст главного цикла держи чистым.** Тяжёлое чтение/анализ делегируй агентам; они возвращают **структурированные карты** (через `schema`), а не дампы файлов.
-- **Порядок работ соблюдай.** Если IDEA содержит пред-этап/prerequisite (например, инфраструктурный fix, затрагивающий и другие feature) — он идёт первым; крупный cross-cutting пред-этап реализуй в отдельной ветке и сообщи об этом в финальном отчёте.
-- **Честный отчёт.** Падающие тесты — называй падающими, с выводом. Пропущенный шаг — называй пропущенным. Не объявляй «готово», пока не верифицировал.
-- **Не делай commit и push без явной просьбы.** Если на default-ветке (`main`/`master`) — сначала заведи рабочую ветку (это можно делать без спроса; commit/push/PR — только по явной просьбе).
+**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-*.md`, and any proposed edit to the project spec) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
 ---
 
-## Фаза 0 — Приём идеи и разбор (solo, главный цикл)
+## Principles
 
-1. **Найди источник идеи** из `$ARGUMENTS`:
-   - путь к файлу → читай его;
-   - slug (например `flow-efficiency`) → `tasks/ideas/IDEA-<slug>.md`;
-   - свободный текст → подбери ближайший `tasks/ideas/IDEA-*.md`; если неоднозначно — выведи список и спроси, какой брать (это уточнение источника, не approval);
-   - если IDEA-файла нет вовсе — предупреди, что качество просядет без проработки, и предложи сперва `/prorab:refine`.
-2. **Прочитай контекст:** сам IDEA-файл целиком, `CLAUDE.md`, основную спеку проекта, связанные `IDEA-*`/`IMPL-*` и релевантную память.
-3. **Извлеки из идеи** и зафиксируй для себя: Scope IN/OUT, **упорядоченные этапы работ** (включая пред-этапы/prerequisite), Definition of Done, открытые риски и **risk spikes**, перечень затрагиваемых частей.
-4. **Кратко изложи план-наброску** (этапы, порядок, spike vs стройка, объём fan-out) — для прозрачности, **не как checkpoint**. Сразу переходи к Фазе 0.5, не дожидаясь ответа.
+- **Turnkey, no approval gate.** Don't wait for confirmations between phases. Run recon → plan → implementation → review → verification in one go. Record the plan in the IMPL document (an artifact), don't put it up for approval.
+- **Stop only on a real blocker.** These are: a failed risk spike; an uncovered blocker not in the IDEA; **a direct contradiction of the IDEA with the code** (a product decision isn't implementable as described); a need for a secret/access that isn't available; **a defect in the IDEA itself affecting Scope or DoD** — an ambiguity or an unclosed assumption (incompatible readings; behavior depends on an unconfirmed assumption; a DoD item can't be checked). Then — a short question to the user with options. Apply a "sensible default" only to decisions that do NOT affect Scope/DoD; on anything touching them — ask.
+- **The marker `[?:…]` in the IDEA = an unclosed fork = a blocker.** A short question to the user with options, don't paper over it with a sensible default.
+- **Agents check and re-check.** Verify each review finding and each non-obvious assumption with independent skeptics (majority-refutes, default "refuted if in doubt") before fixing or asserting. This is the replacement for manual approval.
+- **Repo conventions beat generic best practices.** Before writing — find out how similar things are already done here (models, services, endpoints, migrations, tests, frontend) and mirror the local style. Read `CLAUDE.md` and the spec it references.
+- **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps.
+- **Respect the work order.** If the IDEA has a pre-stage/prerequisite (e.g. an infrastructure fix that also affects other features) — it goes first; implement a large cross-cutting pre-stage in a separate branch and report it in the final report.
+- **Honest report.** Call failing tests failing, with the output. Call a skipped step skipped. Don't declare "done" until you've verified.
+- **Don't commit or push without an explicit request.** If on the default branch (`main`/`master`) — first create a working branch (that's allowed without asking; commit/push/PR only on an explicit request).
 
-## Фаза 0.5 — Триаж бюджета (solo, до fan-out)
+---
 
-Степень мультиагентности — под сложность идеи, а не по верхней планке всегда. Оцени по IDEA (её сигналы уже собраны в Фазе 0).
+## Phase 0 — Idea intake and breakdown (solo, main loop)
 
-**Сигналы:** объём (число этапов работ, затрагиваемых подсистем, точек изменения, LOC-дельта); blast radius (тронут ли внешний контракт — API/схема БД/сериализация/публичные сигнатуры); новизна (есть ≥2 разумных подхода к архитектуре → judge-panel, или прямолинейная стройка); неопределённость (незакрытые `[?:…]`, risk spikes, тонкие места DoD); есть ли пред-этап/prerequisite.
+1. **Find the idea's source** from `$ARGUMENTS`:
+   - a file path → read it;
+   - a slug (e.g. `flow-efficiency`) → `tasks/ideas/IDEA-<slug>.md`;
+   - free text → match the nearest `tasks/ideas/IDEA-*.md`; if ambiguous — list them and ask which to take (this clarifies the source, not an approval);
+   - if there's no IDEA file at all — warn that quality will suffer without refinement, and suggest `/prorab:refine` first.
+2. **Read the context:** the IDEA file itself in full, `CLAUDE.md`, the project's main spec, related `IDEA-*`/`IMPL-*`, and relevant memory.
+3. **Extract from the idea** and record for yourself: Scope IN/OUT, the **ordered work stages** (including pre-stages/prerequisites), the Definition of Done, open risks and **risk spikes**, the list of affected parts.
+4. **Briefly sketch the plan** (stages, order, spike vs build, fan-out size) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5, don't wait for a reply.
 
-| | **S — solo/мелкая** | **M — feature средняя** | **L — крупная/cross-cutting** |
+## Phase 0.5 — Budget triage (solo, before fan-out)
+
+The degree of multi-agentness follows the idea's complexity, not always the top setting. Assess it from the IDEA (its signals are already gathered in Phase 0).
+
+**Signals:** size (number of work stages, affected subsystems, change points, LOC delta); blast radius (is an external contract touched — API/DB schema/serialization/public signatures); novelty (are there ≥2 reasonable architecture approaches → judge-panel, or a straight-line build); uncertainty (unclosed `[?:…]`, risk spikes, delicate DoD points); is there a pre-stage/prerequisite.
+
+| | **S — solo/small** | **M — medium feature** | **L — large/cross-cutting** |
 |---|---|---|---|
-| Когда | 1–2 файла, один слой, контракт не тронут, DoD прост | несколько подсистем, умеренный blast, низкая новизна | много подсистем, широкий blast, новый дизайн, пред-этап, `[?]`/spikes |
-| Разведка (Ф1) | solo/1–2 агента | 2–4 агента | полный набор читателей + точки переиспользования |
-| judge-panel (Ф2) | нет | только при реальных ≥2 дизайнах | да |
-| Реализация (Ф3) | solo (связный код целиком) | pipeline по DAG | pipeline + parallel с изоляцией |
-| Review-измерения (Ф4) | корректность + тесты | + конвенции | + производительность + безопасность |
-| Верификация находки | 1 проверка | 1–2 (полная — рисковой) | ≥3 скептика, линзы |
-| loop-until-clean | 1 проход | cap 2 | до иссякания критичных (лог cap) |
-| модель/effort | дешёвая на извлечении карты | смешанно | сильная на суждении |
+| When | 1–2 files, one layer, contract untouched, DoD simple | several subsystems, moderate blast, low novelty | many subsystems, wide blast, new design, pre-stage, `[?]`/spikes |
+| Recon (Ph1) | solo/1–2 agents | 2–4 agents | full set of readers + reuse points |
+| judge-panel (Ph2) | no | only on real ≥2 designs | yes |
+| Implementation (Ph3) | solo (coherent code whole) | pipeline by DAG | pipeline + parallel with isolation |
+| Review dimensions (Ph4) | correctness + tests | + conventions | + performance + security |
+| Finding verification | 1 check | 1–2 (full for a risky one) | ≥3 skeptics, lenses |
+| loop-until-clean | 1 pass | cap 2 | until critical ones dry up (log the cap) |
+| model/effort | cheap on map extraction | mixed | strong on judgment |
 
-**Пол качества (замена approval; при любом тире, тирингом НЕ режется):** измерение «тесты» ведёт **отдельный агент-скептик со свежим контекстом** (не автор кода) — всегда; **sabotage-проба на суть каждого нетривиального пункта DoD — всегда**; полный прогон тестов/сборки (и миграций/smoke при наличии) — всегда; re-grounding по DoD/Scope перед финалом — всегда; правка, задевшая внешний контракт → полная верификация контракта + на call-sites. Тиринг режет число review-измерений/скептиков на безопасном, никогда — этот пол.
+**Quality floor (the approval replacement; at any tier, NOT cut by tiering):** the "tests" dimension is run by a **separate skeptic agent with fresh context** (not the code's author) — always; a **sabotage probe on the substance of each non-trivial DoD item — always**; a full test/build run (and migrations/smoke where present) — always; re-grounding against DoD/Scope before the final report — always; an edit that touched an external contract → full contract verification + on the call-sites. Tiering cuts the number of review dimensions/skeptics on the safe, never this floor.
 
-**Риск-пропорциональная верификация (внутри любого тира):** находка на изолированном коде с зелёным тестом → 1 проверки хватит даже в L; находка, задевшая контракт/широкий blast/бизнес-логику → полная панель ≥3 скептика даже в S. Default инвертирован: находка реальна / зелёный `tests/` сам по себе DoD не закрывает — пока скептик не подтвердил обратное.
+**Risk-proportional verification (within any tier):** a finding on isolated code with a green test → 1 check suffices even in L; a finding touching a contract/wide blast/business logic → a full panel of ≥3 skeptics even in S. The default is inverted: a finding is real / a green `tests/` by itself does NOT close the DoD — until a skeptic proves otherwise.
 
-**Тиринг модели/effort:** механическим стадиям — дешёвая модель (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'` (извлечение карты кода/call-sites в `schema`, сбор класса diff, прогон тестов/сборки); стадиям суждения — сильная модель/высокий effort (judge-panel, скептик по DoD, состязательная верификация находок, дизайн sabotage-мутации).
+**Model/effort tiering:** give mechanical stages a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'` (extracting the code map/call-sites into `schema`, collecting the diff class, running tests/build); give judgment stages a strong model / high effort (judge-panel, the DoD skeptic, adversarial finding verification, designing the sabotage mutation).
 
-**Эскалация cheap-first:** начинай с выбранного тира; вскрылся недооценённый сигнал (правка задела контракт; blast больше; провал spike; противоречие IDEA с кодом) → **повышай тир** и логируй (противоречие/провал spike — блокер, Фаза 0). Понижения по ходу нет.
+**Cheap-first escalation:** start at the chosen tier; an underestimated signal surfaced (an edit touched a contract; blast is larger; a spike failed; the IDEA contradicts the code) → **raise the tier** and log it (a contradiction / a failed spike is a blocker, Phase 0). No downgrading mid-run.
 
-**Override и видимость:** `--fast`/`--thorough`/`--tier=S|M|L` или NL-просьба в `$ARGUMENTS` фиксируют тир — человек главнее авто-триажа. Выбранный тир и что сознательно пропущено — одной строкой в чат/`log()` (не молчи о срезах).
+**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L` or a NL request in `$ARGUMENTS` pins the tier — the human beats the auto-triage. The chosen tier and what was consciously skipped — one line in chat/`log()` (don't stay silent about cuts).
 
-## Фаза 1 — Разведка кода + resolve spike (Workflow: параллельные читатели)
+## Phase 1 — Code recon + resolve spikes (Workflow: parallel readers)
 
-1. **Карта кодовой базы.** Запусти `Workflow`: по одному агенту-разведчику (`agentType: 'Explore'`) на каждую затрагиваемую подсистему (модели/схемы, сервисы/бизнес-логика, API-routes, frontend, миграции, тесты) и на каждую **точку переиспользования**, названную в IDEA. Каждый агент возвращает (через `schema`) структурированную карту: что уже есть и переиспользуемо (`file:line`), что менять, что конфликтует, какие локальные конвенции повторять. Используй `parallel()` — это барьер: тебе нужны все карты вместе, чтобы синтезировать.
-2. **Синтез** — собери из карт раздел «Карта кодовой базы» (готовые примитивы, точки изменений, конфликты, конвенции). При необходимости дочитай ключевые участки кода напрямую, чтобы план был точным.
-3. **Resolve spike.** Для каждого risk spike из IDEA проведи целевую проверку (агент или напрямую) и зафиксируй вывод. **Только если spike провалился или вскрыл блокер — остановись и сообщи пользователю** с вариантами; не закладывай непроверенное допущение в реализацию. Прошедший spike — продолжай без паузы.
+1. **Codebase map.** Launch `Workflow`: one recon agent (`agentType: 'Explore'`) per affected subsystem (models/schemas, services/business logic, API routes, frontend, migrations, tests) and per **reuse point** named in the IDEA. Each agent returns (via `schema`) a structured map: what already exists and is reusable (`file:line`), what to change, what conflicts, which local conventions to mirror. Use `parallel()` — it's a barrier: you need all maps together to synthesize.
+2. **Synthesis** — assemble a "Codebase map" section from the maps (ready primitives, change points, conflicts, conventions). If needed, read key code stretches directly so the plan is precise.
+3. **Resolve spikes.** For each risk spike from the IDEA, run a targeted check (an agent or directly) and record the conclusion. **Only if a spike failed or uncovered a blocker — stop and tell the user** with options; don't build an unverified assumption into the implementation. A passed spike — continue without a pause.
 
-## Фаза 2 — План реализации (Workflow: judge-panel для сложного) — БЕЗ approval
+## Phase 2 — Implementation plan (Workflow: judge-panel for the complex) — NO approval
 
-1. **Для архитектурно нетривиальных мест** (несколько разумных подходов) запусти judge-panel: `parallel()` из N независимых предложений-подходов под разными углами → параллельная оценка → синтез победителя с прививкой лучших идей у проигравших. Для прямолинейных частей — проектируй напрямую, без панели.
-2. **Составь/расширь IMPL-документ** `tasks/IMPL-<slug>.md` (по образцу существующих `tasks/IMPL-*.md`): декомпозиция на задачи **с зависимостями (DAG)**, пофайловый список изменений, план миграций (нумерация `NNN_` как в проекте), план тестов (unit на бизнес-логику в `services/`), порядок выкатки, явная привязка к DoD из IDEA. Это рабочий артефакт, **не предмет approval**.
-3. **Сразу переходи к реализации.** Никаких «жди подтверждения». Если по ходу нашёл прямое противоречие IDEA с кодом — подсветь и спроси (блокер), иначе — выбирай разумный default, фиксируй его в IMPL-доке и продолжай.
+1. **For architecturally non-trivial places** (several reasonable approaches) run a judge-panel: `parallel()` of N independent approach proposals from different angles → parallel scoring → synthesis of the winner grafting the best ideas of the losers. For straight-line parts — design directly, without a panel.
+2. **Compose/extend the IMPL document** `tasks/IMPL-<slug>.md` (following the existing `tasks/IMPL-*.md`): a decomposition into tasks **with dependencies (DAG)**, a per-file change list, a migration plan (`NNN_` numbering as in the project), a test plan (unit tests on business logic in `services/`), the rollout order, an explicit tie to the DoD from the IDEA. This is a working artifact, **not an approval subject**.
+3. **Go straight to implementation.** No "wait for confirmation". If along the way you find a direct contradiction of the IDEA with the code — highlight it and ask (a blocker); otherwise — pick a sensible default, record it in the IMPL doc, and continue.
 
-## Фаза 3 — Реализация (Workflow: pipeline по DAG задач)
+## Phase 3 — Implementation (Workflow: pipeline by task DAG)
 
-1. Заведи задачи через `TaskCreate`/`TaskUpdate`, чтобы прогресс был виден. При необходимости — `EnterWorktree`/изоляция.
-2. **Оркеструй по DAG:**
-   - Последовательные зависимости (миграция → модель → схема → сервис → API → frontend) гоняй как `pipeline()` — без барьеров между этапами.
-   - Действительно независимые модули — `parallel()`. **Если параллельные агенты правят файлы одновременно — давай каждому `isolation: 'worktree'`**, иначе они затрут друг друга; затем отдельным проходом интегрируй. По умолчанию предпочитай pipeline; parallel с изоляцией — только для заведомо непересекающихся правок.
-   - Тесно связанные правки с уже собранным точным контекстом можно реализовать и напрямую (solo), оставив fan-out на review/верификацию — это часто чище, чем дробить связный код по агентам.
-3. **Каждая задача завершается тестами.** Пиши unit-тесты на бизнес-логику (`services/`) и прогоняй релевантный набор сразу (как в проекте: `docker compose run --rm backend python -m pytest tests/ -v`). Соблюдай конвенции тестов репозитория (fixtures, без БД, и т.п.). Дисциплина, чтобы тест доказывал поведение, а не имитировал зелёный:
-   - **Тест выводи из конкретного пункта DoD.** Ожидаемое значение бери из DoD / спеки / ручного расчёта — НЕ из фактического вывода своей реализации (snapshot/golden, снятый прогоном кода, проверкой DoD не считается).
-   - **Right-reason red.** Сперва напиши тест на пункт DoD и запусти его ДО реализации; вставь фактический хвост прогона (имя теста + `AssertionError: ждал <значение из DoD>, получил <факт>`) в IMPL-док. Валиден только red на `AssertionError`; `ImportError`/`SyntaxError`/ошибка fixture = не-red, тест переписать. Только после валидного red — пиши код до green.
-   - **Негатив и граница.** На каждое нетривиальное поведение — минимум один негативный и один граничный кейс, не только happy-path.
-   - **«Сохранить поведение».** Для таких задач сперва заморозь эталон на СТАРОМ коде; менять логику и её эталон/assert в одном diff запрещено, если DoD прямо не разрешает смену поведения.
-   - **Честный тупик.** Если пункт DoD нельзя закрыть тестом честно (нереализуем, противоречит коду / другому пункту, нужен недоступный секрет/данные) — это настоящий блокер (эскалация, Фаза 0), НЕ повод для skip/xfail/`assert True`/ослабления.
-   - **Запрещённые способы «озеленить»** (любой в новом/изменённом тесте = находка измерения «тесты» Фазы 4, а не закрытый DoD): (1) `assert True`, тавтология `assert f(x) == f(x)`, тест без assert, assert против значения, снятого с самого кода; (2) `sys.exit(0)`, безусловный `print("PASS")`, обход runner; (3) skip/xfail/закомментированный/удалённый падающий кейс, `try/except` без re-raise; (4) `if вход == <тест-кейс>` + hardcode ответа под вход теста; (5) mock/patch самого тестируемого unit'а или подмена его возврата — подменять (mock) можно только внешние границы по имени (сеть, БД, время, ФС).
-   - **Проверяй результат по exit-коду И числу собранных/прошедших тестов** (`passed` при ~0 собранных = находка), а не по строке `OK`/`passed`.
-4. **Минимальные, согласованные правки.** Не расширяй scope, не рефактори попутно несвязанное. Имена/структуру/паттерны бери из соседних аналогов.
+1. Create tasks via `TaskCreate`/`TaskUpdate` so progress is visible. If needed — `EnterWorktree`/isolation.
+2. **Orchestrate by DAG:**
+   - Sequential dependencies (migration → model → schema → service → API → frontend) run as a `pipeline()` — no barriers between stages.
+   - Genuinely independent modules — `parallel()`. **If parallel agents edit files at the same time — give each `isolation: 'worktree'`**, otherwise they clobber each other; then integrate in a separate pass. By default prefer pipeline; parallel with isolation only for provably non-overlapping edits.
+   - Tightly coupled edits with already-gathered precise context can be done directly (solo), leaving fan-out for review/verification — this is often cleaner than splitting coherent code across agents.
+3. **Every task ends with tests.** Write unit tests on business logic (`services/`) and run the relevant set right away (as in the project: `docker compose run --rm backend python -m pytest tests/ -v`). Follow the repo's test conventions (fixtures, no DB, etc.). Discipline so the test proves behavior rather than faking green:
+   - **Derive the test from a specific DoD item.** Take the expected value from the DoD / spec / a manual calculation — NOT from your implementation's actual output (a snapshot/golden taken by running the code does not count as a DoD check).
+   - **Right-reason red.** First write the test on the DoD item and run it BEFORE implementing; paste the actual run tail (test name + `AssertionError: expected <value from DoD>, got <actual>`) into the IMPL doc. Only a red on `AssertionError` is valid; `ImportError`/`SyntaxError`/a fixture error = not-red, rewrite the test. Only after a valid red — write the code to green.
+   - **Negative and boundary.** For each non-trivial behavior — at least one negative and one boundary case, not just the happy path.
+   - **"Preserve behavior".** For such tasks first freeze the baseline on the OLD code; changing logic and its baseline/assert in one diff is forbidden unless the DoD explicitly allows a behavior change.
+   - **Honest dead-end.** If a DoD item can't be closed by a test honestly (not implementable, contradicts the code / another item, needs an unavailable secret/data) — that's a real blocker (escalate, Phase 0), NOT grounds for skip/xfail/`assert True`/weakening.
+   - **Forbidden ways to "green up"** (any one in a new/changed test = a "tests"-dimension finding in Phase 4, not a closed DoD): (1) `assert True`, the tautology `assert f(x) == f(x)`, a test with no assert, an assert against a value taken from the code itself; (2) `sys.exit(0)`, an unconditional `print("PASS")`, bypassing the runner; (3) skip/xfail/a commented-out/deleted failing case, `try/except` without re-raise; (4) `if input == <test-case>` + a hardcoded answer for the test input; (5) mock/patch of the tested unit itself or substituting its return — you may substitute (mock) only external boundaries by name (network, DB, time, FS).
+   - **Check the result by exit code AND the count of collected/passed tests** (`passed` with ~0 collected = a finding), not by an `OK`/`passed` string.
+4. **Minimal, consistent edits.** Don't widen scope, don't refactor unrelated things along the way. Take names/structure/patterns from neighboring analogs.
 
-## Фаза 4 — Состязательное review + верификация (Workflow) — главный контроль качества вместо approval
+## Phase 4 — Adversarial review + verification (Workflow) — the main quality control instead of approval
 
-1. **Review diff** — `pipeline()` по измерениям (корректность; согласованность с конвенциями репозитория; производительность; безопасность). Каждую находку **состязательно верифицируй** (≥большинство независимых скептиков, по умолчанию «опровергнуто, если сомнение»), прежде чем чинить — чтобы не плодить ложные правки.
-2. **Измерение «тесты» ведёт ОТДЕЛЬНЫЙ агент-скептик со свежим контекстом** (НЕ автор кода/тестов). Вход ему: DoD из IDEA + diff тестов; реализацию он открывает только чтобы верифицировать находку. «Прогон зелёный» и рассуждения автора аргументом не считаются — **default инвертирован: зелёный `tests/` сам по себе DoD НЕ закрывает.** По каждому нетривиальному пункту DoD — да/нет-рубрика, любое «нет» = находка (верифицируется как прочие находки этой фазы):
-   1. **Sabotage probe** (эмпирически, не на глаз): внеси в код, реализующий суть пункта, правдоподобную регрессию из закрытого набора (инверсия условия `==`/`!=`, `>`/`<=`; сдвиг границы; знак `+`/`-`; удаление значимой ветки; возврат константы), прогони релевантный тест, откати (`git checkout`; мутации в commit не включай). Ни один тест не покраснел → «нет»; чинить ТЕСТ (запрещено `assert result != <мутант>`). Эквивалентную мутацию (не меняет наблюдаемый по DoD результат) пропусти ТОЛЬКО с однострочным обоснованием; голое «эквивалентно» = мутант не убит.
-   2. **Независимый оракул**: назови конкретный пункт DoD — источник каждого ожидаемого значения. Магическое число без вывода из требования / snapshot от самого кода = «нет».
-   3. **Реальный unit**: исполняется настоящий код unit-under-test; сам unit и его прямой возврат не подменены mock.
-   4. **Негатив + граница**: присутствуют — либо конкретное «почему нет» (не «неприменимо»).
-   5. **Нет обходов** в новых/изменённых тестах: `grep skip|xfail|# assert|sys.exit|except.*pass` → ручной просмотр diff.
-3. **Чини подтверждённые находки** (loop-until-clean для критичных): повторяй review → верификация → fix, пока критичные находки не иссякнут.
-4. **Полная верификация и честный отчёт:**
+1. **Review the diff** — `pipeline()` by dimension (correctness; consistency with repo conventions; performance; security). **Adversarially verify** each finding (≥ a majority of independent skeptics, default "refuted if in doubt") before fixing — so as not to breed false edits.
+2. **The "tests" dimension is run by a SEPARATE skeptic agent with fresh context** (NOT the code/test author). Its input: the DoD from the IDEA + the test diff; it opens the implementation only to verify a finding. "The run is green" and the author's reasoning are not arguments — **the default is inverted: a green `tests/` by itself does NOT close the DoD.** For each non-trivial DoD item — a yes/no rubric, any "no" = a finding (verified like the other findings of this phase):
+   1. **Sabotage probe** (empirically, not by eye): inject a plausible regression from a closed set into the code implementing the item's substance (invert a condition `==`/`!=`, `>`/`<=`; shift a boundary; flip a `+`/`-` sign; delete a significant branch; return a constant), run the relevant test, revert (`git checkout`; don't include mutations in a commit). No test went red → "no"; fix the TEST (`assert result != <mutant>` is forbidden). Skip an equivalent mutation (doesn't change the DoD-observable result) ONLY with a one-line justification; a bare "equivalent" = the mutant wasn't killed.
+   2. **Independent oracle**: name the specific DoD item that is the source of each expected value. A magic number without derivation from a requirement / a snapshot from the code itself = "no".
+   3. **Real unit**: the real code of the unit-under-test executes; the unit itself and its direct return are not mocked.
+   4. **Negative + boundary**: present — or a specific "why not" (not "not applicable").
+   5. **No workarounds** in new/changed tests: `grep skip|xfail|# assert|sys.exit|except.*pass` → a manual review of the diff.
+3. **Fix the confirmed findings** (loop-until-clean for critical ones): repeat review → verification → fix until critical findings dry up.
+4. **Full verification and honest report:**
    - backend: `docker compose run --rm backend python -m pytest tests/ -v`;
    - frontend: `npm run build` (tsc + vite);
-   - при наличии — миграции (`alembic upgrade head`) и/или прогон приложения / smoke (`docker compose up -d`).
-   Команды бери из `CLAUDE.md`/`README`; не выдумывай. Результаты докладывай как есть.
-5. **Re-grounding перед финальным отчётом.** Перечитай DoD и Scope-IN из IDEA-файла и предъяви таблицу «каждый пункт DoD → чем закрыт (задача + проверка)». Файл, изменённый вне Scope-IN, = находка scope creep; незакрытый пункт DoD ≠ «готово».
+   - where present — migrations (`alembic upgrade head`) and/or an app run / smoke (`docker compose up -d`).
+   Take the commands from `CLAUDE.md`/`README`; don't invent them. Report results as they are.
+5. **Re-grounding before the final report.** Re-read the DoD and Scope-IN from the IDEA file and present a table "each DoD item → what closes it (task + check)". A file changed outside Scope-IN = a scope-creep finding; an unclosed DoD item ≠ "done".
 
-**Оговорка (против ритуала).** Правила Фаз 3–4 — это ЛИНЗЫ для скептика Фазы 4, доказываемые выводом команды, а не самозачётные галочки автора (это и есть «честный отчёт»). Не переусердствуй: агрессивное «reviewer обязан найти дыры» плодит flaky, шум ложных находок и over-engineering. Фокус скептика — покрытие DoD и обезвреживание подделанных проверок, НЕ стиль. Mock внешних границ разрешён; запрещён только mock самого unit-under-test.
+**Caveat (against ritual).** The Phase 3–4 rules are LENSES for the Phase 4 skeptic, proven by a command's output, not the author's self-awarded checkboxes (that is the "honest report"). Don't overdo it: aggressive "the reviewer must find holes" breeds flaky, false-finding noise, and over-engineering. The skeptic's focus is DoD coverage and defusing faked checks, NOT style. Mocking external boundaries is allowed; only mocking the unit-under-test itself is forbidden.
 
-## Фаза 5 — Сведение
+## Phase 5 — Wrap-up
 
-1. **Обнови артефакты:** IMPL-док (что сделано, отклонения от плана, follow-ups), при крупном изменении — предложи правку основной спеки (на русском). Значимые решения/находки/выбранные default дописывай в секцию решений/отклонений IMPL-дока (кросс-идейное решение — опционально и в `CLAUDE.md`); новый файл под это не заводи.
-2. **Финальный отчёт:** что реализовано (по задачам), статус тестов/сборки, какие default выбрал по ходу, что осознанно отложено (например, пред-этап как отдельная ветка/PR). Явно обозначь: пройдена стадия **реализация**; «последняя миля» — review изменений, прогон/smoke, commit/PR — выполняется по практикам проекта и только по явной просьбе (см. п. 3).
-3. **Commit/PR — только по просьбе.** Если на `main`/`master` — заведи ветку. Сообщения commit и тело PR — по правилам проекта.
+1. **Update artifacts:** the IMPL doc (what was done, deviations from the plan, follow-ups); on a large change — propose an edit to the main spec (in the task's language). Record significant decisions/findings/chosen defaults in the IMPL doc's decisions/deviations section (a cross-idea decision — optionally in `CLAUDE.md` too); don't start a new file for this.
+2. **Final report:** what was implemented (by task), test/build status, which defaults you chose along the way, what was consciously deferred (e.g. a pre-stage as a separate branch/PR). State explicitly: the **implementation** stage is done; the "last mile" — reviewing changes, run/smoke, commit/PR — follows the project's practices and only on an explicit request (see item 3).
+3. **Commit/PR only on request.** If on `main`/`master` — create a branch. Commit messages and the PR body — per the project's rules.
 
 ---
 
-## Памятка по Workflow-паттернам (применяй осознанно)
+## Workflow-pattern cheatsheet (apply deliberately)
 
-- **`pipeline()` по умолчанию.** Барьер (`parallel()` между этапами) — только когда следующему этапу нужны ВСЕ результаты предыдущего (dedup/слияние/ранний выход).
-- **Структурированный вывод.** Давай агентам `schema`, чтобы возвращали валидированные объекты, а не текст для парсинга, и чтобы не засорять твой контекст.
-- **Состязательная верификация.** На каждую находку/допущение — N независимых скептиков с разными линзами; убивай, если большинство опровергает. Это основной механизм «само-проверки» вместо ручного approval.
-- **Изоляция worktree** — только для параллельной мутации файлов (дорого: setup+диск на агента); иначе не используй.
-- **Видимость.** `phase()`/`log()` — чтобы пользователь видел ход; масштабируй fan-out под размер идеи (мелкая правка — пара агентов; крупная feature/аудит — большой pool + панель/сведение).
-- **Не молчи о срезах.** Если ограничил охват (top-N, без retry, sample) — `log()` об этом.
+- **`pipeline()` by default.** A barrier (`parallel()` between stages) — only when the next stage needs ALL results of the previous one (dedup/merge/early exit).
+- **Structured output.** Give agents `schema` so they return validated objects, not text to parse, and so they don't clutter your context.
+- **Adversarial verification.** For each finding/assumption — N independent skeptics with different lenses; kill it if a majority refutes. This is the main "self-check" mechanism in place of manual approval.
+- **Worktree isolation** — only for parallel file mutation (expensive: setup+disk per agent); otherwise don't use it.
+- **Visibility.** `phase()`/`log()` — so the user sees progress; scale fan-out to the idea's size (a small edit — a couple of agents; a large feature/audit — a big pool + panel/synthesis).
+- **Don't stay silent about cuts.** If you bounded coverage (top-N, no retry, sample) — `log()` it.
 
-## Чего НЕ делать
+## What NOT to do
 
-- Не устраивай approval checkpoint и не спрашивай «продолжать ли» — задача делается под ключ. Останавливайся только на настоящем блокере (провал spike, противоречие IDEA с кодом, нужен недоступный секрет/доступ, дефект IDEA по Scope/DoD, маркер `[?:…]`).
-- Не «озеленяй» тесты обходами (`assert True`, skip/xfail, snapshot от собственного кода, mock самого unit-under-test, hardcode под вход теста) и не выводи ожидаемое из фактического вывода реализации — тест доказывает пункт DoD, иначе это находка Фазы 4, а не закрытый DoD.
-- Не переоткрывай продуктовые решения, зафиксированные в IDEA (если не нашёл прямого противоречия с кодом — тогда подсветь и спроси).
-- Не объявляй «готово» без прогона тестов/сборки; не приукрашивай статус.
-- Не делай commit/push без явной просьбы; не расширяй scope за пределы IDEA.
-- Не строй реализацию на непроверенном spike.
+- Don't stage an approval checkpoint and don't ask "should I continue" — the task is done turnkey. Stop only on a real blocker (a spike fails, the IDEA contradicts the code, an unavailable secret/access is needed, an IDEA defect on Scope/DoD, a `[?:…]` marker).
+- Don't "green up" tests with workarounds (`assert True`, skip/xfail, a snapshot from your own code, mocking the unit-under-test itself, a hardcode for the test input) and don't derive the expected from the implementation's actual output — the test proves a DoD item, otherwise it's a Phase 4 finding, not a closed DoD.
+- Don't re-open product decisions fixed in the IDEA (unless you found a direct contradiction with the code — then highlight it and ask).
+- Don't declare "done" without a test/build run; don't gild the status.
+- Don't commit/push without an explicit request; don't widen scope beyond the IDEA.
+- Don't build the implementation on an unverified spike.

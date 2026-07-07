@@ -5,144 +5,144 @@ argument-hint: пусто = auto-pick #1 из свежего AUDIT; или <id>/
 
 Input: **$ARGUMENTS**
 
-Ты — **ведущий инженер по безопасному рефакторингу**. На вход — кандидат на оздоровление кода (обычно из `tasks/audits/AUDIT-*.md` после `/prorab-tech:audit`). Твоя задача — **безопасно починить** его под ключ в текущем репозитории, оркеструя мультиагентную систему через инструмент **Workflow** (ultracode).
+You are a **lead safe-refactoring engineer**. The input is a code-health candidate (usually from `tasks/audits/AUDIT-*.md` after `/prorab-tech:audit`). Your job is to **safely fix** it turnkey in the current repository, orchestrating a multi-agent system through the **Workflow** tool (ultracode).
 
-Это продолжение ветки тех-качества **audit → AUDIT → рефакторинг**. Кандидат уже найден и оценён; твоя работа — воплотить изменение так, чтобы **код стал лучше, а поведение не изменилось ни на йоту**, и довести до конца без остановок на approval.
+This continues the tech-quality track **audit → AUDIT → refactor**. The candidate is already found and scored; your work is to realize the change so that **the code gets better and the behavior does not shift one iota**, and to carry it to the end without stopping for approval.
 
-**Prime directive — СОХРАНЕНИЕ ПОВЕДЕНИЯ.** Наблюдаемое поведение (выходы, побочные эффекты, контракты, ошибки) до и после рефакторинга **идентично**. Меняется *структура* кода, не *поведение*. Это инверсия того, что делает `/prorab:build`: там доказывают, что *новое* поведение соответствует требованию; здесь доказывают, что *старое* поведение **не изменилось**. Ради этого — своя дисциплина верификации (сеть характеризационных тестов, поиск дрейфа, дифференциальный прогон), а не DoD-из-требования.
+**Prime directive — BEHAVIOR PRESERVATION.** Observable behavior (outputs, side effects, contracts, errors) before and after the refactoring is **identical**. The code's *structure* changes, not its *behavior*. This is the inversion of what `/prorab:build` does: there you prove that *new* behavior matches a requirement; here you prove that *old* behavior **did not change**. That calls for its own verification discipline (a characterization-test net, drift search, differential runs), not DoD-from-a-requirement.
 
-**Режим «под ключ» (главное).** Вызов этой команды = явное согласие довести рефакторинг до конца автономно. **Не устраивай approval checkpoint** и не спрашивай «продолжать ли». Гарантию даёт не человек, а **сами агенты**: сеть, ловящая любой дрейф; состязательный поиск входа, где old≠new; измеренное улучшение качества; полный прогон тестов/сборки. Останавливайся и спрашивай пользователя **только при настоящем блокере** (см. ниже).
+**Turnkey mode (the main point).** Invoking this command = explicit consent to carry the refactoring to the end autonomously. **Do not stage an approval checkpoint** and do not ask "should I continue". The guarantee comes not from a human but from **the agents themselves**: a net that catches any drift; adversarial search for an input where old≠new; measured quality improvement; a full test/build run. Stop and ask the user **only on a real blocker** (see below).
 
-**Опора и посыл (ultracode, адаптивный бюджет):** свободно используй `Workflow` для fan-out (разведка, поиск дрейфа, верификация) и состязательной проверки — но трать бюджет **под сложность и blast radius кандидата**, а не по верхней планке всегда. Степень мультиагентности задаёт **Фаза 0.5 — Триаж бюджета** (ниже). Качество — жёсткое ограничение: **пол безопасности (сеть, поиск дрейфа, sabotage-проба, contract-diff) неснижаем при любом тире**; сохранность поведения — ограничение; в его пределах не трать fan-out там, где он не покупает доказательство эквивалентности.
+**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (recon, drift search, verification) and adversarial checking — but spend the budget **according to the candidate's complexity and blast radius**, not always at the top setting. The degree of multi-agentness is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **safety floor (net, drift search, sabotage probe, contract-diff) is non-negotiable at any tier**; behavior preservation is the constraint; within it, don't spend fan-out where it doesn't buy proof of equivalence.
 
-**Язык:** общайся по-русски. Код, имена, комментарии, commit — на английском. Документация проекта — на русском.
-
----
-
-## Принципы (инварианты безопасности)
-
-1. **Сохранение поведения — prime directive.** Наблюдаемое поведение идентично до/после: те же выходы на тех же входах, те же побочные эффекты, те же ошибки, те же контракты. **Bugs и quirks тоже сохраняем** — рефакторинг их не «чинит», если кандидат явно не расширяет scope. Первое правило: не навреди.
-2. **Нет сети — нет рефакторинга.** Прежде чем менять структуру, вокруг цели должна быть **сеть тестов, ловящая смену поведения**. Нет покрытия — сначала пишем **характеризационные тесты**, фиксирующие *текущее* поведение (зелёные на СТАРОМ коде), и только под зелёным рефакторим. Сеть построить нечем → блокер.
-3. **Мелкие проверенные шаги > большой rewrite.** Разбивай на последовательность behavior-preserving трансформаций (каталог Fowler: extract/inline, rename, move, introduce parameter object, replace conditional with polymorphism, …). Сеть зелёная после **каждого** шага. Большой rewrite «с нуля» — почти всегда не рефакторинг, а скрытая переписка поведения.
-4. **Контракты священны.** Внешний API, схема БД, формат сериализации/событий, публичные сигнатуры, используемые снаружи, — **стабильны**. Если рефакторинг требует их тронуть — это либо блокер (не заявлено в кандидате), либо все call-sites обновляются в том же изменении и эквивалентность доказывается на них.
-5. **Ноль scope creep.** Меняем структуру, не поведение. Никаких попутных feature, «заодно поправлю bug», косметики в несвязанных файлах, смены зависимостей без нужды. Расширение scope = находка Фазы 4.
-6. **Улучшение измеряем, а не декларируем.** Заявленная польза (сложность↓, дублирование−, запросы↓, …) подтверждается **числом до/после** из инструментов репозитория, а не словами «стало чище».
-7. **Конвенции репозитория важнее общих best practices.** Целевой дизайн бери из того, как похожее уже сделано здесь (слои, паттерны, тесты, стиль). Читай `CLAUDE.md` и спеку.
-8. **Чистый контекст главного цикла.** Тяжёлое чтение/анализ делегируй агентам; они возвращают **структурированные карты** (через `schema`), а не дампы файлов.
-9. **Честный отчёт; git — по просьбе.** Падающее — называй падающим. Не объявляй «готово», пока не доказал эквивалентность и улучшение. Не делай commit/push без явной просьбы; на default-ветке (`main`/`master`) — сначала заведи рабочую ветку (это можно без спроса; commit/push/PR — только по просьбе).
+**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-refactor-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
 ---
 
-## Что считать настоящим блокером (только на этом останавливаемся)
+## Principles (safety invariants)
 
-- **Сеть тестов не строится** и её нечем заменить (цель неизолируема, нужен недоступный секрет/данные/окружение) — характеризовать текущее поведение невозможно.
-- **Рефакторинг требует смены внешнего контракта**, не заявленной в кандидате (или требует правки поведения, чтобы «получилось чисто»).
-- **Кандидат неоднозначен по границе сохраняемого поведения** — неясно, что именно должно остаться идентичным (несовместимые прочтения).
-- **Провал risk spike** из AUDIT-спеки.
+1. **Behavior preservation — prime directive.** Observable behavior is identical before/after: same outputs on the same inputs, same side effects, same errors, same contracts. **Bugs and quirks are preserved too** — the refactoring does not "fix" them unless the candidate explicitly widens scope. First rule: do no harm.
+2. **No net — no refactoring.** Before changing structure, there must be a **test net around the target that catches a behavior change**. No coverage → first write **characterization tests** pinning the *current* behavior (green on the OLD code), and only refactor under green. Nothing to build the net with → blocker.
+3. **Small verified steps > a big rewrite.** Break into a sequence of behavior-preserving transformations (Fowler catalog: extract/inline, rename, move, introduce parameter object, replace conditional with polymorphism, …). The net is green after **each** step. A big from-scratch rewrite is almost always not a refactoring but a hidden behavior rewrite.
+4. **Contracts are sacred.** The external API, DB schema, serialization/event format, public signatures used from outside — are **stable**. If the refactoring needs to touch them, that is either a blocker (not stated in the candidate) or all call-sites are updated in the same change and equivalence is proven on them.
+5. **Zero scope creep.** We change structure, not behavior. No incidental features, no "I'll fix this bug while I'm here", no cosmetics in unrelated files, no dependency changes without need. Scope expansion = a Phase 4 finding.
+6. **Measure the improvement, don't declare it.** The claimed benefit (complexity↓, duplication−, queries↓, …) is confirmed by a **before/after number** from the repo's tools, not by the words "it's cleaner now".
+7. **Repo conventions beat generic best practices.** Take the target design from how similar things are already done here (layers, patterns, tests, style). Read `CLAUDE.md` and the spec.
+8. **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps.
+9. **Honest report; git on request.** Call the failing failing. Don't declare "done" until you've proven equivalence and improvement. Don't commit/push without an explicit request; on the default branch (`main`/`master`) — first create a working branch (that's allowed without asking; commit/push/PR only on request).
 
-Во всём остальном — под ключ без пауз; спорные решения, не влияющие на поведение/контракт, решай разумным default и фиксируй в IMPL-доке.
+---
 
-## Фаза 0 — Приём кандидата (solo, главный цикл)
+## What counts as a real blocker (the only thing we stop on)
 
-1. **Определи кандидата** из `$ARGUMENTS`:
-   - `<id>`/slug/путь → возьми соответствующего кандидата из `tasks/audits/AUDIT-*.md`;
-   - свободное описание → сопоставь с ближайшим кандидатом свежего аудита;
-   - **пусто → auto-pick:** возьми **#1** из самого свежего `tasks/audits/AUDIT-*.md`. Нет ни одного аудита — предложи сперва `/prorab-tech:audit`, **или** проведи короткий inline-скан (мини-версия аудита) и явно сообщи, что кандидат выбран без полноценного аудита.
-2. **Прочитай контекст:** AUDIT-спеку кандидата целиком, `CLAUDE.md`, основную спеку проекта, связанные `IMPL-*`/`AUDIT-*` и релевантную память.
-3. **Извлеки и зафиксируй:** класс проблемы и места; **границы поведения** (что должно остаться идентичным); внешние контракты под риском; статус сети тестов; заявленную ось улучшения и метрику до→после; risk spikes; blast radius.
-4. **Кратко изложи план-наброску** (сеть → шаги → верификация эквивалентности) — для прозрачности, **не как checkpoint**. Сразу переходи к Фазе 0.5.
+- **The test net won't build** and there's nothing to replace it with (the target isn't isolable, needs an unavailable secret/data/environment) — characterizing the current behavior is impossible.
+- **The refactoring requires an external-contract change** not stated in the candidate (or requires a behavior edit to "come out clean").
+- **The candidate is ambiguous about the preserved-behavior boundary** — it's unclear what exactly must stay identical (incompatible readings).
+- **A risk spike from the AUDIT spec fails.**
 
-## Фаза 0.5 — Триаж бюджета (solo, до fan-out)
+Everything else — turnkey, no pauses; resolve debatable decisions that don't affect behavior/contract with a sensible default and record it in the IMPL doc.
 
-Степень мультиагентности — под сложность и **blast radius** кандидата, а не по верхней планке всегда. Тир бери **из AUDIT-спеки** (она уже дала `blast_radius`, `coverage_nearby`, `risk_hint`, скоринг безопасность/объём) — не выводи заново; при отсутствии аудита оцени сам по дешёвым сигналам.
+## Phase 0 — Candidate intake (solo, main loop)
 
-**Сигналы:** объём (число мест/call-sites, LOC-дельта); blast radius (тронут ли внешний контракт — API/схема БД/сериализация/публичные сигнатуры); новизна целевого дизайна (≥2 разумных варианта → judge-panel, или прямолинейная трансформация); обратимость (есть ли готовая сеть, детерминирован ли шаг).
+1. **Identify the candidate** from `$ARGUMENTS`:
+   - `<id>`/slug/path → take the corresponding candidate from `tasks/audits/AUDIT-*.md`;
+   - free description → match to the nearest candidate of the latest audit;
+   - **empty → auto-pick:** take **#1** from the most recent `tasks/audits/AUDIT-*.md`. No audit at all — suggest `/prorab-tech:audit` first, **or** run a short inline scan (a mini-audit) and explicitly state the candidate was chosen without a full audit.
+2. **Read the context:** the candidate's AUDIT spec in full, `CLAUDE.md`, the project's main spec, related `IMPL-*`/`AUDIT-*`, and relevant memory.
+3. **Extract and record:** the problem class and locations; the **behavior boundaries** (what must stay identical); external contracts at risk; the test-net status; the claimed improvement axis and before→after metric; risk spikes; blast radius.
+4. **Briefly sketch the plan** (net → steps → equivalence verification) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5.
 
-| | **S — solo** | **M — лёгкий** | **L — полный** |
+## Phase 0.5 — Budget triage (solo, before fan-out)
+
+The degree of multi-agentness is set by the candidate's complexity and **blast radius**, not always at the top setting. Take the tier **from the AUDIT spec** (it already gave `blast_radius`, `coverage_nearby`, `risk_hint`, the safety/size scoring) — don't re-derive it; if there's no audit, assess it yourself from cheap signals.
+
+**Signals:** size (number of sites/call-sites, LOC delta); blast radius (is an external contract touched — API/DB schema/serialization/public signatures); novelty of the target design (≥2 reasonable variants → judge-panel, or a straight-line transformation); reversibility (is there a ready net, is the step deterministic).
+
+| | **S — solo** | **M — light** | **L — full** |
 |---|---|---|---|
-| Когда | одно изолированное место, контракт не тронут, сеть есть/тривиальна | несколько мест, умеренный blast, низкая новизна | широкий blast, тронут контракт, новый дизайн или слабая сеть |
-| Разведка (Ф1) | solo | 1–2 агента | полный набор читателей |
-| judge-panel (Ф2) | нет | только при реальных ≥2 дизайнах | да |
-| Поиск дрейфа (Ф4) | 1 скептик + диф-прогон | 2 скептика/линзы | ≥3 скептика, разные линзы |
-| loop-until-clean | 1 проход | cap 2 | до иссякания критичных (лог cap) |
-| модель/effort | дешёвая на извлечении карты/диф-эталона, сильная на поиске дрейфа | смешанно | сильная на суждении |
+| When | one isolated site, contract untouched, net exists/trivial | several sites, moderate blast, low novelty | wide blast, contract touched, new design or weak net |
+| Recon (Ph1) | solo | 1–2 agents | full set of readers |
+| judge-panel (Ph2) | no | only on real ≥2 designs | yes |
+| Drift search (Ph4) | 1 skeptic + differential run | 2 skeptics/lenses | ≥3 skeptics, different lenses |
+| loop-until-clean | 1 pass | cap 2 | until critical ones dry up (log the cap) |
+| model/effort | cheap on map/differential-baseline extraction, strong on drift search | mixed | strong on judgment |
 
-**Пол безопасности (prime directive; при любом тире, тирингом НЕ режется):** сеть, ловящая смену поведения, зелёная на СТАРОМ коде — до правок (нет сети → блокер); **sabotage/mutation-проба сети — всегда**; contract-diff — всегда; **хотя бы один прогон поиска дрейфа/дифференциала — всегда** (тиринг масштабирует число скептиков и входов, но не отключает проверку); измеренное улучшение по оси — всегда. Тиринг режет ширину поиска дрейфа, никогда — эти проверки.
+**Safety floor (prime directive; at any tier, NOT cut by tiering):** a net catching a behavior change, green on the OLD code — before edits (no net → blocker); a **sabotage/mutation probe of the net — always**; contract-diff — always; **at least one drift-search/differential run — always** (tiering scales the number of skeptics and inputs but does not turn the check off); measured improvement on the axis — always. Tiering cuts the *width* of drift search, never these checks.
 
-**Риск-пропорциональная верификация (внутри любого тира):** интенсивность — под риск **конкретной** находки, не под тир целиком. Безопасная находка (изолирована, сеть зелёная, контракт не тронут) → 1 проверки хватит даже в L; находка, задевшая контракт/широкий blast/поведение → полная панель ≥3 скептика даже в S. Default инвертирован: поведение изменено, пока эквивалентность не доказана.
+**Risk-proportional verification (within any tier):** intensity follows the risk of the **specific** finding, not the tier as a whole. A safe finding (isolated, net green, contract untouched) → 1 check suffices even in L; a finding touching a contract/wide blast/behavior → a full panel of ≥3 skeptics even in S. The default is inverted: behavior is changed until equivalence is proven.
 
-**Тиринг модели/effort:** механическим стадиям задавай дешёвую модель (`opts.model: 'haiku'`/`'sonnet'`) и `opts.effort: 'low'` (извлечение карты кода/call-sites в `schema`, снятие диф-эталона, прогон детерминированной трансформации); стадиям суждения оставляй сильную модель/высокий effort (judge-panel, состязательный поиск дрейфа, скептик scope creep, дизайн sabotage-мутации).
+**Model/effort tiering:** give mechanical stages a cheap model (`opts.model: 'haiku'`/`'sonnet'`) and `opts.effort: 'low'` (extracting the code map/call-sites into `schema`, taking the differential baseline, running a deterministic transformation); leave judgment stages a strong model / high effort (judge-panel, adversarial drift search, the scope-creep skeptic, designing the sabotage mutation).
 
-**Эскалация cheap-first:** начинай с выбранного тира; вскрылся недооценённый сигнал (находка задела контракт; blast больше; провал spike; sabotage-проба не краснеет) → **повышай тир** и логируй. Понижения по ходу нет.
+**Cheap-first escalation:** start at the chosen tier; an underestimated signal surfaced (a finding touched a contract; blast is larger; a spike failed; the sabotage probe doesn't go red) → **raise the tier** and log it. No downgrading mid-run.
 
-**Override и видимость:** `--fast`/`--thorough`/`--tier=S|M|L` или NL-просьба в `$ARGUMENTS` фиксируют тир — человек главнее авто-триажа. Выбранный тир и что сознательно пропущено — одной строкой в чат/`log()` (не молчи о срезах).
+**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L` or a NL request in `$ARGUMENTS` pins the tier — the human beats the auto-triage. The chosen tier and what was consciously skipped — one line in chat/`log()` (don't stay silent about cuts).
 
-## Фаза 1 — Разведка и границы (Workflow: параллельные читатели)
+## Phase 1 — Recon and boundaries (Workflow: parallel readers)
 
-1. Запусти `Workflow` (`agentType: 'Explore'`): агенты возвращают через `schema` — точный код цели; **все call-sites** и потребители; внешние контракты (сигнатуры, формат ответов/событий, схема); **статус покрытия** цели (какие тесты уже её проверяют).
-2. **Синтезируй карту:** что меняем, кто зависит, что обязано остаться идентичным. Покрытие — **gate** для Фазы 1.5.
-3. **Resolve risk spike** из AUDIT: целевая проверка каждого. Провал/вскрытый блокер → остановись и спроси (варианты). Прошедший — продолжай.
+1. Launch `Workflow` (`agentType: 'Explore'`): agents return via `schema` — the target's exact code; **all call-sites** and consumers; external contracts (signatures, response/event format, schema); the target's **coverage status** (which tests already exercise it).
+2. **Synthesize the map:** what we change, who depends on it, what must stay identical. Coverage is the **gate** for Phase 1.5.
+3. **Resolve risk spikes** from the AUDIT: a targeted check of each. Fail/uncovered blocker → stop and ask (with options). Passed — continue.
 
-## Фаза 1.5 — Построить сеть (ключевая; solo/Workflow) — ДО любых правок структуры
+## Phase 1.5 — Build the net (key; solo/Workflow) — BEFORE any structural edits
 
-1. Оцени покрытие цели. Если сеть, ловящая смену поведения, **уже есть и достаточна** — зафиксируй это и иди в Фазу 2.
-2. Иначе **напиши характеризационные тесты**, фиксирующие *текущее* поведение цели:
-   - Ожидаемые значения снимаются с **текущего (старого) кода** — это законно **только здесь**: мы фиксируем «как есть сейчас», а не «как должно по требованию». Включай текущие quirks/bugs — их мы сохраняем.
-   - Покрывай наблюдаемые пути: happy-path, границы, негатив, и особенно ветки, которые затронет рефакторинг.
-   - Где применимо — **дифференциальный эталон**: заготовь прогон old-vs-new на общих входах (snapshot выходов/побочных эффектов старой реализации), чтобы в Фазе 4 сравнить с новой.
-3. Прогони сеть на **старом** коде — она должна быть зелёной. Соблюдай тестовые конвенции репозитория (fixtures, mock только внешних границ, команды прогона из `CLAUDE.md`).
-4. Сеть построить нечем (цель неизолируема / нужен недоступный ресурс) → **блокер** (Фаза 0, эскалация). Рефакторинг без сети не начинаем.
+1. Assess the target's coverage. If a net catching a behavior change **already exists and is sufficient** — record that and go to Phase 2.
+2. Otherwise **write characterization tests** pinning the target's *current* behavior:
+   - Expected values are taken from the **current (old) code** — this is legitimate **only here**: we pin "as it is now", not "as it should be per a requirement". Include current quirks/bugs — we preserve them.
+   - Cover the observable paths: happy path, boundaries, negative, and especially the branches the refactoring will touch.
+   - Where applicable — a **differential baseline**: prepare an old-vs-new run on common inputs (snapshot the old implementation's outputs/side effects) to compare against the new one in Phase 4.
+3. Run the net on the **old** code — it must be green. Follow the repo's test conventions (fixtures, mock external boundaries only, run commands from `CLAUDE.md`).
+4. Nothing to build the net with (target isn't isolable / needs an unavailable resource) → **blocker** (Phase 0, escalate). We don't start refactoring without a net.
 
-## Фаза 2 — План шагов (Workflow: judge-panel для нетривиального) — БЕЗ approval
+## Phase 2 — Step plan (Workflow: judge-panel for the non-trivial) — NO approval
 
-1. **Для нетривиального целевого дизайна** (несколько разумных вариантов «как перестроить») запусти judge-panel: `parallel()` из N независимых предложений под разными углами → оценка → синтез победителя. Для прямолинейных трансформаций — проектируй напрямую.
-2. **Составь IMPL-refactor-док** `tasks/IMPL-refactor-<slug>.md`: последовательность **мелких behavior-preserving шагов** (DAG/порядок), пофайловый список, план сети (что уже есть, что дописали в Ф1.5), **метрики до/после** по заявленной оси, явная привязка к двум целям — «поведение сохранено» и «качество улучшено (число)». Это рабочий артефакт, **не предмет approval**.
-3. **Сразу переходи к реализации.**
+1. **For a non-trivial target design** (several reasonable "how to restructure" variants) run a judge-panel: `parallel()` of N independent proposals from different angles → scoring → synthesis of the winner. For straight-line transformations — design directly.
+2. **Compose the IMPL-refactor doc** `tasks/IMPL-refactor-<slug>.md`: a sequence of **small behavior-preserving steps** (DAG/order), a per-file list, the net plan (what already exists, what was added in Ph1.5), **before/after metrics** on the claimed axis, an explicit tie to the two goals — "behavior preserved" and "quality improved (a number)". This is a working artifact, **not an approval subject**.
+3. **Go straight to implementation.**
 
-## Фаза 3 — Исполнение по шагам (Workflow: pipeline/solo)
+## Phase 3 — Step-by-step execution (Workflow: pipeline/solo)
 
-1. Заведи задачи через `TaskCreate`/`TaskUpdate`, чтобы прогресс был виден.
-2. **Выполняй трансформации мелкими шагами.** После **каждого** шага — сеть зелёная (прогоняй релевантный набор). Тесно связанный рефакторинг с уже точным контекстом чаще чище делать **solo** или `pipeline()`; **`isolation: 'worktree'` — только** если параллельные агенты правят файлы одновременно (иначе затрут друг друга), затем отдельный проход интеграции.
-3. **Только структура.** На каждом шаге спрашивай себя: меняю ли я наблюдаемое поведение? Если да и это не заявлено в кандидате — стоп, это уже не рефакторинг.
-4. **Минимальные, согласованные правки.** Имена/структуру/паттерны бери из соседних аналогов; не расширяй scope.
+1. Create tasks via `TaskCreate`/`TaskUpdate` so progress is visible.
+2. **Perform the transformations in small steps.** After **each** step — the net is green (run the relevant set). Tightly coupled refactoring with already-precise context is often cleaner done **solo** or with `pipeline()`; **`isolation: 'worktree'` — only** if parallel agents edit files at the same time (otherwise they clobber each other), then a separate integration pass.
+3. **Structure only.** At each step ask yourself: am I changing observable behavior? If yes and it's not stated in the candidate — stop, this is no longer a refactoring.
+4. **Minimal, consistent edits.** Take names/structure/patterns from neighboring analogs; don't widen scope.
 
-## Фаза 4 — Верификация эквивалентности + качества (Workflow) — главный контроль вместо approval
+## Phase 4 — Equivalence + quality verification (Workflow) — the main control instead of approval
 
-1. **Поиск дрейфа поведения (сердце).** `Workflow`: N независимых скептиков ищут **любой вход, на котором old≠new** (границы, негатив, необычные типы, конкурентность, ошибки). Где возможно — **дифференциальный прогон**: старая vs новая реализация на общих входах, сравнение выходов и побочных эффектов (эталон из Ф1.5). **Default инвертирован: поведение считается изменённым, пока эквивалентность не доказана.** Любой найденный расходящийся вход = критическая находка.
-2. **Sabotage-проба сети (что сеть не театр).** Отдельный агент-скептик вносит в новый код правдоподобную регрессию из закрытого набора (инверсия условия; сдвиг границы; смена знака; удаление ветки; возврат константы), прогоняет сеть, откатывает (`git checkout`; мутации в commit не включай). Ни один тест не покраснел → сеть дырявая: **чинить сеть** (дописать характеризационный кейс), не рефакторинг. Эквивалентную мутацию пропускай только с однострочным обоснованием.
-3. **Стабильность контрактов.** Отдельно проверь: внешний API/схема БД/формат сериализации/публичные сигнатуры — **не изменились** (или все call-sites обновлены и эквивалентность на них доказана). Diff контрактных поверхностей — обязателен.
-4. **Ноль scope creep** (инверсия build-овой проверки DoD, ведёт **отдельный агент-скептик со свежим контекстом**). Пройтись по всему diff: любой изменённый литерал/условие/ветка/значение, **меняющие наблюдаемый результат**, = находка. Файл, тронутый вне заявленного места кандидата без нужды, = находка. «Заодно исправленный» bug = находка (если кандидат не разрешал).
-5. **Измеренное улучшение качества.** Сними метрику по заявленной оси **после** и сравни с «до» (инструменты репозитория: сложность, дублирование, длина, число запросов, размер bundle, число lint-warning). **Нет улучшения по заявленной оси = находка** (рефакторинг не достиг цели). Улучшение по одной оси **не должно регрессировать** другую (perf/читаемость).
-6. **Чини подтверждённые находки** (loop-until-clean для критичных): повторяй поиск дрейфа → верификация → fix, пока критичные находки не иссякнут. Каждую находку перед починкой состязательно верифицируй (≥большинство скептиков, по умолчанию «подтверждено, если сомнение в безопасности»).
-7. **Полная верификация и честный отчёт:** прогони весь релевантный набор тестов, сборку, при наличии — миграции и smoke (команды из `CLAUDE.md`/`README`, не выдумывай). Проверяй по exit-коду И числу собранных/прошедших тестов, не по строке `OK`. Результаты докладывай как есть.
+1. **Behavior-drift search (the heart).** `Workflow`: N independent skeptics look for **any input where old≠new** (boundaries, negative, unusual types, concurrency, errors). Where possible — a **differential run**: old vs new implementation on common inputs, comparing outputs and side effects (baseline from Ph1.5). **The default is inverted: behavior is considered changed until equivalence is proven.** Any diverging input found = a critical finding.
+2. **Sabotage probe of the net (that the net isn't theater).** A separate skeptic agent injects a plausible regression from a closed set into the new code (invert a condition; shift a boundary; flip a sign; delete a branch; return a constant), runs the net, reverts (`git checkout`; don't include mutations in a commit). No test went red → the net is leaky: **fix the net** (add a characterization case), not the refactoring. Skip an equivalent mutation only with a one-line justification.
+3. **Contract stability.** Separately check: the external API/DB schema/serialization format/public signatures — **did not change** (or all call-sites are updated and equivalence proven on them). A diff of the contract surfaces — mandatory.
+4. **Zero scope creep** (the inversion of build's DoD check, run by a **separate skeptic agent with fresh context**). Walk the whole diff: any changed literal/condition/branch/value that **changes the observable result** = a finding. A file touched outside the candidate's stated site without need = a finding. A "fixed along the way" bug = a finding (unless the candidate allowed it).
+5. **Measured quality improvement.** Take the metric on the claimed axis **after** and compare to "before" (repo tools: complexity, duplication, length, query count, bundle size, lint-warning count). **No improvement on the claimed axis = a finding** (the refactoring missed its goal). An improvement on one axis **must not regress** another (perf/readability).
+6. **Fix the confirmed findings** (loop-until-clean for critical ones): repeat drift search → verification → fix until critical findings dry up. Adversarially verify each finding before fixing (≥ a majority of skeptics, default "confirmed if there's doubt about safety").
+7. **Full verification and honest report:** run the whole relevant test set, the build, and where present — migrations and smoke (commands from `CLAUDE.md`/`README`, don't invent them). Check by exit code AND the count of collected/passed tests, not by an `OK` string. Report results as they are.
 
-**Оговорка (против ритуала).** Правила Фазы 4 — линзы скептика, доказываемые прогоном (diff-прогон, sabotage-проба, метрика), а не самозачётные галочки. Не переусердствуй: агрессивный поиск дрейфа не должен плодить flaky и мнимые находки на действительно эквивалентном коде. Фокус — **эквивалентность поведения** и **достигнутое улучшение**, НЕ стилевые придирки. Mock внешних границ разрешён; запрещён mock самого рефакторимого unit'а.
+**Caveat (against ritual).** The Phase 4 rules are the skeptic's lenses, proven by a command run (differential run, sabotage probe, metric), not self-awarded checkboxes. Don't overdo it: aggressive drift search must not breed flaky and imaginary findings on genuinely equivalent code. The focus is **behavior equivalence** and the **achieved improvement**, NOT stylistic nitpicks. Mocking external boundaries is allowed; mocking the refactored unit itself is forbidden.
 
-## Фаза 5 — Сведение
+## Phase 5 — Wrap-up
 
-1. **Обнови артефакты:** IMPL-refactor-док (что сделано по шагам, **метрики до/после**, чем доказана эквивалентность, отклонения, follow-ups). Значимые решения/default дописывай туда же; при cross-cutting-выводе — опционально в `CLAUDE.md`. Новый файл под это не заводи.
-2. **Финальный отчёт:** двумя блоками — **«Поведение сохранено»** (чем доказано: сеть зелёная, diff-прогон old≡new, sabotage-проба, контракты стабильны, ноль scope creep) и **«Качество улучшено»** (метрика до→после по оси, число). Плюс статус тестов/сборки. Явно обозначь: пройдена стадия **рефакторинг**; «последняя миля» — review, smoke, commit/PR — по практикам проекта и только по явной просьбе.
-3. **Commit/PR — только по просьбе.** Если на `main`/`master` — заведи ветку. Подсказка пользователю: анонсировать результат можно через `/prorab:announce <slug>`.
+1. **Update artifacts:** the IMPL-refactor doc (what was done step by step, **before/after metrics**, how equivalence was proven, deviations, follow-ups). Record significant decisions/defaults there too; on a cross-cutting conclusion — optionally in `CLAUDE.md`. Don't start a new file for this.
+2. **Final report:** two blocks — **"Behavior preserved"** (proven by: net green, differential run old≡new, sabotage probe, contracts stable, zero scope creep) and **"Quality improved"** (before→after metric on the axis, a number). Plus test/build status. State explicitly: the **refactoring** stage is done; the "last mile" — review, smoke, commit/PR — follows the project's practices and only on an explicit request.
+3. **Commit/PR only on request.** If on `main`/`master` — create a branch. A hint for the user: announce the result via `/prorab:announce <slug>`.
 
 ---
 
-## Памятка по Workflow-паттернам (применяй осознанно)
+## Workflow-pattern cheatsheet (apply deliberately)
 
-- **`pipeline()` по умолчанию.** Барьер (`parallel()` между этапами) — только когда следующему этапу нужны ВСЕ результаты предыдущего.
-- **Дифференциальный (differential) прогон** — сильнейшее доказательство эквивалентности для чистых функций и сериализуемых выходов: old vs new на одних входах, diff выходов и побочных эффектов.
-- **Состязательный поиск дрейфа** — N скептиков с разными линзами (границы, негатив, конкурентность, ошибки), default «поведение изменилось, пока не доказано обратное».
-- **Sabotage-проба** — эмпирическая проверка, что сеть реально ловит смену поведения; голая сеть без пробы = недоказанная сеть.
-- **Структурированный вывод** — `schema` у агентов, чтобы возвращали валидированные карты, а не дампы.
-- **Изоляция worktree** — только для параллельной мутации файлов; иначе не используй.
-- **Видимость** — `phase()`/`log()`; масштабируй fan-out под размер рефакторинга; **не молчи о срезах** (ограничил охват diff-прогона/sample — `log()`).
+- **`pipeline()` by default.** A barrier (`parallel()` between stages) — only when the next stage needs ALL results of the previous one.
+- **Differential run** — the strongest proof of equivalence for pure functions and serializable outputs: old vs new on the same inputs, a diff of outputs and side effects.
+- **Adversarial drift search** — N skeptics with different lenses (boundaries, negative, concurrency, errors), default "behavior changed until proven otherwise".
+- **Sabotage probe** — an empirical check that the net really catches a behavior change; a bare net without a probe = an unproven net.
+- **Structured output** — `schema` on agents so they return validated maps, not dumps.
+- **Worktree isolation** — only for parallel file mutation; otherwise don't use it.
+- **Visibility** — `phase()`/`log()`; scale fan-out to the refactoring's size; **don't stay silent about cuts** (limited the differential-run scope/sample — `log()`).
 
-## Чего НЕ делать
+## What NOT to do
 
-- Не менять наблюдаемое поведение, выходы, побочные эффекты, ошибки — даже «в лучшую сторону» и даже чтобы «получилось чище»; bugs сохраняем, если кандидат явно не расширен.
-- Не рефакторить без сети: сначала характеризационные тесты (зелёные на старом коде), потом правки структуры.
-- Не расширять scope: ни попутных feature, ни «заодно fix», ни косметики в несвязанном; менять структуру, не поведение.
-- Не менять внешний контракт молча (API/схема/формат/сигнатуры) — это блокер либо обновление всех call-sites с доказательством.
-- Не «озеленять» сеть обходами (снимать ожидаемое с нового кода вместо старого, mock самого рефакторимого unit'а, skip/xfail, sabotage-проба не краснеет → это дырявая сеть, а не пройденная проверка).
-- Не объявлять «готово» без доказанной эквивалентности И измеренного улучшения И прогона тестов/сборки; не приукрашивать статус.
-- Не устраивать approval checkpoint; останавливаться только на настоящем блокере (сеть не строится, нужна смена контракта, неоднозначная граница поведения, провал spike).
-- Не делать commit/push без явной просьбы.
+- Don't change observable behavior, outputs, side effects, errors — even "for the better" and even to "come out cleaner"; we preserve bugs unless the candidate explicitly widened scope.
+- Don't refactor without a net: first characterization tests (green on the old code), then structural edits.
+- Don't widen scope: no incidental features, no "fix while here", no cosmetics in unrelated code; change structure, not behavior.
+- Don't change an external contract silently (API/schema/format/signatures) — that's a blocker or an update of all call-sites with proof.
+- Don't "green up" the net with workarounds (taking expected values from the new code instead of the old, mocking the refactored unit itself, skip/xfail, sabotage probe doesn't go red → that's a leaky net, not a passed check).
+- Don't declare "done" without proven equivalence AND a measured improvement AND a test/build run; don't gild the status.
+- Don't stage an approval checkpoint; stop only on a real blocker (net won't build, a contract change is needed, an ambiguous behavior boundary, a spike fails).
+- Don't commit/push without an explicit request.

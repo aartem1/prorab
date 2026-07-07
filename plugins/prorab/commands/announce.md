@@ -5,49 +5,51 @@ argument-hint: slug feature / путь к IMPL или IDEA / commit(ы) / сво
 
 Input: **$ARGUMENTS**
 
-Ты готовишь **короткий, точный анонс результатов работы** — чтобы его можно было переслать коллегам (продукт, QA, менеджеры, смежные команды) в мессенджер. Это не отчёт для инженера и не changelog: получатель должен за 20–30 секунд понять, **что сделали, что нового, что изменилось и как это считается**, без чтения кода.
+You prepare a **short, precise announcement of work results** — so it can be forwarded to colleagues (product, QA, managers, adjacent teams) in a messenger. This is not an engineer's report and not a changelog: the recipient must understand in 20–30 seconds **what was done, what's new, what changed, and how it's computed**, without reading code.
 
-Кода ты сейчас НЕ пишешь и файлы проекта НЕ меняешь (кроме опционального сохранения самого анонса по просьбе). Commit/push — не делаешь. Твой результат — текст анонса в чате, готовый к copy-paste.
+You write NO code right now and change NO project files (except optionally saving the announcement itself on request). You don't commit/push. Your result is the announcement text in chat, ready to copy-paste.
 
-Общайся и пиши анонс по-русски.
-
----
-
-## Принципы
-
-- **Точность важнее красоты.** Каждое утверждение анонса должно опираться на реально сделанное (IMPL-док, diff, commits, статус тестов), а не на замысел из IDEA. Не заявлено/не проверено — не пишем. «Планировали» ≠ «сделали».
-- **Сжатие без потери смысла.** Цель — плотный полезный анонс, а не портянка. Ориентир: тело помещается на один экран мессенджера (≈ ≤ 20–25 строк). Режь воду, канцелярит, повторы; оставляй факты и пользу.
-- **Пиши для получателя, а не для себя.** Простой неформальный русский, без «вы», без внутреннего жаргона и имён приватных функций/файлов. **Термины — строго как в UI** приложения (названия отчётов, колонок, вкладок, кнопок). Если термин технический — переведи в пользу («pooled по объёму» → можно оставить, но пояснить «взвешенно по числу…»).
-- **Сканируемость.** Короткий заголовок-строка + разделы с bullet-пунктами. Каждый bullet — одна мысль: `<что> — <зачем/польза>`. Никаких многострочных абзацев.
-- **Адаптивность разделов.** Разделы ниже — не жёсткий шаблон: пустые выкидывай. Нет расчётов — нет раздела «Как считается». Мелкая правка — хватит заголовка + 3 bullet.
-- **Честность про границы.** Если есть известная особенность/ограничение/незакрытый хвост, который получателю важно знать (например «данные пока не сопоставились», «работает только после X») — короткой строкой в «Важно». Не замалчивай, но и не раздувай.
+**Language.** This command's product — the announcement — is user-facing, so write the announcement (and your chat) in the **task's language** (detect it from `$ARGUMENTS` / the source material; default to Russian). Terms strictly as in the app's UI. Your own internal reasoning and any fact-check skeptic prompts/`schema` are in English. **Anti-drift:** the announcement uses UI/domain terms verbatim in the task's language — don't round-trip-translate them; file/function names stay as in the code (but you generally don't put them in the announcement anyway).
 
 ---
 
-## Порядок работы
+## Principles
 
-### Фаза 0 — Что анонсируем
+- **Accuracy over beauty.** Every claim in the announcement must rest on what was actually done (the IMPL doc, diff, commits, test status), not on the intent from the IDEA. Not claimed/not verified — we don't write it. "Planned" ≠ "done".
+- **Compression without losing meaning.** The goal is a dense, useful announcement, not a wall. Target: the body fits one messenger screen (≈ ≤ 20–25 lines). Cut fluff, bureaucratese, repetition; keep facts and value.
+- **Write for the recipient, not for yourself.** Simple, informal language of the task (for Russian: no formal «вы»), no internal jargon, no private function/file names. **Terms strictly as in the app's UI** (report, column, tab, button names). If a term is technical — translate it into value ("pooled by volume" → can be kept, but explain "weighted by count…").
+- **Scannability.** A short one-line header + sections with bullet points. Each bullet — one thought: `<what> — <why/value>`. No multi-line paragraphs.
+- **Section adaptivity.** The sections below aren't a rigid template: drop empty ones. No computations — no "How it's computed" section. A small change — a header + 3 bullets suffice.
+- **Honesty about boundaries.** If there's a known feature/limitation/unclosed tail the recipient should know (e.g. "the data hasn't been reconciled yet", "works only after X") — a short line in "Important". Don't hush it, but don't inflate it either.
 
-Определи предмет анонса из `$ARGUMENTS`:
-- slug / путь к `tasks/IMPL-<slug>.md` или `tasks/ideas/IDEA-<slug>.md` → бери его;
-- commit(ы)/hash → бери diff этих commits;
-- свободное описание → сопоставь с последней релевантной работой;
-- **пусто** → возьми последнюю завершённую работу: свежий `tasks/IMPL-*.md` и/или последние commits (`git log --oneline -n 5`, `git show --stat`). Если неоднозначно, что именно анонсировать, — выведи 2–3 кандидата и спроси (это уточнение предмета, не approval).
+---
 
-### Фаза 1 — Сбор фактуры (только чтение)
+## Order of work
 
-Собери, что **реально** вошло, из наиболее надёжных источников (в порядке доверия):
-1. **IMPL-док** `tasks/IMPL-<slug>.md` — что сделано, отклонения от плана, статус DoD, follow-ups, известные особенности. Это первичный источник «что именно поставили».
-2. **Diff/commits** — `git show --stat`/`git diff` по commit(ам) feature: какие пользовательские поверхности реально изменились (endpoints, экраны, колонки, форматы). Отделяй пользовательские изменения от внутренних.
-3. **IDEA** `tasks/ideas/IDEA-<slug>.md` — для формулировки «проблема/зачем» и продуктовых решений (термины, пороги, способ расчёта). Но «сделано» бери из IMPL/diff, не из IDEA.
-4. **Статус верификации** — из IMPL/сессии: тесты/сборка зелёные, боевой прогон/сверки. Нужен, чтобы не переобещать.
-5. При наличии — память проекта и `CLAUDE.md` (термины, контекст).
+### Phase 0 — What we're announcing
 
-Держи контекст чистым: объёмное чтение делегируй `Agent` (`subagent_type: Explore`), пусть вернут выжимку «что изменилось для пользователя + числа/термины», а не дампы файлов — и только при **объёмном** diff/наборе источников; мелкую правку читай напрямую, не разворачивая агентов.
+Determine the announcement's subject from `$ARGUMENTS`:
+- slug / path to `tasks/IMPL-<slug>.md` or `tasks/ideas/IDEA-<slug>.md` → take it;
+- commit(s)/hash → take the diff of those commits;
+- free description → match to the latest relevant work;
+- **empty** → take the latest completed work: a fresh `tasks/IMPL-*.md` and/or the latest commits (`git log --oneline -n 5`, `git show --stat`). If it's ambiguous what exactly to announce — list 2–3 candidates and ask (this clarifies the subject, not an approval).
 
-### Фаза 2 — Черновик анонса
+### Phase 1 — Gathering the facts (read-only)
 
-Собери анонс по структуре ниже (разделы адаптируй/выкидывай под feature):
+Gather what **actually** landed, from the most reliable sources (in order of trust):
+1. **The IMPL doc** `tasks/IMPL-<slug>.md` — what was done, deviations from the plan, DoD status, follow-ups, known quirks. This is the primary source of "what exactly shipped".
+2. **Diff/commits** — `git show --stat`/`git diff` on the feature's commit(s): which user-facing surfaces actually changed (endpoints, screens, columns, formats). Separate user-facing changes from internal ones.
+3. **The IDEA** `tasks/ideas/IDEA-<slug>.md` — for phrasing "problem/why" and the product decisions (terms, thresholds, computation method). But take "done" from the IMPL/diff, not the IDEA.
+4. **Verification status** — from the IMPL/session: tests/build green, a production run/reconciliations. Needed so as not to over-promise.
+5. Where present — project memory and `CLAUDE.md` (terms, context).
+
+Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have them return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents.
+
+### Phase 2 — Announcement draft
+
+Assemble the announcement per the structure below (adapt/drop sections to the feature):
+
+> Write the announcement in the **task's language** (the structure is shown in Russian, the common default; render its labels/prose in the task's language, terms as in the UI).
 
 ```
 <emoji> <Заголовок в одну строку: что выкатили и где>
@@ -69,31 +71,31 @@ Input: **$ARGUMENTS**
 Где посмотреть: <экран/отчёт/кнопка как в UI>
 ```
 
-Правила черновика:
-- Заголовок — самое ценное; читается как «мы сделали X».
-- «Как считается» пиши так, чтобы понял не-инженер: не «pooled = Σnum/Σdenom», а «в среднем по всем …, взвешенно по количеству». Способ расчёта и пороги бери из IDEA/IMPL **дословно по смыслу**.
-- Не перечисляй все затронутые файлы/endpoints — только то, что видит и чувствует пользователь.
-- Уложись в ориентир длины. Если не влезает — режь второстепенное, а не смысл.
+Draft rules:
+- The header is the most valuable part; it reads as "we did X".
+- Write "How it's computed" so a non-engineer gets it: not "pooled = Σnum/Σdenom" but "on average across all …, weighted by count". Take the computation method and thresholds from the IDEA/IMPL **verbatim in meaning**.
+- Don't list all touched files/endpoints — only what the user sees and feels.
+- Fit the length target. If it doesn't fit — cut the secondary, not the meaning.
 
-### Фаза 3 — Проверка на точность и сжатие (соразмерно)
+### Phase 3 — Accuracy check and compression (proportionate)
 
-Прежде чем отдать — прогони проверку, соразмерную размеру анонса:
-1. **Fact-check каждого утверждения.** По каждому пункту (особенно числа, пороги, способ расчёта, «новое/изменилось») сверься: подтверждается ли это IMPL/diff/статусом тестов? Неподтверждённое — убери или смягчи. Для анонса с нетривиальными фактами (числа, метрики, несколько поверхностей) запусти лёгкую состязательную проверку через `Workflow`: пара независимых скептиков сверяют утверждения с источниками и помечают недоказанные; выкидывай/правь помеченное. Для мелкой правки хватит самопроверки. **Бюджет — под число и рискованность утверждений:** число скептиков масштабируй под количество нетривиальных фактов (не фиксируй), а сам fact-check гоняй на дешёвой модели (`opts.model: 'haiku'`/`'sonnet'`, `opts.effort: 'low'`) — сверка утверждения с источником не требует сильной модели.
-2. **Сжатие и ясность.** Пройди ещё раз: убери воду и дубли, замени канцелярит, проверь что термины = UI, что нет стены текста и анонс сканируется за секунды.
-3. **Длина.** Если превышает ориентир — сократи. При желании добавь сверху **TL;DR в 1–2 строки**.
+Before handing it off — run a check proportionate to the announcement's size:
+1. **Fact-check every claim.** For each item (especially numbers, thresholds, computation method, "new/changed") verify: is it confirmed by the IMPL/diff/test status? Unconfirmed — remove or soften it. For an announcement with non-trivial facts (numbers, metrics, several surfaces) run a light adversarial check via `Workflow`: a couple of independent skeptics cross-check claims against the sources and flag the unproven; drop/fix the flagged. For a small change, a self-check is enough. **Budget follows the number and riskiness of claims:** scale the number of skeptics to the count of non-trivial facts (don't fix it), and run the fact-check itself on a cheap model (`opts.model: 'haiku'`/`'sonnet'`, `opts.effort: 'low'`) — cross-checking a claim against a source doesn't need a strong model.
+2. **Compression and clarity.** Go through once more: remove fluff and duplicates, replace bureaucratese, check that terms = UI, that there's no wall of text and the announcement scans in seconds.
+3. **Length.** If it exceeds the target — shorten it. Optionally add a **TL;DR of 1–2 lines** at the top.
 
-### Фаза 4 — Выдача
+### Phase 4 — Delivery
 
-- Отдай финальный анонс **в чате, готовым к copy-paste** (в одном блоке, чтобы удобно скопировать).
-- Предложи (не делай молча) варианты: короче (TL;DR-версия в 3–5 строк), длиннее (с примером/деталями), сохранить в `tasks/ANNOUNCE-<slug>.md`.
-- Commit/push — **не делаешь** (это задача не про git).
+- Hand off the final announcement **in chat, ready to copy-paste** (in one block, for easy copying).
+- Propose (don't do it silently) variants: shorter (a TL;DR version of 3–5 lines), longer (with an example/details), save to `tasks/ANNOUNCE-<slug>.md`.
+- Commit/push — you **don't do** (this task isn't about git).
 
 ---
 
-## Чего НЕ делать
+## What NOT to do
 
-- Не превращать анонс в отчёт/changelog/стену текста. Плотно и сканируемо.
-- Не писать про то, что не сделано или не проверено; не приукрашивать статус.
-- Не сыпать внутренними терминами, именами файлов/функций, номерами тикетов ради объёма — только польза для получателя.
-- Не менять код/файлы проекта (кроме опционального файла анонса по просьбе) и не делать commit.
-- Не выдумывать способ расчёта — бери из IDEA/IMPL; не уверен — уточни, а не сочиняй.
+- Don't turn the announcement into a report/changelog/wall of text. Dense and scannable.
+- Don't write about what wasn't done or wasn't verified; don't gild the status.
+- Don't sprinkle internal terms, file/function names, ticket numbers for volume — only value for the recipient.
+- Don't change project code/files (except the optional announcement file on request) and don't commit.
+- Don't invent a computation method — take it from the IDEA/IMPL; unsure — clarify, don't make it up.

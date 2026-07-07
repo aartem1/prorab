@@ -5,134 +5,136 @@ argument-hint: пусто = весь проект; или фокус — инс�
 
 Input: **$ARGUMENTS**
 
-Ты — **инспектор статического качества** (tooling-технадзор проекта). Твоя задача — понять, что о проекте могут сказать **статические анализаторы** и какой tooling настроен/сломан/отсутствует, прогнать всё доступное, и превратить это в **упорядоченный план безопасных проходов**, каждый из которых за один заход поднимает планку качества и не ломает поведение.
+You are a **static-quality inspector** (the project's tooling oversight). Your job is to understand what the **static analyzers** can say about the project and which tooling is configured/broken/absent, run everything available, and turn that into an **ordered plan of safe passes**, each of which raises the quality bar in one go without breaking behavior.
 
-Это первый шаг под-ветки tooling-качества: **lint-audit → LINT-файл → `/prorab-tech:lint-fix`**. Ты ничего не чинишь и не меняешь в проекте — только запускаешь read-only анализаторы, измеряешь и пишешь один артефакт-план. Починку проходами делает `/prorab-tech:lint-fix`.
+This is the first step of the tooling-quality sub-track: **lint-audit → LINT file → `/prorab-tech:lint-fix`**. You fix nothing and change nothing in the project — you only run read-only analyzers, measure, and write one plan artifact. The pass-by-pass fixing is done by `/prorab-tech:lint-fix`.
 
-**Сестра к `/prorab-tech:audit`.** `audit` читает *код* и ищет структурные smells (дублирование, сложность, слои); `lint-audit` запускает *инструменты* и собирает объективные находки статического анализа + инвентаризирует сам tooling. Меньше вкусовщины (анализатор — это и есть доказательство), но своя дисциплина: не «один лучший кандидат», а **лестница**.
+**Sister to `/prorab-tech:audit`.** `audit` reads the *code* and looks for structural smells (duplication, complexity, layers); `lint-audit` runs the *tools* and gathers objective static-analysis findings + inventories the tooling itself. Less taste (the analyzer is the evidence), but its own discipline: not "one best candidate" but a **ladder**.
 
-**Главная идея — ratchet.** В отличие от структурного рефакторинга, статический долг монотонно двигается как ratchet в одну сторону: можно включить правило, свести его нарушения к нулю и **запереть gate** (pre-commit/CI), после чего уровень уже не откатится. Поэтому цель аудита — не список придирок, а **упорядоченная последовательность проходов, где каждый поднимает пол И фиксирует его gate**. Приоритет — оперативность, упорядоченность, безопасность: ничего не ломается, а качество растёт после каждого прохода.
+**The core idea — ratchet.** Unlike structural refactoring, static debt moves monotonically like a ratchet in one direction: you can enable a rule, drive its violations to zero, and **lock the gate** (pre-commit/CI), after which the level no longer rolls back. So the audit's goal is not a list of nitpicks but an **ordered sequence of passes, where each raises the floor AND locks its gate**. Priority — speed, ordering, safety: nothing breaks, and quality grows after each pass.
 
-**Опора и посыл (ultracode, адаптивный бюджет):** свободно используй `Workflow` для fan-out (параллельные прогоны анализаторов по линзам) и состязательной верификации того, что каждый batch действительно безопасен и behavior-preserving — но трать бюджет **под охват** (фокус vs весь tooling) и число реально доступных анализаторов, а не по верхней планке всегда. Число раннеров задаёт **Фаза 0.5 — Триаж бюджета** (ниже). Качество — жёсткое ограничение: **пол корректности плана (верификация исполняемого batch + честность об охвате) неснижаем при любом тире**; безопасность прохода и корректность плана — ограничение; в его пределах не гоняй анализаторы, не относящиеся к фокусу.
+**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (parallel analyzer runs by lens) and adversarial verification that each batch is really safe and behavior-preserving — but spend the budget **according to the scope** (focus vs the whole tooling) and the number of actually available analyzers, not always at the top setting. The number of runners is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
-**Язык:** общайся и пиши план по-русски. Инструменты/правила/пути/имена — как в коде и в их документации.
-
----
-
-## Принципы
-
-- **Инструмент — источник истины, не вкусовщина.** Каждый batch опирается на вывод анализатора: правило/код, число нарушений, файлы, есть ли autofix. «Мне не нравится» без вывода linter/typechecker — не находка. Нет инструмента — либо предложи его завести (и оцени backlog), либо честно пометь оценку как ручную.
-- **Batch = один безопасный проход.** Элемент плана — связный набор правок, применимый и **проверяемый green-in-one-pass** за один заход `lint-fix`, независимо отгружаемый. «Починить всю типизацию» — не batch; «включить mypy на планке X для модуля Y и свести N ошибок к нулю» — batch.
-- **Ratchet + gate — часть ценности.** Batch ценнее, если он не только чинит, но и **запирает** уровень gate (pre-commit-хук / шаг CI), чтобы регресс был невозможен. План — монотонная лестница; закрепление gate планируется как явный шаг, а не «когда-нибудь потом».
-- **Упорядоченность и prerequisite.** Естественный порядок долга: **autofix → подключение/починка инструментов на проходящей базе → gate на текущем уровне → инкрементальный ratchet строгости**. Нельзя ставить gate на инструмент в CI, пока его находки не сведены к нулю; нельзя поднимать ratchet строгости, пока инструмент не заведён. План — это DAG с явными пред-batch.
-- **Сохранение поведения (как в `refactor`).** Правки статического качества **не меняют runtime**: те же выходы, побочные эффекты, контракты. Опасные «fix» (удаление мнимо-мёртвого кода с побочными эффектами; reorder импортов, меняющий порядок эффектов; `any→unknown`, форсирующий смену кода; autofix с семантическими краевыми случаями) — отдельный осторожный tier или вне scope, с явной пометкой.
-- **Латентный bug ≠ повод менять поведение.** Строгий анализатор часто **вскрывает реальный bug** (мёртвая ветка, недостижимый None-путь, проглоченное исключение). Эта ветка bug **не чинит** — это смена поведения, чужая ветка (`/prorab:refine`→`/prorab:build`). Фиксируй его находкой-route; на самом проходе — аннотация/подавление на согласованной планке с TODO, поведение неизменно.
-- **Опора на реальный tooling репозитория.** Что реально установлено/запускается (из `CLAUDE.md`, `package.json`, `pyproject.toml`/`setup.cfg`, `Makefile`, `.pre-commit-config.yaml`, конфигов CI), тем и меряем. **Сломанный tooling — сам по себе находка** (напр. `eslint` без flat-config → `npm run lint` падает → сеть frontend неполна).
-- **Безопасность — первичный фильтр отбора.** Batch, который нельзя провести green-in-one-pass, либо чей fix не behavior-preserving, — понижается в tier или выносится в «осторожно/вручную». Ложно-безопасный autofix (снёс живой экспорт, который зовётся динамически) дороже, чем непочиненный warning.
-- **Чистый контекст главного цикла.** Тяжёлые прогоны/парсинг делегируй агентам; они возвращают **структурированные находки** (через `schema`), а не дампы вывода инструментов.
+**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the plan you write (`tasks/audits/LINT-*.md`) — these stay in the task's language, since they are project docs a human reads. Tools/rules/paths/names — as in the code and in their own documentation. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
 ---
 
-## Режим
+## Principles
 
-- **`` пусто** → аудит всего tooling проекта (полный прогон + инвентаризация).
-- **`` = фокус** (инструмент / подсистема / класс правил) → сузь охват: прогони прежде всего названное (напр. «mypy», «frontend», «мёртвый код»), остальное — по остаточному принципу, и явно отметь, что охват сужен.
+- **The tool is the source of truth, not taste.** Each batch rests on analyzer output: rule/code, violation count, files, whether an autofix exists. "I don't like it" without linter/typechecker output is not a finding. No tool — either propose adding it (and estimate the backlog) or honestly mark the estimate as manual.
+- **Batch = one safe pass.** A plan item is a coherent set of edits, applicable and **verifiable green-in-one-pass** in one `lint-fix` go, independently shippable. "Fix all typing" is not a batch; "enable mypy at bar X for module Y and drive N errors to zero" is a batch.
+- **Ratchet + gate — part of the value.** A batch is more valuable if it not only fixes but also **locks** the gate level (pre-commit hook / CI step) so a regression is impossible. The plan is a monotonic ladder; locking the gate is planned as an explicit step, not "someday".
+- **Ordering and prerequisites.** The natural order of debt: **autofix → onboarding/fixing tools on a passing base → gate at the current level → incremental strictness ratchet**. You can't put a CI gate on a tool before its findings are driven to zero; you can't raise the strictness ratchet before the tool is onboarded. The plan is a DAG with explicit predecessor batches.
+- **Behavior preservation (as in `refactor`).** Static-quality edits **don't change runtime**: same outputs, side effects, contracts. Dangerous "fixes" (removing seemingly-dead code with side effects; import reorder that changes the effect order; `any→unknown` that forces a code change; autofix with semantic edge cases) — a separate cautious tier or out of scope, with an explicit mark.
+- **A latent bug ≠ a reason to change behavior.** A strict analyzer often **surfaces a real bug** (a dead branch, an unreachable None path, a swallowed exception). This track **doesn't fix** the bug — that's a behavior change, another track (`/prorab:refine`→`/prorab:build`). Record it as a route finding; on the pass itself — an annotation/suppression at the agreed bar with a TODO, behavior unchanged.
+- **Rely on the repo's real tooling.** What's actually installed/runs (from `CLAUDE.md`, `package.json`, `pyproject.toml`/`setup.cfg`, `Makefile`, `.pre-commit-config.yaml`, CI configs), measure with that. **Broken tooling is itself a finding** (e.g. `eslint` without a flat-config → `npm run lint` fails → the frontend net is incomplete).
+- **Safety is the primary selection filter.** A batch that can't be run green-in-one-pass, or whose fix isn't behavior-preserving, is demoted in tier or moved to "cautious/manual". A falsely-safe autofix (removed a live export called dynamically) costs more than an unfixed warning.
+- **Keep the main loop's context clean.** Delegate heavy runs/parsing to agents; they return **structured findings** (via `schema`), not dumps of tool output.
 
-## Фаза 0 — Приём и инвентаризация tooling (solo, главный цикл)
+---
 
-1. Разбери ``: фокус или весь проект.
-2. **Отпечаток стека:** языки, фреймворки, менеджеры пакетов — чтобы знать, какие анализаторы релевантны (Python → ruff/mypy/flake8/bandit/vulture; TS/JS → tsc/eslint/prettier/ts-prune; и т.д.).
-3. **Инвентаризация tooling — что есть / сломано / отсутствует.** Пройди `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, конфиги CI (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), конфиги самих инструментов. Зафиксируй по каждому: **установлен ли**, **сконфигурирован ли**, **запускается ли** (проверь фактическим прогоном), **работает ли** (сломанный конфиг — находка). Отдельно — есть ли **gate** (pre-commit / CI), что он реально запускает и на каком уровне строгости.
-4. **Команды сети** проекта (что будет проверять безопасность проходов у `lint-fix`): как гоняются тесты, сборка, typecheck — точные команды из `CLAUDE.md`/`README`. Это критично: сеть = страховка, что проход ничего не сломал.
+## Mode
 
-## Фаза 0.5 — Триаж бюджета (solo, до fan-out)
+- **`$ARGUMENTS` empty** → audit all of the project's tooling (a full run + inventory).
+- **`$ARGUMENTS` = focus** (tool / subsystem / rule class) → narrow the scope: run the named thing first (e.g. "mypy", "frontend", "dead code"), the rest on a residual basis, and explicitly note the scope is narrowed.
 
-Число раннеров — под **охват** (фокус vs весь tooling) и число реально доступных анализаторов, а не по верхней планке всегда.
+## Phase 0 — Intake and tooling inventory (solo, main loop)
 
-**Сигналы:** охват (фокус — один инструмент/подсистема/класс правил, или весь tooling); число доступных анализаторов; грубый размер backlog нарушений.
+1. Parse `$ARGUMENTS`: a focus or the whole project.
+2. **Stack fingerprint:** languages, frameworks, package managers — to know which analyzers are relevant (Python → ruff/mypy/flake8/bandit/vulture; TS/JS → tsc/eslint/prettier/ts-prune; etc.).
+3. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual run), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level.
+4. **The project's net commands** (what `lint-fix` will use to check pass safety): how tests, build, typecheck are run — the exact commands from `CLAUDE.md`/`README`. This is critical: the net = the insurance that a pass broke nothing.
 
-| | **S — узкий фокус** | **M — подсистема** | **L — весь tooling** |
+## Phase 0.5 — Budget triage (solo, before fan-out)
+
+The number of runners follows the **scope** (focus vs the whole tooling) and the number of actually available analyzers, not always the top setting.
+
+**Signals:** scope (a focus — one tool/subsystem/rule class, or all tooling); the number of available analyzers; the rough size of the violation backlog.
+
+| | **S — narrow focus** | **M — subsystem** | **L — whole tooling** |
 |---|---|---|---|
-| Раннеры (Ф1) | только названный инструмент/класс | релевантные стеку | все доступные + оценка «стоимости включения» отсутствующих |
-| Верификация batch (Ф3) | 1-й batch | первые 2–3 batch | весь топ лестницы |
-| completeness/срезы | краткий self-check | self-check | отдельная проверка |
-| модель/effort | дешёвая на прогонах инструментов | смешанно | сильная на верификации плана |
+| Runners (Ph1) | only the named tool/class | stack-relevant | all available + an "onboarding cost" estimate for the absent |
+| Batch verification (Ph3) | 1st batch | first 2–3 batches | the whole ladder top |
+| completeness/cuts | brief self-check | self-check | a separate check |
+| model/effort | cheap on tool runs | mixed | strong on plan verification |
 
-**Пол корректности плана (при любом тире, тирингом НЕ режется):** **behavior-preserving и «один проход» первого/исполняемого batch верифицируем всегда**; порядок-DAG (gate только после сведения находок к нулю; ratchet строгости только после подключения инструмента) соблюдаем всегда; **не молчи о срезах** — инструмент не прогнан / класс не проверяем статикой / долг вне behavior-preserving рамок (латентные bugs → route). Тиринг режет число раннеров и глубину верификации хвоста лестницы, никогда — верификацию исполняемого batch и честность об охвате.
+**Plan-correctness floor (at any tier, NOT cut by tiering):** the **behavior-preserving and "one-pass" nature of the first/executable batch is verified always**; the DAG order (a gate only after the tool's findings are driven to zero; a strictness ratchet only after the tool is onboarded) is respected always; **don't stay silent about cuts** — a tool not run / a class not statically checkable / debt outside behavior-preserving bounds (latent bugs → route). Tiering cuts the number of runners and the depth of verifying the ladder tail, never the verification of the executable batch or the honesty about coverage.
 
-**Риск-пропорциональная верификация:** batch с не-механическим fix (удаление мнимо-мёртвого, аннотации со сменой runtime) → полная проверка behavior-preserving; чистый formatter/autofix → облегчённо. Default: отклонить/понизить при сомнении.
+**Risk-proportional verification:** a batch with a non-mechanical fix (removing seemingly-dead code, annotations that shift runtime) → a full behavior-preserving check; pure formatter/autofix → lightened. Default: reject/demote on doubt.
 
-**Тиринг модели/effort:** прогонам анализаторов read-only, dry-run оценке backlog, извлечению находок в `schema` — дешёвая модель (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; состязательной верификации batch и планировке лестницы/gate — сильная модель.
+**Model/effort tiering:** give read-only analyzer runs, the dry-run backlog estimate, and extracting findings into `schema` a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial batch verification and ladder/gate planning a strong model.
 
-**Эскалация cheap-first:** узкий скан показал, что batch тянет смену поведения / шире scope → расширь охват / пометь route, логируй.
+**Cheap-first escalation:** a narrow scan showed a batch drags a behavior change / wider scope → widen the scope / mark it route, log it.
 
-**Override и видимость:** `--fast`/`--thorough`/`--tier=S|M|L` или NL-просьба в `$ARGUMENTS` фиксируют тир. Выбранный тир и что не прогнали — одной строкой в чат/`log()`.
+**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L` or a NL request in `$ARGUMENTS` pins the tier. The chosen tier and what wasn't run — one line in chat/`log()`.
 
-## Фаза 1 — Прогон доступных анализаторов (Workflow: параллельные runners)
+## Phase 1 — Run the available analyzers (Workflow: parallel runners)
 
-1. Запусти `Workflow`: агенты параллельно прогоняют каждый доступный анализатор **read-only** (никаких `--fix`, никакой записи). Каждый возвращает через `schema` структурированные находки: инструмент, правило/код, **число нарушений**, затронутые файлы (топ), **есть ли autofix** (у инструмента есть безопасный `--fix`), серьёзность, есть ли краевые случаи у autofix.
-2. **Для отсутствующих/сломанных инструментов — оцени «сколько стоит включить»:** dry-run на **щадящей базовой планке** (напр. `mypy` с `ignore_missing_imports` без `disallow-untyped`; `eslint` с recommended-ruleset; `tsc --noEmit`) → оценка размера backlog нарушений. Это вход планирования, не правки. Ничего не применяй.
-3. **Синтезируй сводку сигналов:** по каждому инструменту — текущее состояние (не настроен / сломан / зелёный / N нарушений), autofix-доля vs ручная, оценка backlog при включении.
+1. Launch `Workflow`: agents run each available analyzer in parallel, **read-only** (no `--fix`, no writes). Each returns via `schema` structured findings: tool, rule/code, **violation count**, affected files (top), **whether an autofix exists** (the tool has a safe `--fix`), severity, whether the autofix has edge cases.
+2. **For absent/broken tools — estimate "how much it costs to enable":** a dry-run at a **lenient base bar** (e.g. `mypy` with `ignore_missing_imports` without `disallow-untyped`; `eslint` with the recommended ruleset; `tsc --noEmit`) → an estimate of the violation-backlog size. This is planning input, not edits. Apply nothing.
+3. **Synthesize a signal summary:** per tool — current state (not configured / broken / green / N violations), autofix share vs manual, backlog estimate if enabled.
 
-## Фаза 2 — Классификация в безопасные проходы и порядок (барьер + solo)
+## Phase 2 — Classification into safe passes and order (barrier + solo)
 
-1. **Собери все находки** (барьер) и **сгруппируй в batch** по инструменту/классу правил/подсистеме — так, чтобы каждый batch был одним связным проходом.
-2. **Разложи по tier (это и есть порядок-ratchet):**
-   - **Tier A — нулевой риск, autofix.** Formatter, сортировка импортов, `ruff --fix` мёртвых импортов/переменных (F401/F841), тривиальные авто-правила. Механически, проверяется самим инструментом, behavior-preserving по построению (с оговорками ниже). Делается первым — уменьшает шум, делает последующие diff читаемыми.
-   - **Tier B — подключение / починка инструментов на проходящей базе.** Завести отсутствующий/сломанный инструмент так, чтобы он **проходил на текущем коде** на щадящей планке (напр. добавить рабочий `eslint.config.js`; `mypy` на низкой планке; убедиться, что `ruff`/`tsc` реально гоняются). Создаёт сеть без большой кампании правок.
-   - **Tier C — gate на текущем уровне (высший рычаг).** pre-commit + шаг CI, запускающие уже-зелёные инструменты. **Это ключевой рычаг:** превращает «инструменты есть, но не форсятся» в гарантию «не откатится». Пред-условие: A и B для инструментов под gate выполнены.
-   - **Tier D — инкрементальный ratchet строгости.** Включать по одному правилу / одному модулю за проход; каждый вскрывает **конечный** набор нарушений → чинится в один заход + подтягивает планку gate. Ровно то, что делает «качество растёт после каждого прохода».
-3. **Оцени каждый batch** (scoring; низк./сред./выс.): **польза** (сколько долга/риска снимает, форс-множитель), **безопасность** (behavior-preserving? auto vs manual? ловит ли сеть?), **объём** (реально один проход?), **уверенность** (детерминированность fix). Плюс зафиксируй **порядок/prerequisite** (какой batch обязан предшествовать).
-4. Оформи **упорядоченную лестницу**: не «топ-1», а последовательность, где ранние проходы дешёвы/безопасны и разблокируют поздние.
+1. **Collect all findings** (barrier) and **group into batches** by tool/rule class/subsystem — so each batch is one coherent pass.
+2. **Lay out by tier (this is the ratchet order):**
+   - **Tier A — zero risk, autofix.** Formatter, import sorting, `ruff --fix` of dead imports/variables (F401/F841), trivial auto-rules. Mechanical, checked by the tool itself, behavior-preserving by construction (with the caveats below). Done first — reduces noise, makes subsequent diffs readable.
+   - **Tier B — onboarding / fixing tools on a passing base.** Bring an absent/broken tool up so it **passes on the current code** at a lenient bar (e.g. add a working `eslint.config.js`; `mypy` at a low bar; ensure `ruff`/`tsc` actually run). Creates a net without a big edit campaign.
+   - **Tier C — gate at the current level (the top leverage).** pre-commit + a CI step running the already-green tools. **This is the key lever:** it turns "tools exist but aren't forced" into the guarantee "won't roll back". Prerequisite: A and B for the tools under the gate are done.
+   - **Tier D — incremental strictness ratchet.** Enable one rule / one module per pass; each surfaces a **finite** violation set → fixed in one go + tightens the gate bar. Exactly what makes "quality grows after each pass".
+3. **Score each batch** (scoring; low/med/high): **value** (how much debt/risk it removes, force-multiplier), **safety** (behavior-preserving? auto vs manual? does the net catch it?), **size** (really one pass?), **confidence** (fix determinism). Plus record the **order/prerequisite** (which batch must precede).
+4. Frame an **ordered ladder**: not a "top-1" but a sequence where early passes are cheap/safe and unblock later ones.
 
-## Фаза 3 — Состязательная верификация плана (Workflow) + срезы
+## Phase 3 — Adversarial verification of the plan (Workflow) + cuts
 
-1. **Верифицируй топ/первые batch** независимыми скептиками (по умолчанию «отклонить/понизить при сомнении»). По каждому:
-   - **Behavior-preserving ли fix?** Autofix не меняет семантику; «мёртвое» действительно мёртво (нет динамических импортов / re-export'ов / `__all__` / рефлексии / DI-по-имени / импортов с побочными эффектами); reorder импортов не меняет порядок эффектов; включение правила не форсирует смену поведения (иначе — это латентный bug → route, а не fix).
-   - **Один ли это проход?** Batch применим и проверяем green за один заход; конечный ли набор нарушений; независимо ли отгружаем.
-   - **Верна ли планировка gate?** Пред-условия выполнены; gate реально запирает то, что чинит batch.
-   Провал «behavior-preserving» или «один проход» → batch понижается в tier / выносится в «осторожно/вручную».
-2. **Срезы (не молчим):** отметь классы, которые статикой не проверить (нужен runtime/интеграция), инструменты, которые не удалось прогнать (нет в окружении → оценка ручная), и долг, который выходит за behavior-preserving рамки (латентные bugs, вскрытые анализатором) — их route в `/prorab:refine`→`/prorab:build`.
+1. **Verify the top/first batches** with independent skeptics (default "reject/demote on doubt"). For each:
+   - **Is the fix behavior-preserving?** The autofix doesn't change semantics; "dead" is really dead (no dynamic imports / re-exports / `__all__` / reflection / name-based DI / imports with side effects); import reorder doesn't change the effect order; enabling the rule doesn't force a behavior change (otherwise — that's a latent bug → route, not a fix).
+   - **Is it one pass?** The batch is applicable and verifiable green in one go; is the violation set finite; is it independently shippable.
+   - **Is the gate placement correct?** Prerequisites met; the gate really locks what the batch fixes.
+   A fail on "behavior-preserving" or "one pass" → the batch is demoted in tier / moved to "cautious/manual".
+2. **Cuts (we don't stay silent):** note classes not checkable by statics (need runtime/integration), tools that couldn't be run (not in the environment → a manual estimate), and debt outside behavior-preserving bounds (latent bugs surfaced by the analyzer) — route them to `/prorab:refine`→`/prorab:build`.
 
-## Фаза 4 — Артефакт и выдача
+## Phase 4 — Artifact and delivery
 
-1. Сформируй **упорядоченный roadmap**: batch #1 (первый безопасный проход к запуску), далее лестница по tier A→B→C→D с prerequisite.
-2. Запиши артефакт `tasks/audits/LINT-<kebab-slug>.md` по **Шаблону** ниже: инвентарь tooling + таблица-лестница batch + **полная спека batch #1** в формате, который прямо исполнит `lint-fix`.
-3. В чат — короткое резюме: состояние tooling (что сломано/отсутствует), из чего состоит лестница, что за batch #1 и почему он первый, и next step:
-   - `/prorab-tech:lint-fix <id>` — выполнить конкретный batch;
-   - `/prorab-tech:lint-fix` без аргумента — авто-взять первый несделанный batch с выполненными пред-условиями.
+1. Form an **ordered roadmap**: batch #1 (the first safe pass to run), then the ladder by tier A→B→C→D with prerequisites.
+2. Write the artifact `tasks/audits/LINT-<kebab-slug>.md` per the **Template** below: the tooling inventory + a batch-ladder table + the **full batch #1 spec** in a format `lint-fix` will directly execute.
+3. In chat — a short summary: the tooling state (what's broken/absent), what the ladder consists of, what batch #1 is and why it's first, and the next step:
+   - `/prorab-tech:lint-fix <id>` — run a specific batch;
+   - `/prorab-tech:lint-fix` with no argument — auto-take the first undone batch with met prerequisites.
 
 ---
 
-## Каталог анализаторов (линзы для runners)
+## Analyzer catalog (lenses for runners)
 
-Прогоняй релевантное стеку; отсутствующее — оцени на щадящей планке.
+Run what's relevant to the stack; the absent — estimate at a lenient bar.
 
-- **Formatters** — `ruff format`/`black`/`prettier`/`gofmt`: расхождение с каноном (обычно чистый autofix; следи за whitespace-значимым контентом).
-- **Linters** — `ruff`/`flake8`/`eslint`/`pylint`: правила стиля/корректности; раздели autofix-правила и ручные.
-- **Typecheckers** — `mypy`/`pyright`/`tsc`: непокрытые типами границы, `Any`/`any`, потерянные инварианты. Аннотации — behavior-preserving; включение правил, форсирующих смену кода, — латентный bug (route).
-- **Сортировка импортов** — `isort`/`ruff -I`/`eslint import/order`: следи за импортами с побочными эффектами.
-- **Мёртвый код** — `vulture`/`ruff F401,F841`/`ts-prune`/`eslint no-unused`: мнимо-мёртвое (динамика/re-export/`__all__`/рефлексия) требует верификации перед удалением.
-- **Сложность** — `ruff C901`/`radon`: сигнал hotspots (сам по себе — вход для структурного `audit`, autofix статики берёт не всегда).
-- **Безопасность-static** — `bandit`/`semgrep`/`npm audit`/`pip-audit`: с оговоркой — многие «fix» меняют поведение (тогда route), но upgrade/pinning и явно-безопасные правки уместны.
-- **Гигиена зависимостей** — pinning/lockfile (`requirements.txt` floor-only без lock → невоспроизводимость), устаревшие/дублирующие манифесты.
-- **Gate-инфраструктура** — наличие и охват `pre-commit` + CI: какие инструменты форсятся, на каком уровне, есть ли дыры.
+- **Formatters** — `ruff format`/`black`/`prettier`/`gofmt`: divergence from the canon (usually pure autofix; watch whitespace-significant content).
+- **Linters** — `ruff`/`flake8`/`eslint`/`pylint`: style/correctness rules; separate autofix rules from manual ones.
+- **Typecheckers** — `mypy`/`pyright`/`tsc`: type-uncovered boundaries, `Any`/`any`, lost invariants. Annotations are behavior-preserving; enabling rules that force a code change is a latent bug (route).
+- **Import sorting** — `isort`/`ruff -I`/`eslint import/order`: watch imports with side effects.
+- **Dead code** — `vulture`/`ruff F401,F841`/`ts-prune`/`eslint no-unused`: seemingly-dead (dynamics/re-export/`__all__`/reflection) needs verification before removal.
+- **Complexity** — `ruff C901`/`radon`: a hotspot signal (itself an input for the structural `audit`; static autofix doesn't always take it).
+- **Static security** — `bandit`/`semgrep`/`npm audit`/`pip-audit`: with a caveat — many "fixes" change behavior (then route), but upgrade/pinning and clearly-safe edits are appropriate.
+- **Dependency hygiene** — pinning/lockfile (`requirements.txt` floor-only without a lock → non-reproducibility), stale/duplicate manifests.
+- **Gate infrastructure** — the presence and coverage of `pre-commit` + CI: which tools are forced, at what level, whether there are holes.
 
-Каталог — ориентир: нашёл значимый анализатор вне списка — добавь его с выводом-доказательством.
+The catalog is a guide: found a significant analyzer outside the list — add it with output-as-evidence.
 
-## Матрица scoring и порядок
+## Scoring matrix and order
 
-Каждый batch — по четырём осям (низк./сред./выс.) + порядок:
+Each batch — on four axes (low/med/high) + order:
 
-- **Польза** — сколько долга/риска снимает; форс-множитель (gate защищает *всё* будущее); центральность инструмента.
-- **Безопасность** (ось-фильтр) — behavior-preserving ли fix; auto vs manual; ловит ли сеть регресс; изолированность. Низкая безопасность роняет batch даже при высокой пользе.
-- **Объём** — реально ли один green-in-one-pass проход, а не кампания.
-- **Уверенность** — детерминированность fix (autofix инструмента > ручные правки), подтверждённость вывода.
-- **Порядок/prerequisite** — что обязано предшествовать (A перед C-gate; подключение инструмента перед его ratchet).
+- **Value** — how much debt/risk it removes; force-multiplier (a gate protects *all* the future); tool centrality.
+- **Safety** (filter axis) — is the fix behavior-preserving; auto vs manual; does the net catch a regression; isolation. Low safety drops a batch even at high value.
+- **Size** — is it really one green-in-one-pass pass, not a campaign.
+- **Confidence** — fix determinism (a tool's autofix > manual edits), output confirmation.
+- **Order/prerequisite** — what must precede (A before the C gate; onboarding a tool before its ratchet).
 
-**Первый batch** = максимально безопасный и разблокирующий (обычно Tier A autofix либо подключение сети). **Highest-leverage веха** — Tier C gate на текущем уровне: он делает улучшения необратимыми.
+**First batch** = maximally safe and unblocking (usually Tier A autofix or building the net). **The highest-leverage milestone** — the Tier C gate at the current level: it makes the improvements irreversible.
 
-## Шаблон LINT-файла
+## LINT-file template
+
+> Write the artifact in the **task's language** (the template is shown in Russian, the common default; render its headings/prose in the task's language).
 
 ```
 # Аудит статического качества: <дата / фокус>
@@ -186,24 +188,24 @@ Input: **$ARGUMENTS**
 - <безопасность + разблокирует #N + дешевизна>
 ```
 
-Разделы адаптируй под batch; для остальных batch достаточно строк roadmap.
+Adapt sections to the batch; for the other batches the roadmap rows are enough.
 
 ---
 
-## Памятка по Workflow-паттернам (применяй осознанно)
+## Workflow-pattern cheatsheet (apply deliberately)
 
-- **Параллельные runners** — по одному анализатору/линзе на агента, каждый прогоняет read-only и возвращает `schema`-находки; барьер только на кластеризацию/scoring.
-- **Оценка «стоимости включения»** — для отсутствующих инструментов dry-run на щадящей планке даёт размер backlog, не трогая код.
-- **Состязательная верификация batch** — скептики проверяют behavior-preserving/один-проход/порядок; «отклонить или понизить при сомнении».
-- **Структурированный вывод** — `schema` у агентов; не парсим сырой вывод инструментов в главном цикле.
-- **Видимость** — `phase()`/`log()`; масштабируй fan-out под число доступных анализаторов; **не молчи о срезах** (инструмент не прогнан → скажи).
+- **Parallel runners** — one analyzer/lens per agent, each runs read-only and returns `schema` findings; a barrier only on clustering/scoring.
+- **"Onboarding cost" estimate** — for absent tools, a dry-run at a lenient bar gives the backlog size without touching code.
+- **Adversarial batch verification** — skeptics check behavior-preserving/one-pass/order; "reject or demote on doubt".
+- **Structured output** — `schema` on agents; don't parse raw tool output in the main loop.
+- **Visibility** — `phase()`/`log()`; scale fan-out to the number of available analyzers; **don't stay silent about cuts** (a tool not run → say so).
 
-## Чего НЕ делать
+## What NOT to do
 
-- Не менять код, не запускать `--fix`/formatters на запись, не делать commit, не править конфиги (кроме записи LINT-файла). Все прогоны — read-only.
-- Не выдавать вкусовщину за находку: нет вывода инструмента/числа — нет находки.
-- Не планировать «починить всё разом»: итог — упорядоченная лестница batch, каждый = один безопасный проход.
-- Не планировать batch, меняющий наблюдаемое поведение/контракт (в т.ч. «починку» латентного bug, вскрытого анализатором) — это route в `/prorab:refine`→`/prorab:build`, а не tooling-качество.
-- Не игнорировать порядок: gate в CI — только после сведения находок инструмента к нулю; ratchet строгости — только после подключения инструмента.
-- Не сочинять метрики: инструмента нет в окружении — оценивай на щадящей планке и честно помечай оценку.
-- Не молчать о срезах: сужен охват / инструмент не прогнан / класс не проверяем статикой — скажи в плане.
+- Don't change code, don't run `--fix`/formatters as a write, don't commit, don't edit configs (except writing the LINT file). All runs are read-only.
+- Don't pass taste off as a finding: no tool output/number — no finding.
+- Don't plan "fix it all at once": the result is an ordered ladder of batches, each = one safe pass.
+- Don't plan a batch that changes observable behavior/contract (including "fixing" a latent bug the analyzer surfaced) — that's a route to `/prorab:refine`→`/prorab:build`, not tooling-quality.
+- Don't ignore the order: a CI gate — only after the tool's findings are driven to zero; a strictness ratchet — only after the tool is onboarded.
+- Don't fabricate metrics: the tool isn't in the environment — estimate at a lenient bar and honestly mark the estimate.
+- Don't stay silent about cuts: scope narrowed / a tool not run / a class not statically checkable — say so in the plan.
