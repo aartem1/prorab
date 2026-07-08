@@ -1,6 +1,6 @@
 ---
-description: Итеративная проработка сырой идеи — вопросы, изучение кода, выявление противоречий до готовности к спецификации
-argument-hint: краткое описание идеи (можно сырое, неполное, противоречивое)
+description: Iterative refinement of a raw idea — questions, code study, surfacing contradictions until it's ready for a spec
+argument-hint: short idea description (raw, incomplete, contradictory is fine)
 ---
 
 Input: **$ARGUMENTS**
@@ -79,43 +79,43 @@ Between question rounds it's allowed to:
 
 When you consider the idea mature (no 🟥, no key 🟧 left), give the **final idea summary** in a structured form:
 
-> Write the summary in the **task's language** (the template is shown in Russian, the common default; render its headings/prose in the task's language).
+> Write the summary in the **task's language** (default Russian). The template below is in English for reference — render its headings/prose in the task's language.
 
 ```
-## Идея: <название>
+## Idea: <name>
 
-### Проблема / мотивация
+### Problem / motivation
 …
 
-### Решение (в одном абзаце)
+### Solution (one paragraph)
 …
 
 ### Scope
 - IN:  …
 - OUT: …
 
-### Затрагиваемые части проекта
+### Affected parts of the project
 - Backend: …
 - Frontend: …
-- БД / миграции: …
-- Внешние интеграции: …
-- Точки переиспользования (file:line): … — готовые примитивы, которые build должен переиспользовать, а не писать заново
+- DB / migrations: …
+- External integrations: …
+- Reuse points (file:line): … — ready primitives that build must reuse rather than write from scratch
 
-### Порядок этапов (что первым, prerequisite/пред-этапы)
+### Order of stages (what comes first, prerequisites/pre-stages)
 - …
 
-### Ключевые решения (что и почему, и что отвергли — почему)
+### Key decisions (what and why, and what was rejected — why)
 - …
 
-### Risk spikes (проверить ДО стройки: риск → как проверить)
+### Risk spikes (check BEFORE building: risk → how to check)
 - …
 
-### Прочие допущения
-- … (оставшиеся неясности пиши как `[?:…]`)
+### Other assumptions
+- … (write remaining uncertainties as `[?:…]`)
 
 ### Definition of Done
-Каждый пункт пронумерован и сформулирован как проверяемая пара вход→ожидаемое (при X → Y); ожидаемое берётся ИЗ ТРЕБОВАНИЯ, не «как вернёт код». На каждый нетривиальный пункт — минимум один негатив (пустой/невалидный вход → ошибка/отказ) и минимум одна граница (0 / предел / off-by-one). Где точное значение независимо не выводимо (ранжирование, парсинг, агрегаты, недетерминизм) — вместо литерала метаморфный инвариант из спеки (перестановка входа не меняет sum/max; parse∘serialize = исходник; идемпотентность), НЕ «всегда-истинное» отношение.
-1. при <вход> → <ожидаемое из требования>
+Each item is numbered and phrased as a checkable input→expected pair (given X → Y); the expected value comes FROM THE REQUIREMENT, not "how the code returns it". For each non-trivial item — at least one negative (empty/invalid input → error/refusal) and at least one boundary (0 / limit / off-by-one). Where the exact value isn't independently derivable (ranking, parsing, aggregates, non-determinism) — a metamorphic invariant from the spec instead of a literal (permuting the input doesn't change sum/max; parse∘serialize = original; idempotence), NOT an "always-true" relation.
+1. given <input> → <expected from the requirement>
 2. …
 ```
 

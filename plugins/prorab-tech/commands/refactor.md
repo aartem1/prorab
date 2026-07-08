@@ -1,6 +1,6 @@
 ---
-description: Безопасный рефакторинг под ключ через мультиагентный ultracode-Workflow. Prime directive — сохранение поведения: бизнес-логика и наблюдаемые выходы идентичны, код становится чище. Сеть характеризационных тестов, состязательный поиск дрейфа, измеренное улучшение качества. Без approval gate.
-argument-hint: пусто = auto-pick #1 из свежего AUDIT; или <id>/slug кандидата из tasks/audits/AUDIT-*, путь к файлу, свободное описание проблемы
+description: Turnkey safe refactoring via a multi-agent ultracode Workflow. Prime directive — behavior preservation: business logic and observable outputs identical, the code gets cleaner. A characterization-test net, adversarial drift search, measured quality improvement. No approval gate.
+argument-hint: empty = auto-pick #1 from the latest AUDIT; or <id>/slug of a candidate from tasks/audits/AUDIT-*, a file path, a free problem description
 ---
 
 Input: **$ARGUMENTS**

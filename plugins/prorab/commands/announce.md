@@ -1,6 +1,6 @@
 ---
-description: Готовит краткий, точный анонс результатов работы (после /prorab:build или ручной реализации) — что сделано/ново/изменилось, методики и способ расчёта; сжато и удобно для пересылки в мессенджер.
-argument-hint: slug feature / путь к IMPL или IDEA / commit(ы) / свободное «что выкатили»; пусто = последняя работа
+description: Prepares a concise, precise announcement of work results (after /prorab:build or a manual implementation) — what was done/new/changed, methods and how it's computed; dense and easy to forward in a messenger.
+argument-hint: feature slug / path to IMPL or IDEA / commit(s) / free "what we shipped"; empty = latest work
 ---
 
 Input: **$ARGUMENTS**
@@ -49,26 +49,26 @@ Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explo
 
 Assemble the announcement per the structure below (adapt/drop sections to the feature):
 
-> Write the announcement in the **task's language** (the structure is shown in Russian, the common default; render its labels/prose in the task's language, terms as in the UI).
+> Write the announcement in the **task's language** (default Russian). The structure below is in English for reference — render its labels/prose in the task's language, terms as in the UI.
 
 ```
-<emoji> <Заголовок в одну строку: что выкатили и где>
+<emoji> <One-line header: what shipped and where>
 
-Коротко: <1–2 предложения — суть для тех, кто дальше не читает>
+In short: <1–2 sentences — the gist for those who read no further>
 
-🆕 Что нового
-• <feature/возможность> — <в чём польза, коротко>
+🆕 What's new
+• <feature/capability> — <the value, briefly>
 
-🔀 Что изменилось
-• <было → стало> (только реальные изменения существующего поведения)
+🔀 What changed
+• <was → now> (only real changes to existing behavior)
 
-🧮 Как считается / методики  (только если есть расчёты, метрики, пороги)
-• <метрика> — <способ расчёта простыми словами> (напр.: сумма по командам; взвешенно по объёму; 85-й перцентиль; пороги X/Y)
+🧮 How it's computed / methods  (only if there are computations, metrics, thresholds)
+• <metric> — <how it's computed in plain words> (e.g.: sum across teams; weighted by volume; 85th percentile; thresholds X/Y)
 
-⚠️ Важно / на что смотреть  (только если есть)
-• <ограничение / известная особенность / что не забыть сделать>
+⚠️ Important / what to watch  (only if any)
+• <limitation / known quirk / what not to forget to do>
 
-Где посмотреть: <экран/отчёт/кнопка как в UI>
+Where to see it: <screen/report/button as in the UI>
 ```
 
 Draft rules:

@@ -1,221 +1,245 @@
 # Changelog
 
-Все заметные изменения фреймворка prorab. Версии — по [SemVer](https://semver.org/lang/ru/).
-В marketplace **два плагина** с независимыми версиями: `prorab` (продуктовая ветка) и
-`prorab-tech` (ветка тех-качества). Версия каждого живёт в его
-`plugins/<plugin>/.claude-plugin/plugin.json` и дублируется в `.claude-plugin/marketplace.json`.
-Записи ниже помечены плагином, которого касаются.
+All notable changes to the prorab framework. Versions follow [SemVer](https://semver.org/).
+The marketplace has **two plugins** with independent versions: `prorab` (the product track) and
+`prorab-tech` (the tech-quality track). Each one's version lives in its
+`plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
+The entries below are tagged with the plugin they concern.
+
+## prorab 0.5.1 · prorab-tech 0.4.1
+
+**Full English across the docs and command metadata.** Follow-up to the English execution language
+(0.5.0/0.4.0): the remaining Russian prose that isn't user-facing runtime output is now English too.
+**Behavior and guarantees unchanged** — docs/wording only, so a patch bump of both plugins (as with
+the 0.3.1 terminology normalization).
+
+- **READMEs and CHANGELOG → English.** The root `README.md`, both plugin READMEs, and this
+  CHANGELOG are translated. They document the framework itself (a developer-facing catalog), so
+  English keeps them consistent with the command bodies.
+- **JSON manifest descriptions → English.** `marketplace.json` (the top description + both plugin
+  descriptions) and both `plugin.json` descriptions.
+- **Command frontmatter → English.** The `description`/`argument-hint` of all 7 commands (the text
+  shown in the command picker). Previously left in Russian at 0.5.0; now English for a fully
+  English-first catalog.
+- **Artifact-template scaffolds in commands → English.** The `IDEA` (refine), announcement
+  (announce), `AUDIT` (audit) and `LINT` (lint-audit) templates inside the command bodies are now
+  English reference scaffolds. **The runtime behavior is unchanged:** the accompanying note still
+  says "write the artifact in the task's language (default Russian)", so produced artifacts stay
+  localized — only the in-command example flipped from Russian to English.
+- **Unchanged:** the language policy itself (execution = English, user-facing = the task's
+  language), all command logic, tiers, floors, and the anti-drift rule for UI/domain terms.
 
 ## prorab 0.5.0 · prorab-tech 0.4.0
 
-**Английский язык исполнения во всех командах.** Тела всех 7 команд переведены на английский и
-зафиксирована языковая политика: внутренняя работа (рассуждения, промпты между агентами,
-`schema`-выводы) — на английском (плотнее по токенам, стабильнее по качеству), а всё
-пользовательское — на языке задачи. Экономия второго порядка к адаптивному бюджету
-(0.4.0/0.3.0), но **стакается** с ним; поведение команд и гарантии не меняются. Minor-бамп обоих
-плагинов.
+**English execution language across all commands.** The bodies of all 7 commands were translated to
+English and a language policy was fixed: the internal work (reasoning, inter-agent prompts,
+`schema` outputs) is in English (denser in tokens, steadier in quality), while everything
+user-facing is in the task's language. A second-order saving on top of the adaptive budget
+(0.4.0/0.3.0), but it **stacks** with it; command behavior and guarantees don't change. A minor bump
+of both plugins.
 
-- **Языковая политика (во всех командах).** Execution language = English: рассуждения оркестратора,
-  промпты агентам, inter-agent-сообщения, значения полей `schema`. **User-facing = язык задачи**
-  (детектится по формулировке запроса; по умолчанию русский): чат, диалог `refine`, текст `announce`.
-- **Артефакты остаются на языке задачи** (решение пользователя): `IDEA`/`IMPL`/`IMPL-refactor`/
-  `IMPL-lint`/`AUDIT`/`LINT`/`ANNOUNCE` — человекочитаемые проектные доки. Их шаблоны в командах
-  оставлены на русском (общий default) с явной пометкой «пиши артефакт на языке задачи».
-- **Код/имена/комментарии/commit/конфиги — английские** (без изменений). **Анти-дрейф:** UI/доменные
-  термины, видимые пользователю, не гоняются через двойной перевод — берутся как есть на языке задачи
-  (защита нормализации терминологии 0.3.1 при смешении языков на границе).
-- **Rename:** заголовок фазы триажа в командах теперь **`Phase 0.5 — Budget triage`** (было
-  «Фаза 0.5 — Триаж бюджета») — вместе с полной англизацией тел; сигналы/тиры/пороги/структура
-  триажа не изменились.
-- **Оставлено на русском намеренно:** frontmatter команд (`description`/`argument-hint`),
-  `marketplace.json` и README/CHANGELOG — это статический каталог и проектная проза для
-  русскоязычного пользователя, не часть исполнения задачи.
-- **Почему это экономит:** русская генерация ~1.5–2× плотнее по токенам; перевод *тел* сам по себе
-  почти не экономит (грузятся раз + кэш), но английская проза primes англоязычные рассуждения и
-  `schema`-выводы агентов — самый крупный пул генерируемых токенов. Нетто ≈ 10–20% поверх
-  адаптивного бюджета (зависит от того, насколько доменный контент задачи русский).
+- **Language policy (across all commands).** Execution language = English: the orchestrator's
+  reasoning, agent prompts, inter-agent messages, `schema` field values. **User-facing = the task's
+  language** (detected from how the request is phrased; Russian by default): the chat, the `refine`
+  dialogue, the `announce` text.
+- **Artifacts stay in the task's language** (the user's decision): `IDEA`/`IMPL`/`IMPL-refactor`/
+  `IMPL-lint`/`AUDIT`/`LINT`/`ANNOUNCE` — human-readable project docs. At 0.5.0 their templates in the
+  commands were left in Russian (the common default) with an explicit note "write the artifact in the
+  task's language". *(0.5.1 later flipped those template scaffolds to English too, keeping the note.)*
+- **Code/names/comments/commit/configs — English** (unchanged). **Anti-drift:** UI/domain terms
+  visible to the user aren't round-tripped through a double translation — they're carried as-is in the
+  task's language (protecting the 0.3.1 terminology normalization when languages mix at the boundary).
+- **Rename:** the triage-phase heading in the commands is now **`Phase 0.5 — Budget triage`** (was
+  "Фаза 0.5 — Триаж бюджета") — together with the full Englishing of the bodies; the
+  signals/tiers/thresholds/triage structure didn't change.
+- **Left in Russian deliberately (at 0.5.0):** command frontmatter (`description`/`argument-hint`),
+  `marketplace.json`, and the READMEs/CHANGELOG — a static catalog and project prose for a
+  Russian-speaking user, not part of executing a task. *(Superseded by 0.5.1, which translated these.)*
+- **Why it saves:** Russian generation is ~1.5–2× denser in tokens; translating the *bodies* by
+  itself saves almost nothing (loaded once + cached), but English prose primes the agents'
+  English reasoning and `schema` outputs — the largest pool of generated tokens. Net ≈ 10–20% on top
+  of the adaptive budget (depends on how Russian the task's domain content is).
 
 ## prorab 0.4.0 · prorab-tech 0.3.0
 
-**Адаптивный бюджет под сложность задачи** во всех командах. Раньше тяжёлые команды работали
-по одному режиму — верхняя планка fan-out всегда («токены — не ограничение»). Теперь степень
-мультиагентности подбирается под сложность и обратимость задачи: заметная экономия лимитов на
-простых задачах **без снижения качества** (неснижаемый пол безопасности сохраняет гарантии), а
-крупные/рискованные задачи по-прежнему получают полный ultracode-разворот. Minor-бамп обоих
-плагинов (новое поведение, обратно совместимо).
+**Adaptive budget for task complexity** across all commands. Previously the heavy commands ran in a
+single mode — always the top setting of fan-out ("tokens aren't a constraint"). Now the degree of
+multi-agentness is picked to the task's complexity and reversibility: a noticeable saving of limits on
+simple tasks **without lowering quality** (a non-negotiable safety floor keeps the guarantees), while
+large/risky tasks still get the full ultracode fan-out. A minor bump of both plugins (new behavior,
+backward-compatible).
 
-- **Фаза 0.5 — Триаж бюджета (новое) в `build`, `audit`, `refactor`, `lint-audit`, `lint-fix`:**
-  до любого fan-out команда оценивает сложность по дешёвым сигналам (объём, blast radius, новизна,
-  обратимость, неопределённость) и выбирает **тир бюджета S/M/L**. Тир масштабирует число
-  разведчиков/сканеров, judge-panel (включается только при реальных ≥2 дизайнах), число скептиков
-  верификации, cap циклов loop-until-clean/dry. `refactor`/`lint-fix` берут тир **из
-  upstream-артефакта** (AUDIT `blast_radius`/`coverage`/`risk`; LINT tier-метка batch A/B/C/D) — не
-  выводят заново.
-- **Пол безопасности неснижаем при любом тире.** Тиринг режет только *ширину* fan-out, не
-  гарантии: `refactor`/`lint-fix` — сеть/baseline + sabotage-проба + contract-diff + поиск дрейфа
-  для не-механических правок + доказанный gate; `build` — скептик по DoD со свежим контекстом +
-  sabotage-проба на суть DoD + полный прогон тестов/сборки + re-grounding по Scope; `audit`/`lint-audit`
-  — верификация рекомендованного кандидата/исполняемого batch + честность об охвате.
-- **Риск-пропорциональная верификация.** Интенсивность проверки — под риск **конкретной** находки,
-  не под тир целиком: безопасная изолированная находка → 1 проверки достаточно даже в L; находка,
-  задевшая контракт/широкий blast, → полная панель ≥3 скептика даже в S. Инвертированный default
-  («опровергнуто/поведение изменено, пока не доказано») сохранён.
-- **Тиринг модели/effort (новый рычаг).** Механическим стадиям (autofix/formatter, прогон
-  анализаторов, извлечение карты кода в `schema`, сбор класса diff) задаётся дешёвая модель
-  (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; стадиям суждения (judge-panel, поиск
-  дрейфа, скептик по DoD/scope, дизайн sabotage-мутации) — сильная модель. Раньше все агенты
-  наследовали модель главного цикла (Opus) без разбора.
-- **Эскалация cheap-first.** Начинаем с выбранного тира; вскрылся недооценённый сигнал (правка
-  задела контракт, blast больше, провал spike, sabotage-проба не краснеет) → тир повышается по ходу
-  и логируется. Понижения по ходу нет.
-- **Override человеком.** Флаг в `$ARGUMENTS` (`--fast` / `--thorough` / `--tier=S|M|L`) или
-  NL-просьба фиксируют тир — человек главнее авто-триажа. Выбранный тир и сознательно пропущенное —
-  одной строкой в чат/`log()` (не молчим о срезах).
-- **`refine` и `announce` (лёгкая правка):** разведка кода и число раундов вопросов (`refine`),
-  глубина fact-check и число скептиков (`announce`) масштабируются под размер; fact-check в `announce`
-  гоняется на дешёвой модели. Полноценный тир-триаж им не нужен — команды и так лёгкие.
-- **Реформулирована доктрина «токены — не ограничение»** во всех тяжёлых командах → «адаптивный
-  бюджет: качество — жёсткое ограничение (пол неснижаем), в его пределах не трать fan-out там, где он
-  не покупает корректность».
+- **Phase 0.5 — Budget triage (new) in `build`, `audit`, `refactor`, `lint-audit`, `lint-fix`:**
+  before any fan-out the command estimates complexity from cheap signals (size, blast radius, novelty,
+  reversibility, uncertainty) and picks a **budget tier S/M/L**. The tier scales the number of
+  scouts/scanners, the judge-panel (engaged only on real ≥2 designs), the number of verification
+  skeptics, the loop-until-clean/dry caps. `refactor`/`lint-fix` take the tier **from the
+  upstream artifact** (AUDIT `blast_radius`/`coverage`/`risk`; LINT batch tier tag A/B/C/D) — they
+  don't re-derive it.
+- **The safety floor is non-negotiable at any tier.** Tiering trims only the *width* of the fan-out,
+  not the guarantees: `refactor`/`lint-fix` — net/baseline + sabotage probe + contract-diff + drift
+  search for non-mechanical edits + a proven gate; `build` — a DoD skeptic with fresh context +
+  a sabotage probe on the substance of the DoD + a full test/build run + re-grounding against Scope;
+  `audit`/`lint-audit` — verification of the recommended candidate/executable batch + honesty about
+  coverage.
+- **Risk-proportional verification.** The check intensity is for the risk of the **specific** finding,
+  not for the tier as a whole: a safe isolated finding → 1 check suffices even in L; a finding that
+  touched a contract/wide blast → a full panel of ≥3 skeptics even in S. The inverted default
+  ("refuted / behavior changed until proven otherwise") is preserved.
+- **Model/effort tiering (new lever).** Mechanical stages (autofix/formatter, running analyzers,
+  extracting the code map into `schema`, collecting the diff class) are given a cheap model
+  (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; judgment stages (judge-panel, drift
+  search, the DoD/scope skeptic, designing the sabotage mutation) — a strong model. Previously all
+  agents inherited the main-loop model (Opus) indiscriminately.
+- **Cheap-first escalation.** Start at the chosen tier; an underestimated signal surfaced (an edit
+  touched a contract, the blast is larger, a spike failed, the sabotage probe doesn't go red) → the
+  tier is raised mid-run and logged. No downgrading mid-run.
+- **Human override.** A flag in `$ARGUMENTS` (`--fast` / `--thorough` / `--tier=S|M|L`) or an
+  NL request pins the tier — the human beats the auto-triage. The chosen tier and what was
+  consciously skipped — one line in the chat/`log()` (we don't stay silent about cuts).
+- **`refine` and `announce` (a light edit):** code recon and the number of question rounds (`refine`),
+  the fact-check depth and the number of skeptics (`announce`) scale to size; the fact-check in
+  `announce` runs on a cheap model. They don't need a full tier triage — the commands are light anyway.
+- **Reformulated the "tokens aren't a constraint" doctrine** across all heavy commands → "adaptive
+  budget: quality is the hard constraint (the floor is non-negotiable); within it, don't spend fan-out
+  where it doesn't buy correctness".
 
 ## prorab 0.3.1 · prorab-tech 0.2.1
 
-Нормализация смешанной RU/EN терминологии в обоих плагинах. Кириллические
-транслитерации английских терминов и неудачные русские кальки заменены на чистые
-английские термины-of-art; русский остаётся основным языком прозы, английский —
-там, где нет чёткого русского эквивалента. **Поведение команд не изменилось** —
-только формулировки (docs/wording), поэтому patch-бамп обоих плагинов.
+Normalization of mixed RU/EN terminology in both plugins. Cyrillic transliterations of English terms
+and awkward Russian calques were replaced with clean English terms-of-art; Russian stays the primary
+prose language, English — where there's no clear Russian equivalent. **Command behavior didn't
+change** — only the wording (docs/wording), hence a patch bump of both plugins.
 
-- **Транслиты → English:** гейт→gate, храповик/ратчет→ratchet, батч→batch, тир→tier,
-  смелл→smell, спайк→spike, скоуп→scope, дефолт→default (сущ.), бэклог→backlog,
+- **Transliterations → English:** гейт→gate, храповик/ратчет→ratchet, батч→batch, тир→tier,
+  смелл→smell, спайк→spike, скоуп→scope, дефолт→default (noun), бэклог→backlog,
   дифф→diff, фан-аут→fan-out, апрув→approval, чекпоинт→checkpoint, роут→route,
   коммит→commit, пуш→push, баг→bug, линтер→linter, юнит→unit, мок→mock,
   фикс/автофикс→fix/autofix, тайпчек(ер)→typecheck(er), форматтер→formatter,
   тулинг→tooling, ревью→review, скоринг→scoring, рефайнмент→refinement,
   неймспейс→namespace, роадмап→roadmap, релиз→release, смоук→smoke, перф→perf.
-- **Awkward-кальки → чистый русский:** «провод инструментов»→«подключение»,
+- **Awkward calques → clean Russian:** «провод инструментов»→«подключение»,
   «бар»→«планка», «пиннящие поведение»→«фиксирующие».
-- **Оставлено как есть:** устоявшийся русский (рефакторинг, репозиторий, фреймворк,
-  миграция, сеть, покрытие, планка) и уже-английские термины-of-art (Workflow, DAG,
+- **Left as-is:** established Russian (рефакторинг, репозиторий, фреймворк,
+  миграция, сеть, покрытие, планка) and already-English terms-of-art (Workflow, DAG,
   baseline, sabotage, churn, behavior-preserving, judge-panel, loop-until-clean).
 
 ## prorab-tech 0.2.0
 
-Вторая пара команд в ветке тех-качества — **статическое качество проходами-ratchet**.
-Дополняет структурную пару (`audit`/`refactor`) отдельной парой под другую природу долга:
-linters, typecheckers, formatters, мёртвый код, безопасность и **gate** (pre-commit/CI).
-Конвейер: `lint-audit → LINT → lint-fix (повторять по batch) → /prorab:announce`.
+A second pair of commands in the tech-quality track — **static quality via ratchet passes**.
+Complements the structural pair (`audit`/`refactor`) with a separate pair for a different nature of
+debt: linters, typecheckers, formatters, dead code, security and the **gate** (pre-commit/CI).
+Pipeline: `lint-audit → LINT → lint-fix (repeat per batch) → /prorab:announce`.
 
-- **Ключевая идея — ratchet.** В отличие от структурного рефакторинга, статический долг
-  монотонно фиксируется: включил правило, свёл нарушения к нулю, **запер gate** → уровень
-  не откатится. Поэтому артефакт — не «один кандидат», а **упорядоченная лестница безопасных
-  проходов**, каждый из которых поднимает пол И запирает его. Так «качество растёт после
-  каждого прохода» становится гарантией, а не надеждой.
-- **`/prorab-tech:lint-audit` (новая команда, `commands/lint-audit.md`):** инвентаризирует
-  tooling (что есть / сломано / отсутствует, + команды сети для страховки проходов) и
-  прогоняет все доступные анализаторы read-only через `Workflow`; для отсутствующих оценивает
-  «стоимость включения» на щадящей планке. Кластеризует находки в batch и упорядочивает
-  лестницей по tier: **A** нулевой-риск autofix → **B** подключение/починка инструментов на
-  проходящей базе → **C** gate на текущем уровне (высший рычаг) → **D** инкрементальный ratchet
-  строгости. Scoring `польза × безопасность × объём × уверенность` + DAG пред-условий;
-  состязательно верифицирует behavior-preserving и «один проход». Кода не трогает; результат —
-  `tasks/audits/LINT-<slug>.md` (инвентарь tooling + roadmap batch + полная спека batch #1).
-- **`/prorab-tech:lint-fix` (новая команда, `commands/lint-fix.md`):** выполняет **ОДИН** batch
-  под ключ через ultracode-Workflow. **Prime directive — сохранение поведения + запертый
-  ratchet:** снять конечный класс нарушений, доказать эквивалентность (зелёный baseline
-  тестов/сборки/typecheck + состязательный поиск дрейфа + дифференциальный прогон где уместно),
-  **добавить gate (pre-commit/CI) и sabotage-пробой доказать, что он краснеет на регрессе**.
-  Латентный bug, вскрытый анализатором, **не чинит** — это смена поведения, route в
-  `/prorab:refine`→`/prorab:build`. Уважает порядок лестницы (не берёт batch раньше
-  пред-условий). Ноль scope creep, улучшение измеряется числом (N нарушений → 0). Оба режима:
-  `lint-fix <id>` — конкретный batch, `lint-fix` без аргумента — auto-pick следующего несделанного
-  с выполненными пред-условиями. Результат — код + gate + `tasks/IMPL-lint-<slug>.md`; отмечает
-  batch done в LINT-плане.
+- **The core idea — the ratchet.** Unlike structural refactoring, static debt is locked in
+  monotonically: you enable a rule, drive its violations to zero, **lock the gate** → the level
+  won't roll back. So the artifact is not "one candidate" but an **ordered ladder of safe
+  passes**, each of which raises the floor AND locks it. That turns "quality grows after every
+  pass" into a guarantee rather than a hope.
+- **`/prorab-tech:lint-audit` (new command, `commands/lint-audit.md`):** inventories the
+  tooling (what exists / is broken / is absent, + net commands to insure the passes) and
+  runs all available analyzers read-only via `Workflow`; for the absent ones estimates the
+  "cost of enabling" at a lenient bar. Clusters findings into batches and orders them as a
+  ladder by tier: **A** zero-risk autofix → **B** onboarding/fixing tools on a passing base →
+  **C** a gate at the current level (the top leverage) → **D** incremental strictness ratchet.
+  Scoring `value × safety × size × confidence` + a prerequisite DAG; adversarially verifies
+  behavior-preserving and "one pass". Touches no code; result —
+  `tasks/audits/LINT-<slug>.md` (tooling inventory + batch roadmap + the full batch #1 spec).
+- **`/prorab-tech:lint-fix` (new command, `commands/lint-fix.md`):** runs **ONE** batch
+  turnkey via the ultracode Workflow. **Prime directive — behavior preservation + a locked
+  ratchet:** remove a finite class of violations, prove equivalence (a green baseline of
+  tests/build/typecheck + an adversarial drift search + a differential run where apt),
+  **add a gate (pre-commit/CI) and prove by a sabotage probe that it goes red on a regression**.
+  A latent bug the analyzer surfaces it **does not fix** — that's a behavior change, route to
+  `/prorab:refine`→`/prorab:build`. Respects the ladder order (won't take a batch before its
+  prerequisites). Zero scope creep, the improvement is measured by a number (N violations → 0).
+  Both modes: `lint-fix <id>` — a specific batch, `lint-fix` with no argument — auto-picks the next
+  undone one with met prerequisites. Result — code + gate + `tasks/IMPL-lint-<slug>.md`; marks the
+  batch done in the LINT plan.
 
 ## prorab-tech 0.1.0
 
-Новый плагин `prorab-tech` — отдельная ветка **тех-качества** со своим namespace
-(`/prorab-tech:*`), чтобы не путать с продуктовыми командами. Ветка про непрерывное
-оздоровление кода: найти техдолг и **безопасно** его починить, не меняя поведение.
-Конвейер: `audit → AUDIT → refactor → IMPL-refactor → /prorab:announce`.
+The new `prorab-tech` plugin — a separate **tech-quality** track with its own namespace
+(`/prorab-tech:*`), so it doesn't get confused with the product commands. The track is about
+continuous code health: find tech debt and fix it **safely**, without changing behavior.
+Pipeline: `audit → AUDIT → refactor → IMPL-refactor → /prorab:announce`.
 
-- **`/prorab-tech:audit` (новая команда, `commands/audit.md`):** многоагентный аудит
-  кодовой базы. Multi-modal sweep по классам smells (дублирование, сложность, нарушения
-  слоёв/связность, мёртвый код, надёжность, perf, дыры покрытия, конвенции, типизация) +
-  churn×complexity по git-истории. Кластеризация/dedup, scoring по
-  `польза × безопасность × объём × уверенность`, состязательная верификация топа
-  (реален/безопасен/полезен, «отклонить при сомнении»), completeness-critic. Кода не
-  трогает; результат — `tasks/audits/AUDIT-<slug>.md` (ранжированный backlog + полная спека
-  #1-кандидата). Безопасность — первичный критерий отбора: «самое ценное И безопасное», а
-  не «самое грязное».
-- **`/prorab-tech:refactor` (новая команда, `commands/refactor.md`):** безопасная починка
-  под ключ через ultracode-Workflow. **Prime directive — сохранение поведения** (инверсия
-  к `build`: тот доказывает *новое* поведение, этот — что *старое* не изменилось). Нет сети
-  — нет рефакторинга: сначала характеризационные тесты, фиксирующие текущее поведение (зелёные
-  на старом коде, quirks сохраняются), затем мелкие behavior-preserving шаги под зелёным.
-  Верификация эквивалентности: состязательный поиск дрейфа (N скептиков ищут вход, где
-  old≠new; дифференциальный прогон old-vs-new), sabotage-проба сети, стабильность контрактов,
-  ноль scope creep (отдельный скептик со свежим контекстом), **измеренное** улучшение
-  качества (метрика до/после). Оба режима: `refactor <id>` чинит выбранного кандидата,
-  `refactor` без аргумента — auto-pick #1 из свежего аудита. Результат — код +
-  `tasks/IMPL-refactor-<slug>.md` (читается тем же `/prorab:announce`).
+- **`/prorab-tech:audit` (new command, `commands/audit.md`):** a multi-agent audit of the
+  codebase. A multi-modal sweep by smell classes (duplication, complexity, layer/coupling
+  violations, dead code, reliability, perf, coverage holes, conventions, typing) +
+  churn×complexity from git history. Clustering/dedup, scoring by
+  `value × safety × size × confidence`, adversarial verification of the top
+  (real/safe/useful, "reject on doubt"), a completeness-critic. Touches no code; result —
+  `tasks/audits/AUDIT-<slug>.md` (a ranked backlog + the full #1-candidate spec).
+  Safety is the primary selection criterion: "the most valuable AND safe", not
+  "the grimiest".
+- **`/prorab-tech:refactor` (new command, `commands/refactor.md`):** a turnkey safe fix
+  via the ultracode Workflow. **Prime directive — behavior preservation** (an inversion of
+  `build`: it proves *new* behavior, this proves *old* behavior didn't change). No net —
+  no refactoring: first characterization tests pinning the current behavior (green on the old
+  code, quirks preserved), then small behavior-preserving steps under green. Equivalence
+  verification: an adversarial drift search (N skeptics look for an input where old≠new; a
+  differential old-vs-new run), a sabotage probe of the net, contract stability, zero scope creep
+  (a separate skeptic with fresh context), a **measured** quality improvement (a before/after
+  metric). Both modes: `refactor <id>` fixes the chosen candidate, `refactor` with no argument —
+  auto-picks #1 from the latest audit. Result — code +
+  `tasks/IMPL-refactor-<slug>.md` (read by the same `/prorab:announce`).
 
 ## prorab 0.3.0
 
-Новая команда `announce` — финальный шаг конвейера: `refine → build → announce`.
+The new `announce` command — the final step of the pipeline: `refine → build → announce`.
 
-- **`/prorab:announce` (новая команда, `commands/announce.md`):** готовит краткий, точный
-  анонс результатов работы для пересылки в мессенджер — что сделано/ново/изменилось,
-  применённые методики и способ расчёта. Не отчёт и не changelog: получатель понимает feature
-  за 20–30 секунд без чтения кода.
-- **Источник правды — сделанное, не задуманное:** «сделано» берётся из IMPL-дока и diff/
-  commits + статуса тестов; IDEA — только для «зачем» и терминов/порогов. Фаза fact-check
-  сверяет каждое утверждение с источниками (для нетривиальных фактов — лёгкая состязательная
-  проверка через `Workflow`); недоказанное убирается или смягчается.
-- **Формат под пересылку:** простой неформальный русский без «вы», термины строго как в UI,
-  сканируемая структура (заголовок + bullet), ориентир длины «один экран», готово к
-  copy-paste. Кода не пишет, файлы проекта не меняет, не делает commit.
+- **`/prorab:announce` (new command, `commands/announce.md`):** prepares a concise, precise
+  announcement of the results to forward in a messenger — what was done/new/changed, the
+  methods applied and how it's computed. Not a report and not a changelog: the recipient understands
+  the feature in 20–30 seconds without reading code.
+- **Source of truth — what was done, not what was intended:** "done" is taken from the IMPL doc and
+  the diff/commits + the test status; the IDEA — only for "why" and terms/thresholds. A fact-check
+  phase cross-checks every claim against the sources (for non-trivial facts — a light adversarial
+  check via `Workflow`); the unproven is removed or softened.
+- **Format for forwarding:** simple informal Russian without the formal "вы", terms strictly as in
+  the UI, a scannable structure (a header + bullets), a length target of "one screen", ready for
+  copy-paste. Writes no code, changes no project files, makes no commit.
 
 ## prorab 0.2.0
 
-Смыкание шва `refine → build` и защита от verification theater в тестах. Только правки
-тел двух команд-промптов — новых команд/skill/агентов не заводилось.
+Closing the `refine → build` seam and guarding against verification theater in tests. Only edits to
+the bodies of the two command-prompts — no new commands/skills/agents were introduced.
 
-- **`/prorab:refine` — шаблон IDEA синхронизирован с тем, что читает `build`:** в
-  «Затрагиваемые части» добавлены «Точки переиспользования (file:line)»; «Открытые риски /
-  допущения» разбиты на «Risk spikes (риск → как проверить)» и «Прочие допущения»; добавлен
-  «Порядок этапов (prerequisite/пред-этапы)»; «Ключевые решения» просят фиксировать и то,
-  что отвергли.
-- **Нумерованный проверяемый DoD:** каждый пункт — пара вход→ожидаемое, ожидаемое из
-  требования (не «как вернёт код»), с негативом и границей; где значение независимо не
-  выводимо — метаморфный инвариант вместо литерала.
-- **Маркер `[?:…]`** для неподтверждённых допущений: `refine` помечает им незакрытые
-  развилки, `build` трактует как блокер (короткий вопрос с вариантами, а не тихий default).
-- **Расширенное определение блокера в `build`:** дефект самой IDEA, влияющий на Scope/DoD
-  (несовместимые прочтения, поведение на неподтверждённом допущении, непроверяемый DoD-пункт)
-  — блокер-развилка; «разумный default» — только для решений вне Scope/DoD.
-- **Анти-verification-theater в тестах:** right-reason red (валидный red только на
-  `AssertionError`), чёрный список обходов озеленения, отдельный агент-скептик со свежим
-  контекстом ведёт измерение «тесты» в Фазе 4 (sabotage probe, независимый оракул, реальный
-  unit, негатив+граница, grep-обходов), re-grounding по DoD/Scope-IN перед отчётом.
-  Оговорка против ритуала: правила — линзы скептика с доказательством выводом команды, а не
-  галочки автора.
-- **Стоп-триггеры `refine`:** скептицизм служит scope/DoD; при застое двух раундов —
-  свести, зафиксировав остаток как открытые пункты / `[?:…]`.
-- **Хвост конвейера:** `build` фиксирует значимые решения в секцию решений/отклонений
-  IMPL-дока (кросс-идейное — опционально в `CLAUDE.md`) и в финальном отчёте нейтрально
-  обозначает «последнюю милю» (review/smoke/commit/PR) как выполняемую по практикам проекта и
-  только по явной просьбе.
+- **`/prorab:refine` — the IDEA template synced with what `build` reads:** "Affected parts" gained
+  "Reuse points (file:line)"; "Open risks / assumptions" split into "Risk spikes (risk → how to
+  check)" and "Other assumptions"; an "Order of stages (prerequisites/pre-stages)" was added;
+  "Key decisions" now asks to record what was rejected too.
+- **A numbered checkable DoD:** each item is an input→expected pair, the expected value from the
+  requirement (not "how the code returns it"), with a negative and a boundary; where a value isn't
+  independently derivable — a metamorphic invariant instead of a literal.
+- **The `[?:…]` marker** for unconfirmed assumptions: `refine` marks unclosed forks with it,
+  `build` treats it as a blocker (a short question with options, not a silent default).
+- **An extended definition of a blocker in `build`:** a defect in the IDEA itself affecting Scope/DoD
+  (incompatible readings, behavior on an unconfirmed assumption, an uncheckable DoD item)
+  — a blocker fork; a "sensible default" — only for decisions outside Scope/DoD.
+- **Anti-verification-theater in tests:** right-reason red (a valid red only on
+  `AssertionError`), a blacklist of green-up bypasses, a separate skeptic agent with fresh
+  context runs the "tests" measurement in Phase 4 (a sabotage probe, an independent oracle, a real
+  unit, a negative+boundary, a grep for bypasses), re-grounding against DoD/Scope-IN before the
+  report. A caveat against ritual: the rules are a skeptic's lenses proven by a command's output, not
+  the author's checkboxes.
+- **`refine` stop-triggers:** skepticism serves scope/DoD; on a two-round stall — settle, fixing the
+  remainder as open items / `[?:…]`.
+- **Pipeline tail:** `build` records significant decisions in the IMPL doc's decisions/deviations
+  section (a cross-idea one — optionally in `CLAUDE.md`) and in the final report neutrally marks the
+  "last mile" (review/smoke/commit/PR) as done per the project's practices and only on an explicit
+  request.
 
 ## prorab 0.1.0
 
-Начальная упаковка фреймворка в Claude Code marketplace.
+The initial packaging of the framework into a Claude Code marketplace.
 
-- Репозиторий превращён в marketplace с одним плагином `prorab`.
-- Команда **`/prorab:refine`** — из прежней `brainstorm` (проработка идеи до спецификации).
-- Команда **`/prorab:build`** — из прежней `implement-idea` (реализация под ключ через
-  мультиагентный ultracode-Workflow).
-- Установка через `/plugin marketplace add` + `/plugin install`, обновление через
+- The repository turned into a marketplace with one `prorab` plugin.
+- The **`/prorab:refine`** command — from the former `brainstorm` (working an idea up to a spec).
+- The **`/prorab:build`** command — from the former `implement-idea` (turnkey implementation via a
+  multi-agent ultracode Workflow).
+- Installation via `/plugin marketplace add` + `/plugin install`, updating via
   `/plugin marketplace update`.
-- Зафиксирован контракт артефактов: команды глобальны, `IDEA-*`/`IMPL-*` пишутся в
-  `tasks/` рабочего проекта.
+- The artifact contract fixed: the commands are global, `IDEA-*`/`IMPL-*` are written to the
+  `tasks/` of the working project.
