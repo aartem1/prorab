@@ -1,73 +1,75 @@
-# Плагин prorab-tech
+# The prorab-tech plugin
 
-Ветка **тех-качества** prorab — отдельный namespace, чтобы не путать с продуктовыми
-командами (`/prorab:*`). Про непрерывное оздоровление кода: находить накопленный техдолг
-и **безопасно** его чинить, не меняя поведение. Внутри — **две пары** команд под две
-разные природы долга:
+The **tech-quality** track of prorab — a separate namespace, so it doesn't get confused with the
+product commands (`/prorab:*`). About continuous code health: finding accumulated tech debt and
+fixing it **safely**, without changing behavior. Inside — **two pairs** of commands for two
+different natures of debt:
 
-- **Структурный долг** (дублирование, сложность, слои) — `audit` → `refactor`.
-- **Статический долг** (linters, типы, formatters, мёртвый код, gate) — `lint-audit` → `lint-fix`.
+- **Structural debt** (duplication, complexity, layers) — `audit` → `refactor`.
+- **Static debt** (linters, types, formatters, dead code, gate) — `lint-audit` → `lint-fix`.
 
-## Пара структурного качества: `audit` → `refactor`
+## The structural-quality pair: `audit` → `refactor`
 
-- **`/prorab-tech:audit`** (`commands/audit.md`) — многоагентный аудит кодовой базы:
-  сканирует по классам smells (дублирование, сложность, нарушения слоёв, мёртвый код,
-  надёжность, perf, покрытие, конвенции) + churn×complexity по git, кластеризует,
-  ранжирует по `польза × безопасность × объём × уверенность`, состязательно верифицирует
-  топ и выдаёт **оптимального кандидата**. Кода не трогает. Результат —
-  `tasks/audits/AUDIT-<slug>.md` (backlog + полная спека #1).
-- **`/prorab-tech:refactor`** (`commands/refactor.md`) — безопасная починка под ключ через
-  мультиагентный ultracode-Workflow. **Prime directive — сохранение поведения:** сеть
-  характеризационных тестов на старом коде, мелкие шаги, состязательный поиск дрейфа,
-  дифференциальный прогон old-vs-new, измеренное улучшение качества. Оба режима:
-  `refactor <id>` чинит выбранного кандидата, `refactor` без аргумента — auto-pick #1 из
-  свежего аудита. Результат — код + `tasks/IMPL-refactor-<slug>.md`.
+- **`/prorab-tech:audit`** (`commands/audit.md`) — a multi-agent codebase audit:
+  sweeps by smell classes (duplication, complexity, layer violations, dead code,
+  reliability, perf, coverage, conventions) + churn×complexity from git, clusters,
+  ranks by `value × safety × size × confidence`, adversarially verifies the top,
+  and produces the **optimal candidate**. Touches no code. Result —
+  `tasks/audits/AUDIT-<slug>.md` (backlog + the full #1 spec).
+- **`/prorab-tech:refactor`** (`commands/refactor.md`) — a turnkey safe fix via a
+  multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of
+  characterization tests on the old code, small steps, adversarial drift search,
+  a differential old-vs-new run, a measured quality improvement. Both modes:
+  `refactor <id>` fixes the chosen candidate, `refactor` with no argument — auto-picks #1 from
+  the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`.
 
-Конвейер: `audit → AUDIT → refactor → IMPL → /prorab:announce`.
+Pipeline: `audit → AUDIT → refactor → IMPL → /prorab:announce`.
 
-## Пара статического качества: `lint-audit` → `lint-fix`
+## The static-quality pair: `lint-audit` → `lint-fix`
 
-Про tooling: linters, typecheckers, formatters, мёртвый код, безопасность и **gate**
-(pre-commit/CI). Ключевая идея — **ratchet**: статический долг монотонно фиксируется —
-включил правило, свёл нарушения к нулю, **запер gate** → уровень не откатится. Поэтому
-результат — не «один кандидат», а **упорядоченная лестница безопасных проходов**, каждый из
-которых поднимает пол И запирает его.
+About tooling: linters, typecheckers, formatters, dead code, security and the **gate**
+(pre-commit/CI). The core idea — the **ratchet**: static debt is locked in monotonically —
+you enable a rule, drive its violations to zero, **lock the gate** → the level won't roll back.
+So the result is not "one candidate" but an **ordered ladder of safe passes**, each of which
+raises the floor AND locks it.
 
-- **`/prorab-tech:lint-audit`** (`commands/lint-audit.md`) — инвентаризирует tooling (что
-  есть / сломано / отсутствует) + прогоняет все доступные анализаторы (read-only), для
-  отсутствующих оценивает «стоимость включения» на щадящей планке. Кластеризует находки в
-  batch и упорядочивает лестницей: **A** нулевой-риск autofix → **B** подключение/починка
-  инструментов на проходящей базе → **C** gate на текущем уровне (высший рычаг) → **D**
-  инкрементальный ratchet строгости. Scoring `польза × безопасность × объём × уверенность` +
-  DAG пред-условий; состязательно верифицирует, что каждый batch behavior-preserving и
-  проходим за один заход. Кода не трогает. Результат — `tasks/audits/LINT-<slug>.md`
-  (инвентарь tooling + roadmap batch + полная спека batch #1).
-- **`/prorab-tech:lint-fix`** (`commands/lint-fix.md`) — выполняет **ОДИН** batch под ключ
-  через Workflow. **Prime directive — сохранение поведения + запертый ratchet:** снять
-  конечный класс нарушений, доказать эквивалентность (baseline-сеть тестов/сборки/typecheck +
-  поиск дрейфа), **добавить gate и sabotage-пробой доказать, что он ловит регресс**.
-  Латентный bug, вскрытый анализатором, **не чинит** (это смена поведения → route в
-  `/prorab:refine`→`/prorab:build`). Уважает порядок лестницы (не берёт batch раньше
-  пред-условий). Оба режима: `lint-fix <id>` — конкретный batch, `lint-fix` без аргумента —
-  auto-pick первый несделанный batch с выполненными пред-условиями. Результат — код + gate +
-  `tasks/IMPL-lint-<slug>.md`; отмечает batch done в плане.
+- **`/prorab-tech:lint-audit`** (`commands/lint-audit.md`) — inventories the tooling (what
+  exists / is broken / is absent) + runs all available analyzers (read-only), and for the
+  absent ones estimates the "cost of enabling" at a lenient bar. Clusters findings into
+  batches and orders them as a ladder: **A** zero-risk autofix → **B** onboarding/fixing tools
+  on a passing base → **C** a gate at the current level (the top leverage) → **D**
+  incremental strictness ratchet. Scoring `value × safety × size × confidence` +
+  a prerequisite DAG; adversarially verifies that each batch is behavior-preserving and
+  passable in one go. Touches no code. Result — `tasks/audits/LINT-<slug>.md`
+  (tooling inventory + batch roadmap + the full batch #1 spec).
+- **`/prorab-tech:lint-fix`** (`commands/lint-fix.md`) — runs **ONE** batch turnkey
+  via Workflow. **Prime directive — behavior preservation + a locked ratchet:** remove a
+  finite class of violations, prove equivalence (a baseline net of tests/build/typecheck +
+  a drift search), **add a gate and prove by a sabotage probe that it catches a regression**.
+  A latent bug the analyzer surfaces it **does not fix** (that's a behavior change → route to
+  `/prorab:refine`→`/prorab:build`). Respects the ladder order (won't take a batch before its
+  prerequisites). Both modes: `lint-fix <id>` — a specific batch, `lint-fix` with no argument —
+  auto-picks the first undone batch with met prerequisites. Result — code + gate +
+  `tasks/IMPL-lint-<slug>.md`; marks the batch done in the plan.
 
-Конвейер: `lint-audit → LINT → lint-fix → (повторять по batch) → /prorab:announce`.
-Каждый вызов `lint-fix` = одна ступень ratchet; запускай его повторно, пока лестница не
-пройдена. Команды глобальны, артефакты локальны для проекта.
+Pipeline: `lint-audit → LINT → lint-fix → (repeat per batch) → /prorab:announce`.
+Each `lint-fix` call = one ratchet step; run it again until the ladder is done. Commands are
+global, artifacts are local to the project.
 
-**Инверсия к `build`:** `/prorab:build` доказывает, что *новое* поведение соответствует
-требованию; `/prorab-tech:refactor` доказывает, что *старое* поведение **не изменилось**.
-Разная дисциплина верификации — поэтому отдельный исполнитель, а не прогон через `build`.
+**Inversion relative to `build`:** `/prorab:build` proves that *new* behavior matches a
+requirement; `/prorab-tech:refactor` proves that *old* behavior **did not change**.
+A different verification discipline — hence a separate executor, not a run through `build`.
 
-**Адаптивный бюджет.** Все четыре команды перед разворотом агентов проходят шаг **Phase 0.5 —
-Budget triage** (тир S/M/L): число сканеров/раннеров/скептиков и модель масштабируются под охват
-и blast radius. `refactor`/`lint-fix` берут тир прямо из upstream-артефакта (`AUDIT` blast/coverage/risk;
-`LINT` tier-метка batch), не выводя заново. **Пол безопасности неснижаем при любом тире:**
-сеть/baseline, sabotage-проба, contract-diff, поиск дрейфа для не-механических правок, доказанный
-gate. Ручной override — `--fast`/`--thorough`/`--tier=S|M|L`. Подробнее — в [корневом README](../../README.md).
+**Adaptive budget.** All four commands run a **Phase 0.5 — Budget triage** step before fanning
+out agents (tier S/M/L): the number of scanners/runners/skeptics and the model scale to the coverage
+and blast radius. `refactor`/`lint-fix` take the tier straight from the upstream artifact (`AUDIT`
+blast/coverage/risk; `LINT` batch tier tag), not re-deriving it. **The safety floor is non-negotiable
+at any tier:** net/baseline, sabotage probe, contract-diff, drift search for non-mechanical edits, a
+proven gate. Manual override — `--fast`/`--thorough`/`--tier=S|M|L`. More detail — in the
+[root README](../../README.md).
 
-**Язык.** Тела команд и внутренняя работа — на английском; артефакты (`AUDIT`/`LINT`/`IMPL-*`) и
-общение — на языке задачи (по умолчанию русский). См. [корневой README](../../README.md).
+**Language.** Command bodies and the internal work are in English; artifacts
+(`AUDIT`/`LINT`/`IMPL-*`) and the dialogue are in the task's language (Russian by default). See the
+[root README](../../README.md).
 
-Установка и обновление описаны в [корневом README](../../README.md).
+Installation and updating are described in the [root README](../../README.md).

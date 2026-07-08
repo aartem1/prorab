@@ -1,6 +1,6 @@
 ---
-description: Выполнить ОДИН безопасный упорядоченный проход из LINT-плана под ключ через мультиагентный Workflow — снять конечный класс нарушений статического анализа, сохранить поведение и запереть уровень gate (pre-commit/CI). Без approval gate.
-argument-hint: пусто = auto-pick первый несделанный batch с выполненными пред-условиями из свежего LINT-*; или <id>/slug batch, путь к LINT-файлу, свободное описание (инструмент/правило)
+description: Run ONE safe ordered pass from the LINT plan turnkey via a multi-agent Workflow — remove a finite class of static-analysis violations, preserve behavior, and lock the gate level (pre-commit/CI). No approval gate.
+argument-hint: empty = auto-pick the first undone batch with met prerequisites from the latest LINT-*; or <id>/slug of a batch, a path to the LINT file, a free description (tool/rule)
 ---
 
 Input: **$ARGUMENTS**

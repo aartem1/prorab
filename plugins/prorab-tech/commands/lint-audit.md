@@ -1,6 +1,6 @@
 ---
-description: Инвентаризация tooling + прогон всех доступных статических анализаторов (linters, typecheckers, formatters, мёртвый код, безопасность) → упорядоченный ratchet-план безопасных одно-проходных batch. Кода не трогает; результат — tasks/audits/LINT-<slug>.md.
-argument-hint: пусто = весь проект; или фокус — инструмент (mypy/eslint/ruff), подсистема (backend/frontend/путь) или класс правил
+description: Tooling inventory + a run of all available static analyzers (linters, typecheckers, formatters, dead code, security) → an ordered ratchet plan of safe single-pass batches. Touches no code; result — tasks/audits/LINT-<slug>.md.
+argument-hint: empty = the whole project; or a focus — a tool (mypy/eslint/ruff), a subsystem (backend/frontend/path) or a rule class
 ---
 
 Input: **$ARGUMENTS**
@@ -134,58 +134,58 @@ Each batch — on four axes (low/med/high) + order:
 
 ## LINT-file template
 
-> Write the artifact in the **task's language** (the template is shown in Russian, the common default; render its headings/prose in the task's language).
+> Write the artifact in the **task's language** (default Russian). The template below is in English for reference — render its headings/prose in the task's language.
 
 ```
-# Аудит статического качества: <дата / фокус>
+# Static-quality audit: <date / focus>
 
-## Охват
-- Что прогоняли: <весь проект | фокус>
-- Команды сети (страховка проходов): <тесты / сборка / typecheck — точные команды>
-- Непокрыто (срезы): <классы, не проверяемые статикой; инструменты, не прогнанные в окружении; долг вне behavior-preserving рамок>
+## Coverage
+- What was run: <the whole project | focus>
+- Net commands (pass insurance): <tests / build / typecheck — exact commands>
+- Uncovered (cuts): <classes not checkable by statics; tools not run in the environment; debt outside behavior-preserving bounds>
 
-## Инвентарь tooling
-| Инструмент | Статус | Gate | Находки сейчас |
+## Tooling inventory
+| Tool | Status | Gate | Findings now |
 |---|---|---|---|
-| ruff | настроен, зелёный | нет | 34 F401/F841 (auto) |
-| eslint | СЛОМАН (нет flat-config) | нет | — |
-| mypy | отсутствует | нет | ~N при lenient-планке (оценка) |
-| tsc | зелёный | нет | 0 |
-| pre-commit / CI | отсутствует | — | — |
+| ruff | configured, green | none | 34 F401/F841 (auto) |
+| eslint | BROKEN (no flat-config) | none | — |
+| mypy | absent | none | ~N at a lenient bar (estimate) |
+| tsc | green | none | 0 |
+| pre-commit / CI | absent | — | — |
 
-## Roadmap проходов (лестница-ratchet)
-| # | Tier | Инструмент / scope | Нарушений | Авто/ручн. | Поведение | Верификация | Gate (что запирает) | Пред-batch | Статус |
-|---|-----|--------------------|-----------|-----------|-----------|-------------|---------------------|-----------|--------|
-| 1 | A | ruff --fix F401/F841 | 34 | auto | BP (проверить мнимо-мёртвое) | ruff green + тесты/сборка | — (готовит ruff-gate) | — | ☐ |
-| 2 | B | eslint flat-config (lenient) | 0 после | ручн. конфиг | BP | eslint green + tsc | — | — | ☐ |
-| 3 | C | pre-commit+CI: ruff+tsc+pytest | — | ручн. конфиг | BP | gate краснеет на подсаженном нарушении | ЗАПИРАЕТ текущий уровень | 1,2 | ☐ |
-| 4 | D | mypy: модуль X, планка Y | N | ручн. | BP (латентные bugs → route) | mypy green на X + тесты | подтянуть gate | 3 | ☐ |
+## Pass roadmap (the ratchet ladder)
+| # | Tier | Tool / scope | Violations | Auto/manual | Behavior | Verification | Gate (what it locks) | Pre-batch | Status |
+|---|-----|--------------|-----------|-------------|----------|--------------|----------------------|-----------|--------|
+| 1 | A | ruff --fix F401/F841 | 34 | auto | BP (check seemingly-dead) | ruff green + tests/build | — (prepares the ruff gate) | — | ☐ |
+| 2 | B | eslint flat-config (lenient) | 0 after | manual config | BP | eslint green + tsc | — | — | ☐ |
+| 3 | C | pre-commit+CI: ruff+tsc+pytest | — | manual config | BP | gate goes red on an injected violation | LOCKS the current level | 1,2 | ☐ |
+| 4 | D | mypy: module X, bar Y | N | manual | BP (latent bugs → route) | mypy green on X + tests | tighten the gate | 3 | ☐ |
 
-## Batch #1 (первый проход) — полная спека
-### Инструмент и класс правил
-<напр. ruff F401/F841 — мёртвые импорты/переменные> — <одна фраза>
+## Batch #1 (the first pass) — full spec
+### Tool and rule class
+<e.g. ruff F401/F841 — dead imports/variables> — <one phrase>
 
-### Что делает проход
-- <точная команда/правки; напр. `ruff check app --select F401,F841 --fix`>
+### What the pass does
+- <exact command/edits; e.g. `ruff check app --select F401,F841 --fix`>
 
-### Ожидаемый класс diff (и что НЕ должно попасть)
-- <только удаление неиспользуемых импортов/локалей; ни одной правки логики>
+### Expected diff class (and what must NOT get in)
+- <only removal of unused imports/locals; not a single logic edit>
 
-### Границы поведения (что ДОЛЖНО остаться идентичным)
-- Наблюдаемое поведение / выходы / контракты — не меняются.
-- Риски behavior-preservation: <мнимо-мёртвое с побочными эффектами / reorder импортов с эффектами / …> — как проверить
+### Behavior boundaries (what MUST stay identical)
+- Observable behavior / outputs / contracts — unchanged.
+- Behavior-preservation risks: <seemingly-dead with side effects / import reorder with effects / …> — how to check
 
-### Сеть (чем доказывается не-поломка)
-- Baseline зелёный: <тесты/сборка/typecheck>. После прохода — тот же набор зелёный + инструмент зелёный.
+### Net (what proves no breakage)
+- Green baseline: <tests/build/typecheck>. After the pass — the same set green + the tool green.
 
-### Gate, устанавливаемый/подтягиваемый этим проходом
-- <pre-commit-хук / шаг CI, который лочит результат; или «готовит gate batch #N»>
+### Gate installed/tightened by this pass
+- <pre-commit hook / CI step that locks the result; or "prepares the gate of batch #N">
 
-### Верификация прохода
-- Инструмент зелёный на целевой планке; нет новых нарушений в другом месте; gate краснеет на подсаженном нарушении (sabotage gate); тесты/сборка зелёные (exit + число тестов).
+### Pass verification
+- The tool is green at the target bar; no new violations elsewhere; the gate goes red on an injected violation (sabotage gate); tests/build green (exit + test count).
 
-### Почему этот batch первый (порядок)
-- <безопасность + разблокирует #N + дешевизна>
+### Why this batch is first (order)
+- <safety + unblocks #N + cheapness>
 ```
 
 Adapt sections to the batch; for the other batches the roadmap rows are enough.

@@ -1,6 +1,6 @@
 ---
-description: Многоагентный аудит кодовой базы — ищет техдолг/архитектурные проблемы, кластеризует, ранжирует по польза×безопасность×объём×уверенность и выдаёт оптимального кандидата на безопасный рефакторинг. Кода не трогает.
-argument-hint: пусто = весь проект; или фокус — путь/подсистема/класс проблемы (напр. «дублирование в services», «сложность в billing», путь к папке)
+description: Multi-agent codebase audit — finds tech debt/architectural problems, clusters them, ranks by value×safety×size×confidence and produces the optimal candidate for a safe refactoring. Touches no code.
+argument-hint: empty = the whole project; or a focus — a path/subsystem/problem class (e.g. "duplication in services", "complexity in billing", a folder path)
 ---
 
 Input: **$ARGUMENTS**
@@ -142,52 +142,52 @@ Score each cluster on four axes (low/med/high); the result is the priority:
 
 ## AUDIT-file template
 
-> Write the artifact in the **task's language** (the template is shown in Russian, the common default; render its headings/prose in the task's language).
+> Write the artifact in the **task's language** (default Russian). The template below is in English for reference — render its headings/prose in the task's language.
 
 ```
-# Аудит кодовой базы: <дата / фокус>
+# Codebase audit: <date / focus>
 
-## Охват
-- Что сканировали: <весь проект | фокус>
-- Инструменты-сигналы: <тесты/coverage/linters/typechecker/git — что реально запускалось>
-- Непокрыто (срезы): <классы/подсистемы, оставшиеся в тени, если есть>
+## Coverage
+- What was scanned: <the whole project | focus>
+- Signal tools: <tests/coverage/linters/typechecker/git — what actually ran>
+- Uncovered (cuts): <classes/subsystems left in the shadow, if any>
 
-## Ранжированный backlog
-| # | Класс | Где (file:line) | Польза | Безоп. | Объём | Увер. | Кратко |
-|---|-------|-----------------|--------|--------|-------|-------|--------|
-| 1 | …     | …               | выс.   | выс.   | средн.| выс.  | …      |
-| 2 | …     | …               | …      | …      | …     | …     | …      |
+## Ranked backlog
+| # | Class | Where (file:line) | Value | Safety | Size | Conf. | Brief |
+|---|-------|-------------------|-------|--------|------|-------|-------|
+| 1 | …     | …                 | high  | high   | med  | high  | …     |
+| 2 | …     | …                 | …     | …      | …    | …     | …     |
 
-## Рекомендованный кандидат (#1) — полная спека
-### Класс проблемы
-<из каталога> — <одна фраза сути>
+## Recommended candidate (#1) — full spec
+### Problem class
+<from the catalog> — <one-phrase gist>
 
-### Где
-- <file:line>, <file:line> … (все места)
+### Where
+- <file:line>, <file:line> … (all sites)
 
-### Симптом и доказательство
-- <что не так> — <метрика/число/git-факт/вывод linter, подтверждённые>
+### Symptom and evidence
+- <what's wrong> — <metric/number/git fact/linter output, confirmed>
 
-### Что улучшится (измеримо)
-- Ось: <читаемость | сложность | надёжность | perf | связность | …>
-- Метрика до→ожидаемое после: <напр. cyclomatic 24→<10; дублей 6→1; запросов N+1→1>
+### What improves (measurable)
+- Axis: <readability | complexity | reliability | perf | cohesion | …>
+- Metric before→expected after: <e.g. cyclomatic 24→<10; duplicates 6→1; queries N+1→1>
 
-### Границы поведения (что ДОЛЖНО остаться идентичным)
-- Наблюдаемое поведение / выходы: …
-- Внешние контракты под риском: <API / схема БД / формат сериализации / публичные сигнатуры> — стабильны
+### Behavior boundaries (what MUST stay identical)
+- Observable behavior / outputs: …
+- External contracts at risk: <API / DB schema / serialization format / public signatures> — stable
 
-### Статус сети тестов
-- Есть готовое покрытие цели: <да/нет/частично> — <что именно>
-- Что нужно дописать как характеризационную сеть ДО рефактора: …
+### Test-net status
+- Ready coverage of the target exists: <yes/no/partial> — <what exactly>
+- What to add as a characterization net BEFORE the refactoring: …
 
 ### Blast radius
-- Затрагиваемые call-sites/места: <перечень или оценка>
+- Affected call-sites/sites: <list or estimate>
 
-### Risk spikes (проверить refactor ДО починки: риск → как проверить)
+### Risk spikes (for refactor to check BEFORE fixing: risk → how to check)
 - …
 
-### Почему этот кандидат (обоснование выбора)
-- Польза + безопасность + объём: …
+### Why this candidate (selection rationale)
+- Value + safety + size: …
 ```
 
 Adapt/drop sections to the candidate; for runners-up the backlog rows are enough.

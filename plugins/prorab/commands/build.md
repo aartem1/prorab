@@ -1,6 +1,6 @@
 ---
-description: Реализует готовую идею (IDEA-файл после /prorab:refine) под ключ через мультиагентный ultracode-Workflow — разведка кода, реализация по DAG, состязательное review и верификация. Без approval gate: агенты сами проверяют и перепроверяют.
-argument-hint: путь к tasks/ideas/IDEA-*.md, slug идеи, или свободное описание готовой идеи
+description: Turnkey implementation of a refined idea (IDEA file after /prorab:refine) via a multi-agent ultracode Workflow — code recon, DAG-ordered implementation, adversarial review and verification. No approval gate: the agents check and re-check themselves.
+argument-hint: path to tasks/ideas/IDEA-*.md, an idea slug, or a free description of a refined idea
 ---
 
 Input: **$ARGUMENTS**

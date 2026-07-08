@@ -1,24 +1,25 @@
-# Плагин prorab
+# The prorab plugin
 
-Три команды агентской разработки для Claude Code:
+Three agentic-development commands for Claude Code:
 
-- **`/prorab:refine`** (`commands/refine.md`) — проработка сырой идеи до готовности к
-  спецификации. Диалог, вопросы, изучение кода, поиск противоречий. Кода не пишет.
-  Результат — `tasks/ideas/IDEA-<slug>.md` в рабочем проекте.
-- **`/prorab:build`** (`commands/build.md`) — реализация готовой идеи под ключ через
-  мультиагентный ultracode-Workflow. Результат — код + `tasks/IMPL-<slug>.md`.
-- **`/prorab:announce`** (`commands/announce.md`) — краткий точный анонс результатов
-  (после `build` или ручной реализации): что сделано/ново/изменилось, методики и способ
-  расчёта. Сжато, сканируемо, готово к пересылке в мессенджер. Кода не пишет, не делает commit.
+- **`/prorab:refine`** (`commands/refine.md`) — work a raw idea up to spec-readiness.
+  Dialogue, questions, code study, hunting for contradictions. Writes no code.
+  Result — `tasks/ideas/IDEA-<slug>.md` in the working project.
+- **`/prorab:build`** (`commands/build.md`) — turnkey implementation of a refined idea via
+  a multi-agent ultracode Workflow. Result — code + `tasks/IMPL-<slug>.md`.
+- **`/prorab:announce`** (`commands/announce.md`) — a concise, precise announcement of the
+  results (after `build` or a manual implementation): what was done/new/changed, methods and
+  how it's computed. Dense, scannable, ready to forward in a messenger. Writes no code, makes no commit.
 
-Конвейер: `refine → IDEA → build → announce`. Команды глобальны, артефакты локальны для проекта.
+Pipeline: `refine → IDEA → build → announce`. Commands are global, artifacts are local to the project.
 
-**Адаптивный бюджет.** `build` перед разворотом агентов проходит триаж сложности (тир S/M/L) и
-масштабирует fan-out/модель под задачу; пол качества (скептик по DoD со свежим контекстом,
-sabotage-проба, полный прогон тестов/сборки) неснижаем при любом тире. `refine`/`announce`
-масштабируют глубину диалога/fact-check под размер. Подробнее — в [корневом README](../../README.md).
+**Adaptive budget.** Before fanning out agents, `build` runs a complexity triage (tier S/M/L) and
+scales fan-out/model to the task; the quality floor (a DoD skeptic with fresh context, a
+sabotage probe, a full test/build run) is non-negotiable at any tier. `refine`/`announce`
+scale the dialogue/fact-check depth to size. More detail — in the [root README](../../README.md).
 
-**Язык.** Тела команд и внутренняя работа — на английском; артефакты (`IDEA`/`IMPL`), диалог
-`refine` и текст `announce` — на языке задачи (по умолчанию русский). См. [корневой README](../../README.md).
+**Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
+`refine` dialogue and the `announce` text are in the task's language (Russian by default). See the
+[root README](../../README.md).
 
-Установка и обновление описаны в [корневом README](../../README.md).
+Installation and updating are described in the [root README](../../README.md).

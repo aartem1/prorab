@@ -1,7 +1,7 @@
 {
   "name": "prorab-tech",
-  "version": "0.4.0",
-  "description": "Ветка тех-качества prorab: audit+refactor (поиск и безопасная починка структурного техдолга) и lint-audit+lint-fix (аудит статического качества и починка проходами-ratchet: linters/типы/formatters, каждый проход поднимает планку и запирает gate). Поведение неизменно, код чище. Отдельный namespace, чтобы не путать с продуктовыми командами",
+  "version": "0.4.1",
+  "description": "prorab tech-quality track: audit+refactor (find and safely fix structural tech debt) and lint-audit+lint-fix (static-quality audit and ratchet-pass fixing: linters/types/formatters, each pass raises the bar and locks the gate). Behavior unchanged, code cleaner. A separate namespace so it doesn't get confused with the product commands",
   "author": {
     "name": "Artem Altukhov",
     "email": "a.altukhov@hh.kz"

@@ -1,7 +1,7 @@
 {
   "name": "prorab",
-  "version": "0.5.0",
-  "description": "Фреймворк агентской разработки: refine (проработка сырой идеи до спецификации), build (мультиагентная реализация готовой идеи под ключ) и announce (краткий анонс результатов для пересылки)",
+  "version": "0.5.1",
+  "description": "Agentic development framework: refine (work a raw idea up to a spec), build (multi-agent turnkey implementation of a refined idea) and announce (concise result announcement for forwarding)",
   "author": {
     "name": "Artem Altukhov",
     "email": "a.altukhov@hh.kz"
