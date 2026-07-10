@@ -22,7 +22,7 @@ raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──�
 | Command | What it does |
 |---|---|
 | **`/prorab:refine`** | Iteratively works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md`. |
-| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent ultracode Workflow: code recon → plan → DAG-ordered implementation → adversarial review → verification. No approval gate. Result — code + `tasks/IMPL-<slug>.md`. |
+| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent ultracode Workflow: code recon → plan → DAG-ordered implementation → adversarial review → verification. It derives the verification recipe from repository guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack. No approval gate. Result — code + `tasks/IMPL-<slug>.md`. |
 | **`/prorab:announce`** | Prepares a concise, precise announcement of the results (what was done/new/changed, methods, how it's computed) — dense and convenient to forward in a messenger. Reads IMPL/diff/IDEA, fact-checks. Writes no code, makes no commit. |
 
 The commands can be used separately, but they're designed as a pipeline:
@@ -36,15 +36,15 @@ Two pairs for two natures of debt. **Structural** debt (duplication, complexity,
 
 ```
 structural: ──/prorab-tech:audit──▶ AUDIT-<slug>.md (backlog + spec #1) ──/prorab-tech:refactor──▶ refactoring + IMPL-refactor ──▶ /prorab:announce
-static:     ──/prorab-tech:lint-audit──▶ LINT-<slug>.md (batch ladder) ──/prorab-tech:lint-fix──▶ pass + gate + IMPL-lint (repeat per batch) ──▶ /prorab:announce
+static:     ──/prorab-tech:lint-audit──▶ LINT-<slug>.md (batch ladder) ──/prorab-tech:lint-fix──▶ pass + gate state + IMPL-lint (repeat per batch) ──▶ /prorab:announce
 ```
 
 | Command | What it does |
 |---|---|
 | **`/prorab-tech:audit`** | A multi-agent codebase audit: sweeps by smell classes + churn×complexity from git, clusters, ranks by `value × safety × size × confidence`, adversarially verifies the top. Produces the optimal candidate for a safe refactoring. Touches no code. Result — `tasks/audits/AUDIT-<slug>.md`. |
 | **`/prorab-tech:refactor`** | A turnkey safe fix via a multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of characterization tests on the old code, small steps, adversarial drift search, a differential old-vs-new run, a measured quality improvement. `refactor <id>` fixes the chosen candidate; `refactor` with no argument — auto-picks #1 from the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`. |
-| **`/prorab-tech:lint-audit`** | An audit of **static quality**: inventories the tooling (what exists / is broken / is absent) + runs all available analyzers (linters, typecheckers, formatters, dead code, security) read-only, and for the absent ones estimates the "cost of enabling". Clusters into an **ordered ladder of safe passes**: A autofix → B onboarding tools → C a gate at the current level → D strictness ratchet. Touches no code. Result — `tasks/audits/LINT-<slug>.md`. |
-| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a locked ratchet:** remove a finite class of violations, prove equivalence (a baseline net + a drift search), **add a gate (pre-commit/CI) and prove by a sabotage probe that it catches a regression**. Doesn't fix a latent bug — routes it to the product track. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate + `tasks/IMPL-lint-<slug>.md`. |
+| **`/prorab-tech:lint-audit`** | An audit of **static quality**: inventories the tooling (what exists / is broken / is absent), runs analyzers already available in the project read-only, and labels absent-tool estimates as manual unless an ephemeral download is explicitly authorized. Clusters into an **ordered ladder of safe passes**: A autofix → B onboarding tools → C first gate → D strictness ratchet. Touches no code. Result — `tasks/audits/LINT-<slug>.md`. |
+| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** pre-C A/B batches are preparatory and not called locked; C creates and sabotage-proves the first gate; post-C A/B/D batches tighten or expand that gate and prove the changed coverage. Doesn't fix a latent bug — routes it to the product track. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate-state evidence + `tasks/IMPL-lint-<slug>.md`. |
 
 **Inversion relative to `build`:** `build` proves that *new* behavior matches a requirement;
 `refactor` and `lint-fix` prove that *old* behavior **did not change**. A different
@@ -53,8 +53,8 @@ verification discipline — hence separate executors, and their results (`IMPL-r
 
 **Two pairs — different natures of debt.** `audit`/`refactor` work with *structure* (read the
 code, find one best candidate, fix with characterization tests). `lint-audit`/`lint-fix`
-work with *statics* (run tools, produce a ladder, fix in ratchet passes: each pass raises the
-bar and locks it with a gate, so quality grows monotonically and doesn't roll back).
+work with *statics* (run tools, produce a ladder, prepare green tools in A/B, create the first gate
+in C, then tighten that existing gate in later passes so the enforced bar grows monotonically).
 
 ## Adaptive budget for complexity
 
@@ -81,8 +81,8 @@ a near tie or if #1 fails. `refactor`/`lint-fix` take the tier from the upstream
 (AUDIT/LINT), not re-deriving it.
 
 **Savings without losing quality.** The safety floor is non-negotiable at any tier (per the
-command's nature: net/baseline, sabotage probe, contract-diff, drift search, a DoD skeptic, a proven
-gate), and verification is risk-proportional: a safe isolated finding is checked cheaply, while a
+command's nature: net/baseline, contract-diff, drift search, a DoD skeptic, and a sabotage-proven
+gate whenever one is created or changed), and verification is risk-proportional: a safe isolated finding is checked cheaply, while a
 confirmed contract risk can spend more of the fixed budget. The tier can be pinned manually:
 `--fast` / `--thorough` / `--tier=S|M|L` (or by an NL request), but the 16-context ceiling remains
 absolute. `refine` has a two-Explore-context recon cap; `announce` allows one delegated context and

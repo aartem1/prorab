@@ -28,28 +28,30 @@ Pipeline: `audit → AUDIT → refactor → IMPL → /prorab:announce`.
 ## The static-quality pair: `lint-audit` → `lint-fix`
 
 About tooling: linters, typecheckers, formatters, dead code, security and the **gate**
-(pre-commit/CI). The core idea — the **ratchet**: static debt is locked in monotonically —
-you enable a rule, drive its violations to zero, **lock the gate** → the level won't roll back.
-So the result is not "one candidate" but an **ordered ladder of safe passes**, each of which
-raises the floor AND locks it.
+(pre-commit/CI). The core idea is an explicit gate lifecycle: early A/B passes prepare green tools
+without claiming they are locked; C creates and proves the first gate; every later pass that changes
+the enforced bar tightens or expands that same gate. The result is an **ordered ladder of safe
+passes** that first reaches a locked state and then raises it monotonically.
 
 - **`/prorab-tech:lint-audit`** (`commands/lint-audit.md`) — inventories the tooling (what
-  exists / is broken / is absent) + runs all available analyzers (read-only), and for the
-  absent ones estimates the "cost of enabling" at a lenient bar. Clusters findings into
+  exists / is broken / is absent) + runs analyzers already available in the project (read-only).
+  An ephemeral download requires explicit permission; otherwise absent-tool estimates are manual
+  and labeled as not executed. Clusters findings into
   batches and orders them as a ladder: **A** zero-risk autofix → **B** onboarding/fixing tools
-  on a passing base → **C** a gate at the current level (the top leverage) → **D**
+  on a passing base → **C** the first gate at the current level (the top leverage) → **D**
   incremental strictness ratchet. Scoring `value × safety × size × confidence` +
   a prerequisite DAG; adversarially verifies that each batch is behavior-preserving and
   passable in one go. Touches no code. Result — `tasks/audits/LINT-<slug>.md`
   (tooling inventory + batch roadmap + the full batch #1 spec).
 - **`/prorab-tech:lint-fix`** (`commands/lint-fix.md`) — runs **ONE** batch turnkey
-  via Workflow. **Prime directive — behavior preservation + a locked ratchet:** remove a
-  finite class of violations, prove equivalence (a baseline net of tests/build/typecheck +
-  a drift search), **add a gate and prove by a sabotage probe that it catches a regression**.
+  via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** remove a
+  finite class of violations and prove equivalence (a baseline net of tests/build/typecheck +
+  a drift search). Before C, A/B are preparatory and explicitly not locked; C creates and
+  sabotage-proves the first gate; post-C A/B/D tighten or expand that gate and prove the new coverage.
   A latent bug the analyzer surfaces it **does not fix** (that's a behavior change → route to
   `/prorab:refine`→`/prorab:build`). Respects the ladder order (won't take a batch before its
   prerequisites). Both modes: `lint-fix <id>` — a specific batch, `lint-fix` with no argument —
-  auto-picks the first undone batch with met prerequisites. Result — code + gate +
+  auto-picks the first undone batch with met prerequisites. Result — code + gate-state evidence +
   `tasks/IMPL-lint-<slug>.md`; marks the batch done in the plan.
 
 Pipeline: `lint-audit → LINT → lint-fix → (repeat per batch) → /prorab:announce`.

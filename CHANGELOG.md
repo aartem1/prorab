@@ -6,6 +6,25 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.7.0 · prorab-tech 0.6.0
+
+**Stack-agnostic build verification and a coherent lint-gate lifecycle.** Both command tracks get
+a backward-compatible behavior correction, so both plugins receive a minor bump.
+
+- **`build` derives a verification recipe.** It now discovers exact targeted/full test, lint,
+  typecheck, build, migration, and smoke commands from repository guidance, CI, task runners,
+  package scripts, and existing test conventions. Hard-coded assumptions about `services/`, Docker
+  pytest, Alembic, Vite, and a backend/frontend layer sequence were removed from the mandatory flow.
+- **One explicit lint-gate lifecycle.** A/B batches before C are preparatory and must not claim a
+  locked ratchet; C creates and sabotage-proves the first relevant gate; post-C A/B/D batches
+  tighten or expand that existing gate and sabotage-prove the changed coverage. `lint-audit` and
+  `lint-fix` now use the same prerequisites, artifact fields, verification, and reporting language.
+- **Honest unavailable-analyzer handling.** `lint-audit` runs an analyzer only when it is already
+  available, requires explicit permission before an ephemeral download, and otherwise records a
+  manual estimate labeled `not executed` instead of promising a dry-run.
+- **Roadmap synchronized.** Proposal #4 is marked implemented in `IMPROVEMENT-PROPOSALS.md`, and
+  the root/plugin READMEs and manifests describe the corrected behavior.
+
 ## prorab 0.6.0 · prorab-tech 0.5.0
 
 **Hard orchestration budgets and no-progress stopping.** The adaptive S/M/L tiers now enforce a

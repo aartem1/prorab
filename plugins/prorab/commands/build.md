@@ -1,5 +1,5 @@
 ---
-description: Turnkey implementation of a refined idea (IDEA file after /prorab:refine) via a multi-agent ultracode Workflow — code recon, DAG-ordered implementation, adversarial review and verification. No approval gate: the agents check and re-check themselves.
+description: "Turnkey implementation of a refined idea (IDEA file after /prorab:refine) via a multi-agent ultracode Workflow — code recon, DAG-ordered implementation, adversarial review and verification. No approval gate: the agents check and re-check themselves."
 argument-hint: path to tasks/ideas/IDEA-*.md, an idea slug, or a free description of a refined idea
 ---
 
@@ -23,7 +23,7 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
 - **Stop only on a real blocker.** These are: a failed risk spike; an uncovered blocker not in the IDEA; **a direct contradiction of the IDEA with the code** (a product decision isn't implementable as described); a need for a secret/access that isn't available; **a defect in the IDEA itself affecting Scope or DoD** — an ambiguity or an unclosed assumption (incompatible readings; behavior depends on an unconfirmed assumption; a DoD item can't be checked). Then — a short question to the user with options. Apply a "sensible default" only to decisions that do NOT affect Scope/DoD; on anything touching them — ask.
 - **The marker `[?:…]` in the IDEA = an unclosed fork = a blocker.** A short question to the user with options, don't paper over it with a sensible default.
 - **Agents verify, they don't multiply findings.** Batch related findings into one verification task. Use one independent verifier by default; add another lens only for a real conflict or a high-blast risk and only within the tier cap. Default "refuted if in doubt" before fixing or asserting.
-- **Repo conventions beat generic best practices.** Before writing — find out how similar things are already done here (models, services, endpoints, migrations, tests, frontend) and mirror the local style. Read `CLAUDE.md` and the spec it references.
+- **Repo conventions beat generic best practices.** Before writing — find out how similar things are already done here (architecture layers, contracts, migrations, tests, build tooling) and mirror the local style. Read the repository guidance and the spec it references; don't assume a particular stack or directory layout.
 - **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps.
 - **Respect the work order.** If the IDEA has a pre-stage/prerequisite (e.g. an infrastructure fix that also affects other features) — it goes first; implement a large cross-cutting pre-stage in a separate branch and report it in the final report.
 - **Honest report.** Call failing tests failing, with the output. Call a skipped step skipped. Don't declare "done" until you've verified.
@@ -38,9 +38,10 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
    - a slug (e.g. `flow-efficiency`) → `tasks/ideas/IDEA-<slug>.md`;
    - free text → match the nearest `tasks/ideas/IDEA-*.md`; if ambiguous — list them and ask which to take (this clarifies the source, not an approval);
    - if there's no IDEA file at all — warn that quality will suffer without refinement, and suggest `/prorab:refine` first.
-2. **Read the context:** the IDEA file itself in full, `CLAUDE.md`, the project's main spec, related `IDEA-*`/`IMPL-*`, and relevant memory.
-3. **Extract from the idea** and record for yourself: Scope IN/OUT, the **ordered work stages** (including pre-stages/prerequisites), the Definition of Done, open risks and **risk spikes**, the list of affected parts.
-4. **Briefly sketch the plan** (stages, order, spike vs build, fan-out size) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5, don't wait for a reply.
+2. **Read the context:** the IDEA file itself in full, repository guidance (`CLAUDE.md` when present), the project's main spec, README, package/build scripts, CI configuration, Makefile/task-runner files, existing test conventions, related `IDEA-*`/`IMPL-*`, and relevant memory.
+3. **Derive the project verification recipe before planning.** Record the exact supported commands for targeted tests, the full test suite, lint/typecheck/build, and — only where the repository defines them — migrations and runtime smoke checks. Prefer explicit project guidance, then CI, task runners/package scripts, and existing test conventions. Don't invent commands or assume a language, framework, container runtime, or backend/frontend split; if the repository does not define a check, record that gap.
+4. **Extract from the idea** and record for yourself: Scope IN/OUT, the **ordered work stages** (including pre-stages/prerequisites), the Definition of Done, open risks and **risk spikes**, the list of affected parts.
+5. **Briefly sketch the plan** (stages, order, spike vs build, fan-out size) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5, don't wait for a reply.
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
@@ -86,17 +87,17 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 ## Phase 2 — Implementation plan (Workflow: judge-panel for the complex) — NO approval
 
 1. **For architecturally non-trivial places only** (at least two genuinely different approaches with a material trade-off) run the bounded judge-panel from Phase 0.5: independent proposals → scoring and synthesis by the main agent. For straight-line parts — design directly, without a panel.
-2. **Compose/extend the IMPL document** `tasks/IMPL-<slug>.md` (following the existing `tasks/IMPL-*.md`): a decomposition into tasks **with dependencies (DAG)**, a per-file change list, a migration plan (`NNN_` numbering as in the project), a test plan (unit tests on business logic in `services/`), the rollout order, an explicit tie to the DoD from the IDEA. This is a working artifact, **not an approval subject**.
+2. **Compose/extend the IMPL document** `tasks/IMPL-<slug>.md` (following the existing `tasks/IMPL-*.md`): a decomposition into tasks **with dependencies (DAG)**, a per-file change list, a data/schema migration plan when applicable (following the repository's own convention), a test plan using the project's existing test levels and layout, the rollout order, the verification recipe, and an explicit tie to the DoD from the IDEA. This is a working artifact, **not an approval subject**.
 3. **Go straight to implementation.** No "wait for confirmation". If along the way you find a direct contradiction of the IDEA with the code — highlight it and ask (a blocker); otherwise — pick a sensible default, record it in the IMPL doc, and continue.
 
 ## Phase 3 — Implementation (Workflow: pipeline by task DAG)
 
 1. Create tasks via `TaskCreate`/`TaskUpdate` so progress is visible. If needed — `EnterWorktree`/isolation.
 2. **Orchestrate by DAG:**
-   - Sequential dependencies (migration → model → schema → service → API → frontend) run as a `pipeline()` — no barriers between stages.
+   - Sequential project dependencies (for example, a data/schema change before its consumers) run as a `pipeline()` — no barriers between stages. Derive the actual order from the codebase map; don't impose a fixed layer sequence.
    - Genuinely independent modules — `parallel()`. **If parallel agents edit files at the same time — give each `isolation: 'worktree'`**, otherwise they clobber each other; then integrate in a separate pass. By default prefer pipeline; parallel with isolation only for provably non-overlapping edits.
    - Tightly coupled edits with already-gathered precise context can be done directly (solo), leaving fan-out for review/verification — this is often cleaner than splitting coherent code across agents.
-3. **Every task ends with tests.** Write unit tests on business logic (`services/`) and run the relevant set right away (as in the project: `docker compose run --rm backend python -m pytest tests/ -v`). Follow the repo's test conventions (fixtures, no DB, etc.). Discipline so the test proves behavior rather than faking green:
+3. **Every task ends with the relevant checks.** Add or adjust tests at the level and location established by the repository, then run the exact targeted command from the verification recipe. Follow the project's runner, fixture, isolation, and integration conventions; don't assume Docker, pytest, a database policy, or a particular test directory. Discipline so the test proves behavior rather than faking green:
    - **Derive the test from a specific DoD item.** Take the expected value from the DoD / spec / a manual calculation — NOT from your implementation's actual output (a snapshot/golden taken by running the code does not count as a DoD check).
    - **Right-reason red.** First write the test on the DoD item and run it BEFORE implementing; paste the actual run tail (test name + `AssertionError: expected <value from DoD>, got <actual>`) into the IMPL doc. Only a red on `AssertionError` is valid; `ImportError`/`SyntaxError`/a fixture error = not-red, rewrite the test. Only after a valid red — write the code to green.
    - **Negative and boundary.** For each non-trivial behavior — at least one negative and one boundary case, not just the happy path.
@@ -116,11 +117,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
    4. **Negative + boundary**: present — or a specific "why not" (not "not applicable").
    5. **No workarounds** in new/changed tests: `grep skip|xfail|# assert|sys.exit|except.*pass` → a manual review of the diff.
 3. **Fix the confirmed findings:** repeat review → verification → fix only up to the tier's cycle cap, and stop earlier immediately after a round with no new confirmed findings.
-4. **Full verification and honest report:**
-   - backend: `docker compose run --rm backend python -m pytest tests/ -v`;
-   - frontend: `npm run build` (tsc + vite);
-   - where present — migrations (`alembic upgrade head`) and/or an app run / smoke (`docker compose up -d`).
-   Take the commands from `CLAUDE.md`/`README`; don't invent them. Report results as they are.
+4. **Full verification and honest report:** run the exact full recipe derived in Phase 0 — the repository's test suite plus its configured lint/typecheck/build checks, and migrations or runtime smoke checks only when the project defines them. Use the supported invocation from repository guidance, CI, task runners/package scripts, and existing conventions; don't substitute stack-specific commands or silently install tooling. If a required check has no discoverable command, report the gap instead of inventing one. Report results as they are.
 5. **Re-grounding before the final report.** Re-read the DoD and Scope-IN from the IDEA file and present a table "each DoD item → what closes it (task + check)". A file changed outside Scope-IN = a scope-creep finding; an unclosed DoD item ≠ "done".
 
 **Caveat (against ritual).** The Phase 3–4 rules are LENSES for the Phase 4 skeptic, proven by a command's output, not the author's self-awarded checkboxes (that is the "honest report"). Don't overdo it: aggressive "the reviewer must find holes" breeds flaky, false-finding noise, and over-engineering. The skeptic's focus is DoD coverage and defusing faked checks, NOT style. Mocking external boundaries is allowed; only mocking the unit-under-test itself is forbidden.
