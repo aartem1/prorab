@@ -60,13 +60,14 @@ global, artifacts are local to the project.
 requirement; `/prorab-tech:refactor` proves that *old* behavior **did not change**.
 A different verification discipline — hence a separate executor, not a run through `build`.
 
-**Adaptive budget.** All four commands run a **Phase 0.5 — Budget triage** step before fanning
-out agents (tier S/M/L): the number of scanners/runners/skeptics and the model scale to the coverage
-and blast radius. `refactor`/`lint-fix` take the tier straight from the upstream artifact (`AUDIT`
-blast/coverage/risk; `LINT` batch tier tag), not re-deriving it. **The safety floor is non-negotiable
-at any tier:** net/baseline, sabotage probe, contract-diff, drift search for non-mechanical edits, a
-proven gate. Manual override — `--fast`/`--thorough`/`--tier=S|M|L`. More detail — in the
-[root README](../../README.md).
+**Bounded adaptive budget.** All four commands run **Phase 0.5 — Budget triage** with hard
+cumulative limits: S = 2 model contexts and no Workflow; M = 6; L = 12 by default and an absolute
+16 only for confirmed critical risk or explicit `--thorough`. Delegated contexts have mandatory
+`maxTurns`; review/verification cycles are capped at 1/2/3 and stop immediately after a round with
+no new confirmed findings. `audit` groups its catalog into three scan directions and verifies #1 by
+default; runners-up only on a near tie or #1 failure. `refactor`/`lint-fix` take the tier straight
+from the upstream artifact. **The safety floor is non-negotiable at any tier.** More detail — in
+the [root README](../../README.md).
 
 **Language.** Command bodies and the internal work are in English; artifacts
 (`AUDIT`/`LINT`/`IMPL-*`) and the dialogue are in the task's language (Russian by default). See the

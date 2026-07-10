@@ -13,7 +13,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 **The core idea — ratchet.** Unlike structural refactoring, static debt moves monotonically like a ratchet in one direction: you can enable a rule, drive its violations to zero, and **lock the gate** (pre-commit/CI), after which the level no longer rolls back. So the audit's goal is not a list of nitpicks but an **ordered sequence of passes, where each raises the floor AND locks its gate**. Priority — speed, ordering, safety: nothing breaks, and quality grows after each pass.
 
-**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (parallel analyzer runs by lens) and adversarial verification that each batch is really safe and behavior-preserving — but spend the budget **according to the scope** (focus vs the whole tooling) and the number of actually available analyzers, not always at the top setting. The number of runners is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
+**Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the plan you write (`tasks/audits/LINT-*.md`) — these stay in the task's language, since they are project docs a human reads. Tools/rules/paths/names — as in the code and in their own documentation. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
@@ -53,10 +53,18 @@ The number of runners follows the **scope** (focus vs the whole tooling) and the
 
 | | **S — narrow focus** | **M — subsystem** | **L — whole tooling** |
 |---|---|---|---|
-| Runners (Ph1) | only the named tool/class | stack-relevant | all available + an "onboarding cost" estimate for the absent |
-| Batch verification (Ph3) | 1st batch | first 2–3 batches | the whole ladder top |
-| completeness/cuts | brief self-check | self-check | a separate check |
+| Runners (Ph1) | named tool/class, direct | 1–2 grouped runners | 2–4 grouped runners by stack/tool family |
+| Batch verification (Ph3) | executable batch #1 | batch #1; runner-up only on dependency ambiguity | batch #1; runners-up only on near tie/dependency ambiguity |
+| completeness/cuts | brief self-check | main-agent check | one bounded check if budget remains |
 | model/effort | cheap on tool runs | mixed | strong on plan verification |
+
+**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed security/contract/business-critical risk or explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` and reserve the context needed to verify the first executable batch.
+
+Every delegated context must set a turn limit: `max_turns` for a direct `Agent`, `maxTurns` in Workflow agent options/agent definitions; at most **6** for S, **8** for M, and **12** for L. Group analyzers by stack and tool family (for example Python lint/type/security; frontend lint/type/format; dependency/gate inventory) instead of allocating one context per analyzer. A runner may execute several deterministic read-only commands and return one structured summary.
+
+**Enforce the cap in code:** every generated Workflow script must receive the remaining delegated budget (`tier cap - contexts already used`), keep a `scheduled` counter, and route every `agent()` launch through a local `boundedAgent()` wrapper that throws before exceeding it and injects the tier's `maxTurns`. Never call raw `agent()` outside that wrapper. Never run `pipeline()` over a list longer than the remaining budget; group/slice the work first. If another Workflow is launched later, pass only the still-unused remainder.
+
+**No-progress stopping rule:** one analyzer round is the default. A completeness check may trigger at most one focused top-up for a concrete missing signal. If a completed analyzer or plan-verification round produces **zero new confirmed, non-duplicate findings**, stop fan-out immediately. Plan verification is capped at **1/2/3 rounds for S/M/L**.
 
 **Plan-correctness floor (at any tier, NOT cut by tiering):** the **behavior-preserving and "one-pass" nature of the first/executable batch is verified always**; the DAG order (a gate only after the tool's findings are driven to zero; a strictness ratchet only after the tool is onboarded) is respected always; **don't stay silent about cuts** — a tool not run / a class not statically checkable / debt outside behavior-preserving bounds (latent bugs → route). Tiering cuts the number of runners and the depth of verifying the ladder tail, never the verification of the executable batch or the honesty about coverage.
 
@@ -70,7 +78,7 @@ The number of runners follows the **scope** (focus vs the whole tooling) and the
 
 ## Phase 1 — Run the available analyzers (Workflow: parallel runners)
 
-1. Launch `Workflow`: agents run each available analyzer in parallel, **read-only** (no `--fix`, no writes). Each returns via `schema` structured findings: tool, rule/code, **violation count**, affected files (top), **whether an autofix exists** (the tool has a safe `--fix`), severity, whether the autofix has edge cases.
+1. In S, run the named analyzer directly. In M/L, assign the available analyzers to the grouped runners allocated in Phase 0.5; do not launch one context per tool. Runners work **read-only** (no `--fix`, no writes) and return via `schema` structured findings: tool, rule/code, **violation count**, affected files (top), **whether an autofix exists** (the tool has a safe `--fix`), severity, whether the autofix has edge cases.
 2. **For absent/broken tools — estimate "how much it costs to enable":** a dry-run at a **lenient base bar** (e.g. `mypy` with `ignore_missing_imports` without `disallow-untyped`; `eslint` with the recommended ruleset; `tsc --noEmit`) → an estimate of the violation-backlog size. This is planning input, not edits. Apply nothing.
 3. **Synthesize a signal summary:** per tool — current state (not configured / broken / green / N violations), autofix share vs manual, backlog estimate if enabled.
 
@@ -87,7 +95,7 @@ The number of runners follows the **scope** (focus vs the whole tooling) and the
 
 ## Phase 3 — Adversarial verification of the plan (Workflow) + cuts
 
-1. **Verify the top/first batches** with independent skeptics (default "reject/demote on doubt"). For each:
+1. **Verify the first executable batch** with the allocated independent verifier (default "reject/demote on doubt"). It checks all three questions below in one bounded task. Verify a runner-up only when a near tie or prerequisite ambiguity could change what must run first:
    - **Is the fix behavior-preserving?** The autofix doesn't change semantics; "dead" is really dead (no dynamic imports / re-exports / `__all__` / reflection / name-based DI / imports with side effects); import reorder doesn't change the effect order; enabling the rule doesn't force a behavior change (otherwise — that's a latent bug → route, not a fix).
    - **Is it one pass?** The batch is applicable and verifiable green in one go; is the violation set finite; is it independently shippable.
    - **Is the gate placement correct?** Prerequisites met; the gate really locks what the batch fixes.
@@ -194,11 +202,11 @@ Adapt sections to the batch; for the other batches the roadmap rows are enough.
 
 ## Workflow-pattern cheatsheet (apply deliberately)
 
-- **Parallel runners** — one analyzer/lens per agent, each runs read-only and returns `schema` findings; a barrier only on clustering/scoring.
+- **Grouped runners** — one bounded runner per stack/tool family, each may execute several read-only analyzers and returns `schema` findings; a barrier only on clustering/scoring.
 - **"Onboarding cost" estimate** — for absent tools, a dry-run at a lenient bar gives the backlog size without touching code.
-- **Adversarial batch verification** — skeptics check behavior-preserving/one-pass/order; "reject or demote on doubt".
+- **Adversarial batch verification** — verify the first executable batch by default; a runner-up only when it can change the order. One bounded verifier checks behavior-preserving/one-pass/order; "reject or demote on doubt".
 - **Structured output** — `schema` on agents; don't parse raw tool output in the main loop.
-- **Visibility** — `phase()`/`log()`; scale fan-out to the number of available analyzers; **don't stay silent about cuts** (a tool not run → say so).
+- **Visibility** — `phase()`/`log()`; show tier, `used/cap`, grouped runner coverage, and any no-progress stop; **don't stay silent about cuts** (a tool not run → say so).
 
 ## What NOT to do
 
