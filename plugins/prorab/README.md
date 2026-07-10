@@ -6,7 +6,9 @@ Three agentic-development commands for Claude Code:
   Dialogue, questions, code study, hunting for contradictions. Writes no code.
   Result — `tasks/ideas/IDEA-<slug>.md` in the working project.
 - **`/prorab:build`** (`commands/build.md`) — turnkey implementation of a refined idea via
-  a multi-agent ultracode Workflow. Result — code + `tasks/IMPL-<slug>.md`.
+  a multi-agent ultracode Workflow. It derives the project's verification recipe from repository
+  guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack.
+  Result — code + `tasks/IMPL-<slug>.md`.
 - **`/prorab:announce`** (`commands/announce.md`) — a concise, precise announcement of the
   results (after `build` or a manual implementation): what was done/new/changed, methods and
   how it's computed. Dense, scannable, ready to forward in a messenger. Writes no code, makes no commit.

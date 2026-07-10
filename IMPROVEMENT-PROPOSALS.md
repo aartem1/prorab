@@ -40,7 +40,7 @@ prompt-команд. Нет исполняемых guardrails, формальн�
 | 1 | ☑ | P0 | Ввести жёсткие лимиты агентов и hybrid orchestration | 5 | 5 | M | `prorab 0.6.0` / `prorab-tech 0.5.0` |
 | 2 | ☐ | P0 | Создать eval-набор и собирать фактические usage-метрики | 5 | 5 | M | — |
 | 3 | ☐ | P1 | Перенести безопасность из prompt'ов в hooks и изолировать mutations | 5 | 2 | M | Приоритет понижен 2026-07-10 |
-| 4 | ☐ | P0 | Исправить противоречия lint pipeline и stack-specific предположения | 5 | 2 | S | — |
+| 4 | ☑ | P0 | Исправить противоречия lint pipeline и stack-specific предположения | 5 | 2 | S | `prorab 0.7.0` / `prorab-tech 0.6.0` |
 | 5 | ☐ | P1 | Мигрировать `commands/` в модульные Skills | 4 | 4 | M | — |
 | 6 | ☐ | P1 | Ввести формальную схему и freshness-проверку артефактов | 5 | 4 | M | — |
 | 7 | ☐ | P1 | Заменить механических LLM-агентов детерминированными scripts | 4 | 5 | M | — |
@@ -117,6 +117,8 @@ prompt-команд. Нет исполняемых guardrails, формальн�
 
 ### 4. Исправить конкретные противоречия
 
+Реализовано в `prorab 0.7.0` / `prorab-tech 0.6.0`.
+
 #### Lint pipeline
 
 `lint-audit` разделяет работу на:
@@ -129,7 +131,7 @@ prompt-команд. Нет исполняемых guardrails, формальн�
 Одновременно `lint-fix` требует добавлять и sabotage-проверять gate при каждом batch. Шаблон LINT
 при этом допускает, что batch A лишь подготавливает gate.
 
-Рекомендуемая единая модель:
+Реализованная единая модель:
 
 - A/B/D обновляют или расширяют уже существующий gate;
 - отдельный C создаёт gate впервые;
@@ -456,8 +458,8 @@ Artifact-aware read-only verification текущего diff против IDEA/IM
 - [x] Ввести hard caps S/M/L и обязательный `maxTurns`.
 - [x] Добавить no-progress stopping rule и предел review→fix циклов.
 - [x] Сгруппировать audit lenses и проверять #1 по умолчанию.
-- [ ] Исправить lint gate contradiction.
-- [ ] Убрать stack-specific обязательные команды из `build`.
+- [x] Исправить lint gate contradiction.
+- [x] Убрать stack-specific обязательные команды из `build`.
 
 ### Релиз 2 — измеримость и risk-based verification
 

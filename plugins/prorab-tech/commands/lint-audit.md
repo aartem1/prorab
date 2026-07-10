@@ -11,7 +11,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 **Sister to `/prorab-tech:audit`.** `audit` reads the *code* and looks for structural smells (duplication, complexity, layers); `lint-audit` runs the *tools* and gathers objective static-analysis findings + inventories the tooling itself. Less taste (the analyzer is the evidence), but its own discipline: not "one best candidate" but a **ladder**.
 
-**The core idea — ratchet.** Unlike structural refactoring, static debt moves monotonically like a ratchet in one direction: you can enable a rule, drive its violations to zero, and **lock the gate** (pre-commit/CI), after which the level no longer rolls back. So the audit's goal is not a list of nitpicks but an **ordered sequence of passes, where each raises the floor AND locks its gate**. Priority — speed, ordering, safety: nothing breaks, and quality grows after each pass.
+**The core idea — ratchet with an explicit gate lifecycle.** Unlike structural refactoring, static debt can move monotonically once a pre-commit/CI gate exists. Before that point, early A/B batches are **preparatory**: they make tools green but must not claim the level is locked. A dedicated C batch creates the first relevant gate and proves it. After C, every A/B/D batch that changes the enforced bar must expand or tighten the existing gate and prove the new coverage. The audit's goal is an ordered sequence that gets safely to the locked state and then raises it monotonically.
 
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
@@ -21,10 +21,11 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 ## Principles
 
-- **The tool is the source of truth, not taste.** Each batch rests on analyzer output: rule/code, violation count, files, whether an autofix exists. "I don't like it" without linter/typechecker output is not a finding. No tool — either propose adding it (and estimate the backlog) or honestly mark the estimate as manual.
+- **The tool is the source of truth, not taste.** Each batch rests on analyzer output: rule/code, violation count, files, whether an autofix exists. "I don't like it" without linter/typechecker output is not a finding. No tool — propose adding it and honestly mark the backlog estimate as manual.
+- **Availability is an executable fact.** Run an analyzer read-only only when it is already available in the project environment. An ephemeral download or package-runner install requires explicit user permission before the download. If the tool is absent, don't promise or simulate a dry-run: give a manual estimate and state the limitation.
 - **Batch = one safe pass.** A plan item is a coherent set of edits, applicable and **verifiable green-in-one-pass** in one `lint-fix` go, independently shippable. "Fix all typing" is not a batch; "enable mypy at bar X for module Y and drive N errors to zero" is a batch.
-- **Ratchet + gate — part of the value.** A batch is more valuable if it not only fixes but also **locks** the gate level (pre-commit hook / CI step) so a regression is impossible. The plan is a monotonic ladder; locking the gate is planned as an explicit step, not "someday".
-- **Ordering and prerequisites.** The natural order of debt: **autofix → onboarding/fixing tools on a passing base → gate at the current level → incremental strictness ratchet**. You can't put a CI gate on a tool before its findings are driven to zero; you can't raise the strictness ratchet before the tool is onboarded. The plan is a DAG with explicit predecessor batches.
+- **Gate lifecycle — part of the plan.** A/B before the first relevant C gate are explicitly `preparatory` and do not claim a locked ratchet. C creates and sabotage-proves the gate once. After C, A/B/D update or expand that existing gate and prove the changed coverage; they don't create a second ad-hoc gate.
+- **Ordering and prerequisites.** The natural order of debt: **autofix → onboarding/fixing tools on a passing base → gate at the current level → incremental strictness ratchet**. You can't put a CI gate on a tool before its findings are driven to zero; Tier D requires both onboarding and the relevant C gate. The plan is a DAG with explicit predecessor batches.
 - **Behavior preservation (as in `refactor`).** Static-quality edits **don't change runtime**: same outputs, side effects, contracts. Dangerous "fixes" (removing seemingly-dead code with side effects; import reorder that changes the effect order; `any→unknown` that forces a code change; autofix with semantic edge cases) — a separate cautious tier or out of scope, with an explicit mark.
 - **A latent bug ≠ a reason to change behavior.** A strict analyzer often **surfaces a real bug** (a dead branch, an unreachable None path, a swallowed exception). This track **doesn't fix** the bug — that's a behavior change, another track (`/prorab:refine`→`/prorab:build`). Record it as a route finding; on the pass itself — an annotation/suppression at the agreed bar with a TODO, behavior unchanged.
 - **Rely on the repo's real tooling.** What's actually installed/runs (from `CLAUDE.md`, `package.json`, `pyproject.toml`/`setup.cfg`, `Makefile`, `.pre-commit-config.yaml`, CI configs), measure with that. **Broken tooling is itself a finding** (e.g. `eslint` without a flat-config → `npm run lint` fails → the frontend net is incomplete).
@@ -42,7 +43,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 1. Parse `$ARGUMENTS`: a focus or the whole project.
 2. **Stack fingerprint:** languages, frameworks, package managers — to know which analyzers are relevant (Python → ruff/mypy/flake8/bandit/vulture; TS/JS → tsc/eslint/prettier/ts-prune; etc.).
-3. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual run), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level.
+3. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual read-only run only when available), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level. Mark anything requiring a download as unavailable until permission is granted.
 4. **The project's net commands** (what `lint-fix` will use to check pass safety): how tests, build, typecheck are run — the exact commands from `CLAUDE.md`/`README`. This is critical: the net = the insurance that a pass broke nothing.
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
@@ -66,11 +67,11 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **No-progress stopping rule:** one analyzer round is the default. A completeness check may trigger at most one focused top-up for a concrete missing signal. If a completed analyzer or plan-verification round produces **zero new confirmed, non-duplicate findings**, stop fan-out immediately. Plan verification is capped at **1/2/3 rounds for S/M/L**.
 
-**Plan-correctness floor (at any tier, NOT cut by tiering):** the **behavior-preserving and "one-pass" nature of the first/executable batch is verified always**; the DAG order (a gate only after the tool's findings are driven to zero; a strictness ratchet only after the tool is onboarded) is respected always; **don't stay silent about cuts** — a tool not run / a class not statically checkable / debt outside behavior-preserving bounds (latent bugs → route). Tiering cuts the number of runners and the depth of verifying the ladder tail, never the verification of the executable batch or the honesty about coverage.
+**Plan-correctness floor (at any tier, NOT cut by tiering):** the **behavior-preserving and "one-pass" nature of the first/executable batch is verified always**; the gate lifecycle is respected always (pre-C A/B are preparatory; C creates the first gate only after tools are green; D requires C; post-C A/B/D tighten or expand the existing gate); **don't stay silent about cuts** — a tool not run / a class not statically checkable / debt outside behavior-preserving bounds (latent bugs → route). Tiering cuts the number of runners and the depth of verifying the ladder tail, never the verification of the executable batch or the honesty about coverage.
 
 **Risk-proportional verification:** a batch with a non-mechanical fix (removing seemingly-dead code, annotations that shift runtime) → a full behavior-preserving check; pure formatter/autofix → lightened. Default: reject/demote on doubt.
 
-**Model/effort tiering:** give read-only analyzer runs, the dry-run backlog estimate, and extracting findings into `schema` a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial batch verification and ladder/gate planning a strong model.
+**Model/effort tiering:** give available read-only analyzer runs, manual backlog estimation, and extracting findings into `schema` a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial batch verification and ladder/gate planning a strong model.
 
 **Cheap-first escalation:** a narrow scan showed a batch drags a behavior change / wider scope → widen the scope / mark it route, log it.
 
@@ -79,17 +80,17 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 ## Phase 1 — Run the available analyzers (Workflow: parallel runners)
 
 1. In S, run the named analyzer directly. In M/L, assign the available analyzers to the grouped runners allocated in Phase 0.5; do not launch one context per tool. Runners work **read-only** (no `--fix`, no writes) and return via `schema` structured findings: tool, rule/code, **violation count**, affected files (top), **whether an autofix exists** (the tool has a safe `--fix`), severity, whether the autofix has edge cases.
-2. **For absent/broken tools — estimate "how much it costs to enable":** a dry-run at a **lenient base bar** (e.g. `mypy` with `ignore_missing_imports` without `disallow-untyped`; `eslint` with the recommended ruleset; `tsc --noEmit`) → an estimate of the violation-backlog size. This is planning input, not edits. Apply nothing.
+2. **For tools not currently runnable — estimate "how much it costs to enable" honestly:** if the binary/package is already available but its config is broken, use only supported read-only flags to estimate a lenient base bar. If the tool is absent, provide a manual estimate from code/config evidence and label it `manual; not executed`. If an ephemeral download would make a real dry-run possible, ask for explicit permission before downloading; without permission, do not run it. This is planning input, not edits.
 3. **Synthesize a signal summary:** per tool — current state (not configured / broken / green / N violations), autofix share vs manual, backlog estimate if enabled.
 
 ## Phase 2 — Classification into safe passes and order (barrier + solo)
 
 1. **Collect all findings** (barrier) and **group into batches** by tool/rule class/subsystem — so each batch is one coherent pass.
 2. **Lay out by tier (this is the ratchet order):**
-   - **Tier A — zero risk, autofix.** Formatter, import sorting, `ruff --fix` of dead imports/variables (F401/F841), trivial auto-rules. Mechanical, checked by the tool itself, behavior-preserving by construction (with the caveats below). Done first — reduces noise, makes subsequent diffs readable.
-   - **Tier B — onboarding / fixing tools on a passing base.** Bring an absent/broken tool up so it **passes on the current code** at a lenient bar (e.g. add a working `eslint.config.js`; `mypy` at a low bar; ensure `ruff`/`tsc` actually run). Creates a net without a big edit campaign.
-   - **Tier C — gate at the current level (the top leverage).** pre-commit + a CI step running the already-green tools. **This is the key lever:** it turns "tools exist but aren't forced" into the guarantee "won't roll back". Prerequisite: A and B for the tools under the gate are done.
-   - **Tier D — incremental strictness ratchet.** Enable one rule / one module per pass; each surfaces a **finite** violation set → fixed in one go + tightens the gate bar. Exactly what makes "quality grows after each pass".
+   - **Tier A — zero risk, autofix.** Formatter, import sorting, `ruff --fix` of dead imports/variables (F401/F841), trivial auto-rules. Mechanical, checked by the tool itself, behavior-preserving by construction (with the caveats below). Before C it is preparatory; after C it must update the existing gate when it changes the enforced scope/bar.
+   - **Tier B — onboarding / fixing tools on a passing base.** Bring an absent/broken tool up so it **passes on the current code** at a lenient bar (e.g. add a working `eslint.config.js`; `mypy` at a low bar; ensure `ruff`/`tsc` actually run). Before C it prepares a green tool for the first gate; after C it expands the existing gate to cover that tool.
+   - **Tier C — create the first gate at the current level (the top leverage).** Add the repository-conventional pre-commit/CI enforcement for the already-green tools and prove it with sabotage. **This is the one transition from preparatory to locked.** Prerequisite: relevant A and B batches are done.
+   - **Tier D — incremental strictness ratchet.** Only after C: enable one rule / one module per pass; each surfaces a **finite** violation set → fixed in one go, tightens the existing gate, and sabotage-proves the new bar.
 3. **Score each batch** (scoring; low/med/high): **value** (how much debt/risk it removes, force-multiplier), **safety** (behavior-preserving? auto vs manual? does the net catch it?), **size** (really one pass?), **confidence** (fix determinism). Plus record the **order/prerequisite** (which batch must precede).
 4. Frame an **ordered ladder**: not a "top-1" but a sequence where early passes are cheap/safe and unblock later ones.
 
@@ -98,9 +99,9 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 1. **Verify the first executable batch** with the allocated independent verifier (default "reject/demote on doubt"). It checks all three questions below in one bounded task. Verify a runner-up only when a near tie or prerequisite ambiguity could change what must run first:
    - **Is the fix behavior-preserving?** The autofix doesn't change semantics; "dead" is really dead (no dynamic imports / re-exports / `__all__` / reflection / name-based DI / imports with side effects); import reorder doesn't change the effect order; enabling the rule doesn't force a behavior change (otherwise — that's a latent bug → route, not a fix).
    - **Is it one pass?** The batch is applicable and verifiable green in one go; is the violation set finite; is it independently shippable.
-   - **Is the gate placement correct?** Prerequisites met; the gate really locks what the batch fixes.
+   - **Is the gate lifecycle correct?** A/B before C are labeled preparatory; C creates the first relevant gate only after its tools are green; D comes after C; post-C A/B/D tighten or expand the existing gate and specify a sabotage probe.
    A fail on "behavior-preserving" or "one pass" → the batch is demoted in tier / moved to "cautious/manual".
-2. **Cuts (we don't stay silent):** note classes not checkable by statics (need runtime/integration), tools that couldn't be run (not in the environment → a manual estimate), and debt outside behavior-preserving bounds (latent bugs surfaced by the analyzer) — route them to `/prorab:refine`→`/prorab:build`.
+2. **Cuts (we don't stay silent):** note classes not checkable by statics (need runtime/integration), tools that couldn't be run (not in the environment or download not authorized → a manual estimate), and debt outside behavior-preserving bounds (latent bugs surfaced by the analyzer) — route them to `/prorab:refine`→`/prorab:build`.
 
 ## Phase 4 — Artifact and delivery
 
@@ -114,7 +115,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 ## Analyzer catalog (lenses for runners)
 
-Run what's relevant to the stack; the absent — estimate at a lenient bar.
+Run what's relevant to the stack and already available; estimate absent tools manually unless the user explicitly authorizes an ephemeral download.
 
 - **Formatters** — `ruff format`/`black`/`prettier`/`gofmt`: divergence from the canon (usually pure autofix; watch whitespace-significant content).
 - **Linters** — `ruff`/`flake8`/`eslint`/`pylint`: style/correctness rules; separate autofix rules from manual ones.
@@ -136,7 +137,7 @@ Each batch — on four axes (low/med/high) + order:
 - **Safety** (filter axis) — is the fix behavior-preserving; auto vs manual; does the net catch a regression; isolation. Low safety drops a batch even at high value.
 - **Size** — is it really one green-in-one-pass pass, not a campaign.
 - **Confidence** — fix determinism (a tool's autofix > manual edits), output confirmation.
-- **Order/prerequisite** — what must precede (A before the C gate; onboarding a tool before its ratchet).
+- **Order/prerequisite** — what must precede (preparatory A/B before C; C before D; post-C gate expansion alongside any newly onboarded tool).
 
 **First batch** = maximally safe and unblocking (usually Tier A autofix or building the net). **The highest-leverage milestone** — the Tier C gate at the current level: it makes the improvements irreversible.
 
@@ -157,14 +158,14 @@ Each batch — on four axes (low/med/high) + order:
 |---|---|---|---|
 | ruff | configured, green | none | 34 F401/F841 (auto) |
 | eslint | BROKEN (no flat-config) | none | — |
-| mypy | absent | none | ~N at a lenient bar (estimate) |
+| mypy | absent | none | unknown/~N (manual estimate; not executed) |
 | tsc | green | none | 0 |
 | pre-commit / CI | absent | — | — |
 
 ## Pass roadmap (the ratchet ladder)
-| # | Tier | Tool / scope | Violations | Auto/manual | Behavior | Verification | Gate (what it locks) | Pre-batch | Status |
+| # | Tier | Tool / scope | Violations | Auto/manual | Behavior | Verification | Gate lifecycle | Pre-batch | Status |
 |---|-----|--------------|-----------|-------------|----------|--------------|----------------------|-----------|--------|
-| 1 | A | ruff --fix F401/F841 | 34 | auto | BP (check seemingly-dead) | ruff green + tests/build | — (prepares the ruff gate) | — | ☐ |
+| 1 | A | ruff --fix F401/F841 | 34 | auto | BP (check seemingly-dead) | ruff green + tests/build | preparatory — NOT LOCKED; prepares C | — | ☐ |
 | 2 | B | eslint flat-config (lenient) | 0 after | manual config | BP | eslint green + tsc | — | — | ☐ |
 | 3 | C | pre-commit+CI: ruff+tsc+pytest | — | manual config | BP | gate goes red on an injected violation | LOCKS the current level | 1,2 | ☐ |
 | 4 | D | mypy: module X, bar Y | N | manual | BP (latent bugs → route) | mypy green on X + tests | tighten the gate | 3 | ☐ |
@@ -186,11 +187,11 @@ Each batch — on four axes (low/med/high) + order:
 ### Net (what proves no breakage)
 - Green baseline: <tests/build/typecheck>. After the pass — the same set green + the tool green.
 
-### Gate installed/tightened by this pass
-- <pre-commit hook / CI step that locks the result; or "prepares the gate of batch #N">
+### Gate lifecycle for this pass
+- <pre-C A/B: "preparatory — no gate change and not locked; prepares batch #N" | C: gate created and coverage | post-C A/B/D: existing gate tightened/expanded and coverage>
 
 ### Pass verification
-- The tool is green at the target bar; no new violations elsewhere; the gate goes red on an injected violation (sabotage gate); tests/build green (exit + test count).
+- The tool is green at the target bar; no new violations elsewhere; tests/build green (exit + test count). For C and every post-C A/B/D gate change, the gate also goes red on an injected violation; a pre-C preparatory batch explicitly makes no locked claim.
 
 ### Why this batch is first (order)
 - <safety + unblocks #N + cheapness>
@@ -203,7 +204,7 @@ Adapt sections to the batch; for the other batches the roadmap rows are enough.
 ## Workflow-pattern cheatsheet (apply deliberately)
 
 - **Grouped runners** — one bounded runner per stack/tool family, each may execute several read-only analyzers and returns `schema` findings; a barrier only on clustering/scoring.
-- **"Onboarding cost" estimate** — for absent tools, a dry-run at a lenient bar gives the backlog size without touching code.
+- **"Onboarding cost" estimate** — run a lenient read-only check only when the tool is already available; an ephemeral download requires explicit permission; otherwise give a clearly labeled manual estimate.
 - **Adversarial batch verification** — verify the first executable batch by default; a runner-up only when it can change the order. One bounded verifier checks behavior-preserving/one-pass/order; "reject or demote on doubt".
 - **Structured output** — `schema` on agents; don't parse raw tool output in the main loop.
 - **Visibility** — `phase()`/`log()`; show tier, `used/cap`, grouped runner coverage, and any no-progress stop; **don't stay silent about cuts** (a tool not run → say so).
@@ -214,6 +215,6 @@ Adapt sections to the batch; for the other batches the roadmap rows are enough.
 - Don't pass taste off as a finding: no tool output/number — no finding.
 - Don't plan "fix it all at once": the result is an ordered ladder of batches, each = one safe pass.
 - Don't plan a batch that changes observable behavior/contract (including "fixing" a latent bug the analyzer surfaced) — that's a route to `/prorab:refine`→`/prorab:build`, not tooling-quality.
-- Don't ignore the order: a CI gate — only after the tool's findings are driven to zero; a strictness ratchet — only after the tool is onboarded.
-- Don't fabricate metrics: the tool isn't in the environment — estimate at a lenient bar and honestly mark the estimate.
+- Don't ignore the order: pre-C A/B are preparatory; C creates the first relevant gate only after tools are green; D requires C; post-C A/B/D change the existing gate rather than inventing another one.
+- Don't fabricate metrics or silently download a tool: if it isn't in the environment and no download was authorized, give a manual estimate and say it wasn't executed.
 - Don't stay silent about cuts: scope narrowed / a tool not run / a class not statically checkable — say so in the plan.
