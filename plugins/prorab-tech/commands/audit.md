@@ -68,7 +68,9 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **Diagnosis floor (at any tier, NOT cut by tiering):** the **recommended #1 candidate is adversarially verified always** (real / safe / useful); a candidate that fails "real" or "safe" doesn't reach the top — at any tier; **don't stay silent about cuts** — honestly note an unscanned class/subsystem in the report. Tiering cuts the number of lenses and the sweep depth, never the verification of the recommended candidate or the honesty about coverage.
 
-**Risk-proportional verification:** a candidate with wide blast/a touched contract → escalate the tier and use up to three lenses within the hard cap; if S is user-pinned, the one verifier covers all three questions and an unresolved conflict disqualifies the candidate. An isolated low-risk candidate → 1 check suffices even in L. Default: reject on doubt.
+**Evidence hierarchy (cheap and deterministic first):** (1) executable reproduction, tests, or measured code evidence; (2) static analyzer, typecheck, churn/complexity metric, and contract diff; (3) one independent verifier reproducing the diagnosis with concrete evidence; (4) a second verifier only for a real conflict or high blast radius; (5) a three-reviewer panel only for confirmed contract/security/business-critical risk. Never spend a reviewer where stronger deterministic evidence already closes the same question.
+
+**Risk-proportional verification:** a candidate with wide blast/a touched contract → escalate the tier and use the next evidence level, up to three lenses within the hard cap; if S is user-pinned, the one verifier covers all three questions and an unresolved conflict disqualifies the candidate. An isolated low-risk candidate → 1 independent check suffices even in L. Default: reject on doubt.
 
 **Model/effort tiering:** give deterministic scanners (running linter/typecheck/coverage, git churn, extracting metrics into `schema`) a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial candidate verification and clustering/scoring a strong model.
 

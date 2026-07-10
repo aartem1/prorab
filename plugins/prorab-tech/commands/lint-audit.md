@@ -69,7 +69,9 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **Plan-correctness floor (at any tier, NOT cut by tiering):** the **behavior-preserving and "one-pass" nature of the first/executable batch is verified always**; the gate lifecycle is respected always (pre-C A/B are preparatory; C creates the first gate only after tools are green; D requires C; post-C A/B/D tighten or expand the existing gate); **don't stay silent about cuts** — a tool not run / a class not statically checkable / debt outside behavior-preserving bounds (latent bugs → route). Tiering cuts the number of runners and the depth of verifying the ladder tail, never the verification of the executable batch or the honesty about coverage.
 
-**Risk-proportional verification:** a batch with a non-mechanical fix (removing seemingly-dead code, annotations that shift runtime) → a full behavior-preserving check; pure formatter/autofix → lightened. Default: reject/demote on doubt.
+**Evidence hierarchy (cheap and deterministic first):** (1) analyzer/gate execution and the existing test/build net; (2) static diff-class, typecheck, and contract evidence; (3) one independent verifier reproducing the risk with a concrete input/evidence; (4) a second verifier only for a real conflict or high blast radius; (5) a three-reviewer panel only for confirmed contract/security/business-critical risk. Never spend a reviewer where stronger deterministic evidence already closes the same question.
+
+**Risk-proportional verification:** a batch with a non-mechanical fix (removing seemingly-dead code, annotations that shift runtime) → a full behavior-preserving check; pure formatter/autofix → lightened. Add a verifier only after deterministic evidence leaves a real question; add a second only on conflict/high blast radius. Default: reject/demote on doubt.
 
 **Model/effort tiering:** give available read-only analyzer runs, manual backlog estimation, and extracting findings into `schema` a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial batch verification and ladder/gate planning a strong model.
 

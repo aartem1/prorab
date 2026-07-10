@@ -6,6 +6,32 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.8.0 · prorab-tech 0.7.0
+
+**Risk-based verification instead of ritual fan-out and mutations.** Both tracks now spend
+verification effort according to the specific risk while preserving the existing hard context
+caps and command-specific safety floors.
+
+- **Cheap-first evidence hierarchy:** executable tests/differential runs → static/type/contract
+  evidence → one independent reviewer → a second only on conflict/high blast radius → a
+  three-reviewer panel only for confirmed contract/security/business-critical risk.
+- **Three verification profiles:** `economy` skips mutations for low-risk, contract-untouched work;
+  `balanced` (the default otherwise) allows at most one mutation per critical invariant/risk
+  cluster; `thorough` may mutate each substantial DoD item or behavior boundary.
+- **Profiles are independent from S/M/L.** Context tier controls orchestration width; verification
+  profile controls mutation intensity. `--fast`, `--thorough`, and
+  `--verification=economy|balanced|thorough` pin the profile, and progress logs include mutation
+  `used/cap` alongside context `used/cap`.
+- **Gate evidence remains strict:** creating or expanding a lint gate is a critical invariant and
+  still receives one representative injected violation, including in an otherwise economical run.
+- **Mutation isolation:** every selected verification mutation runs in a temporary isolated
+  worktree; the commands no longer instruct agents to revert mutations with `git checkout --` in
+  the user's working tree.
+- **Valid command metadata:** `refactor` frontmatter strings containing a colon/hash are quoted so
+  the command file parses as YAML.
+- **Roadmap synchronized:** proposal #8 is marked implemented; the eval-suite proposal is explicitly
+  deferred because of its implementation and maintenance cost.
+
 ## prorab 0.7.0 · prorab-tech 0.6.0
 
 **Stack-agnostic build verification and a coherent lint-gate lifecycle.** Both command tracks get

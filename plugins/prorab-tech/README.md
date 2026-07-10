@@ -71,6 +71,13 @@ default; runners-up only on a near tie or #1 failure. `refactor`/`lint-fix` take
 from the upstream artifact. **The safety floor is non-negotiable at any tier.** More detail — in
 the [root README](../../README.md).
 
+**Risk-based verification.** Deterministic executable/static evidence comes before reviewers; one
+independent verifier is the default, with extra lenses only for conflict or high blast radius.
+For `refactor`/`lint-fix`, mutation intensity is separate from S/M/L: `economy` performs no
+low-risk behavior mutation, `balanced` allows one per critical risk cluster, and `thorough` may
+cover each substantial behavior boundary. Gate creation/expansion still receives one representative
+violation. Selected mutations run only in a temporary isolated worktree.
+
 **Language.** Command bodies and the internal work are in English; artifacts
 (`AUDIT`/`LINT`/`IMPL-*`) and the dialogue are in the task's language (Russian by default). See the
 [root README](../../README.md).
