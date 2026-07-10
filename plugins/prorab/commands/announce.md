@@ -43,7 +43,9 @@ Gather what **actually** landed, from the most reliable sources (in order of tru
 4. **Verification status** — from the IMPL/session: tests/build green, a production run/reconciliations. Needed so as not to over-promise.
 5. Where present — project memory and `CLAUDE.md` (terms, context).
 
-Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have them return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents.
+Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have it return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents.
+
+**Hard orchestration cap:** `announce` is an S-sized read-only task: no `Workflow`, at most **one delegated context total** (main + verifier/reader = at most two model contexts), and `max_turns: 6` on the direct `Agent` call. If that context is spent on bulky source reading, the main agent performs the final fact-check. Run at most one adversarial fact-check pass; zero new unsupported claims means stop immediately.
 
 ### Phase 2 — Announcement draft
 
@@ -80,7 +82,7 @@ Draft rules:
 ### Phase 3 — Accuracy check and compression (proportionate)
 
 Before handing it off — run a check proportionate to the announcement's size:
-1. **Fact-check every claim.** For each item (especially numbers, thresholds, computation method, "new/changed") verify: is it confirmed by the IMPL/diff/test status? Unconfirmed — remove or soften it. For an announcement with non-trivial facts (numbers, metrics, several surfaces) run a light adversarial check via `Workflow`: a couple of independent skeptics cross-check claims against the sources and flag the unproven; drop/fix the flagged. For a small change, a self-check is enough. **Budget follows the number and riskiness of claims:** scale the number of skeptics to the count of non-trivial facts (don't fix it), and run the fact-check itself on a cheap model (`opts.model: 'haiku'`/`'sonnet'`, `opts.effort: 'low'`) — cross-checking a claim against a source doesn't need a strong model.
+1. **Fact-check every claim.** For each item (especially numbers, thresholds, computation method, "new/changed") verify: is it confirmed by the IMPL/diff/test status? Unconfirmed — remove or soften it. For an announcement with non-trivial facts (numbers, metrics, several surfaces), use the single allowed delegated context as an independent verifier if it wasn't already spent on bulky reading; it cross-checks all claims as one batch and flags the unproven. Drop/fix the flagged, then stop—do not launch a second pass. For a small change, a self-check is enough. Run the direct `Agent` fact-check with `model: 'haiku'`/`'sonnet'` and `max_turns: 6` — cross-checking claims against sources doesn't need a strong model.
 2. **Compression and clarity.** Go through once more: remove fluff and duplicates, replace bureaucratese, check that terms = UI, that there's no wall of text and the announcement scans in seconds.
 3. **Length.** If it exceeds the target — shorten it. Optionally add a **TL;DR of 1–2 lines** at the top.
 

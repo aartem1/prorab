@@ -13,10 +13,12 @@ Three agentic-development commands for Claude Code:
 
 Pipeline: `refine → IDEA → build → announce`. Commands are global, artifacts are local to the project.
 
-**Adaptive budget.** Before fanning out agents, `build` runs a complexity triage (tier S/M/L) and
-scales fan-out/model to the task; the quality floor (a DoD skeptic with fresh context, a
-sabotage probe, a full test/build run) is non-negotiable at any tier. `refine`/`announce`
-scale the dialogue/fact-check depth to size. More detail — in the [root README](../../README.md).
+**Bounded adaptive budget.** Before fanning out, `build` picks tier S/M/L with hard cumulative caps:
+2/6/12 model contexts (L may expand to an absolute 16 only for confirmed critical risk or explicit
+`--thorough`), mandatory `maxTurns`, review-cycle caps 1/2/3, and an immediate stop after a round
+with no new confirmed findings. `refine` allows at most two Explore contexts; `announce`, one
+delegated context and one fact-check pass. The quality floor remains mandatory. More detail — in
+the [root README](../../README.md).
 
 **Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the

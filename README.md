@@ -60,19 +60,33 @@ bar and locks it with a gate, so quality grows monotonically and doesn't roll ba
 
 The heavy commands (`build`, `audit`, `refactor`, `lint-audit`, `lint-fix`) run a
 **Phase 0.5 — Budget triage** step before fanning out agents: they estimate complexity from cheap
-signals (size, blast radius, novelty, reversibility, uncertainty) and pick a **tier S/M/L**. The tier
-scales the number of scouts/scanners, the judge-panel (engaged only on real ≥2 designs), the
-number of verification skeptics and the loop caps; mechanical stages are given a cheap model
-(`opts.model`/`opts.effort`). `refactor`/`lint-fix` take the tier from the upstream artifact
-(AUDIT/LINT), not re-deriving it. So simple tasks cost noticeably fewer limits, while large ones
-still get the full ultracode fan-out.
+signals (size, blast radius, novelty, reversibility, uncertainty) and pick a **tier S/M/L**. The
+budget is cumulative for the whole command and counts the main context plus every delegated or
+Workflow context, including retries:
+
+- **S:** at most 2 contexts total; no Workflow;
+- **M:** at most 6 contexts total;
+- **L:** at most 12 by default, expandable to the absolute cap of 16 only for a confirmed critical
+  risk or explicit `--thorough`.
+
+Every delegated context has a mandatory turn limit (`max_turns` for direct agents, `maxTurns` in
+workflow/custom-agent configuration; 6/8/12 for S/M/L), and review→fix cycles
+are capped at 1/2/3. A completed round with no new confirmed, non-duplicate findings stops fan-out
+immediately. Judge-panels are used only for at least two genuinely different designs and consume
+the same cap. Generated Workflow scripts enforce their remaining allowance with a counter and a
+`boundedAgent()` wrapper; unbounded `agent()`/`pipeline()` fan-out is forbidden. `audit` groups its
+catalog into three directions (structure; reliability/security;
+performance/maintainability) and verifies candidate #1 by default; runners-up are verified only on
+a near tie or if #1 fails. `refactor`/`lint-fix` take the tier from the upstream artifact
+(AUDIT/LINT), not re-deriving it.
 
 **Savings without losing quality.** The safety floor is non-negotiable at any tier (per the
 command's nature: net/baseline, sabotage probe, contract-diff, drift search, a DoD skeptic, a proven
-gate), and verification is risk-proportional: a safe isolated finding is checked cheaply, a finding
-at a contract with a full panel. The tier can be pinned manually: `--fast` / `--thorough`
-/ `--tier=S|M|L` (or by an NL request). `refine` and `announce` scale the dialogue/fact-check depth
-to size without a formal triage.
+gate), and verification is risk-proportional: a safe isolated finding is checked cheaply, while a
+confirmed contract risk can spend more of the fixed budget. The tier can be pinned manually:
+`--fast` / `--thorough` / `--tier=S|M|L` (or by an NL request), but the 16-context ceiling remains
+absolute. `refine` has a two-Explore-context recon cap; `announce` allows one delegated context and
+one fact-check pass.
 
 ## Execution language
 

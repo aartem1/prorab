@@ -6,6 +6,34 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.6.0 · prorab-tech 0.5.0
+
+**Hard orchestration budgets and no-progress stopping.** The adaptive S/M/L tiers now enforce a
+cumulative context ceiling instead of only describing approximate fan-out. This is a
+backward-compatible behavior change in all seven commands, so both plugins receive a minor bump.
+
+- **Absolute context caps:** S = 2 total contexts and no Workflow; M = 6; L = 12 by default and an
+  absolute 16 only after a confirmed critical risk or explicit `--thorough`. The main context,
+  direct agents, every Workflow node, and retries all count.
+- **Bounded execution:** delegated contexts must set `max_turns` (direct Agent) or `maxTurns`
+  (Workflow/custom-agent configuration) to at most 6/8/12 for S/M/L;
+  review→fix cycles are capped at 1/2/3 and stop immediately after a complete round yields no new
+  confirmed, non-duplicate findings.
+- **Executable Workflow cap:** generated scripts must launch agents only through a counted
+  `boundedAgent()` wrapper, reject launches above the remaining command budget, and never feed an
+  unbounded list to `pipeline()`.
+- **Hybrid orchestration:** judge-panels require at least two materially different designs and
+  consume the same cap. Related subsystems/findings are grouped rather than receiving one fresh
+  context each, and the final independent verifier is reserved before recon fan-out.
+- **Audit-specific cuts:** smell lenses are grouped into structure, reliability/security, and
+  performance/maintainability. Candidate #1 is verified by default; runners-up only on a near tie
+  or when #1 fails. Analyzer runners in `lint-audit` are similarly grouped by stack/tool family.
+- **Light commands bounded too:** `refine` allows two Explore contexts total and stops recon after a
+  no-progress round; `announce` allows one delegated context and one adversarial fact-check pass.
+- **Priority record:** deterministic mutation guardrails moved from P0 to P1 in
+  `IMPROVEMENT-PROPOSALS.md` because the owner does not edit files concurrently with agents. The
+  task remains planned: agent-owned intermediate changes can still overlap a mutation.
+
 ## prorab 0.5.1 · prorab-tech 0.4.1
 
 **Full English across the docs and command metadata.** Follow-up to the English execution language

@@ -11,9 +11,9 @@ This continues the tech-quality track **audit → AUDIT → refactor**. The cand
 
 **Prime directive — BEHAVIOR PRESERVATION.** Observable behavior (outputs, side effects, contracts, errors) before and after the refactoring is **identical**. The code's *structure* changes, not its *behavior*. This is the inversion of what `/prorab:build` does: there you prove that *new* behavior matches a requirement; here you prove that *old* behavior **did not change**. That calls for its own verification discipline (a characterization-test net, drift search, differential runs), not DoD-from-a-requirement.
 
-**Turnkey mode (the main point).** Invoking this command = explicit consent to carry the refactoring to the end autonomously. **Do not stage an approval checkpoint** and do not ask "should I continue". The guarantee comes not from a human but from **the agents themselves**: a net that catches any drift; adversarial search for an input where old≠new; measured quality improvement; a full test/build run. Stop and ask the user **only on a real blocker** (see below).
+**Turnkey mode (the main point).** Invoking this command = explicit consent to carry the refactoring to the end autonomously. **Do not stage an approval checkpoint** and do not ask "should I continue". The guarantee comes from a net that catches drift, bounded independent verification, measured quality improvement, and a full test/build run. Stop and ask the user **only on a real blocker** (see below).
 
-**Stance and mandate (ultracode, adaptive budget):** freely use `Workflow` for fan-out (recon, drift search, verification) and adversarial checking — but spend the budget **according to the candidate's complexity and blast radius**, not always at the top setting. The degree of multi-agentness is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **safety floor (net, drift search, sabotage probe, contract-diff) is non-negotiable at any tier**; behavior preservation is the constraint; within it, don't spend fan-out where it doesn't buy proof of equivalence.
+**Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded fan-out (recon, drift search, verification) only where the selected tier allows it. Spend the budget **according to the candidate's complexity and blast radius** and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **safety floor (net, drift search, sabotage probe, contract-diff) is non-negotiable at any tier**; behavior preservation is the constraint; within it, don't spend fan-out where it doesn't buy proof of equivalence.
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-refactor-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
@@ -61,15 +61,23 @@ The degree of multi-agentness is set by the candidate's complexity and **blast r
 | | **S — solo** | **M — light** | **L — full** |
 |---|---|---|---|
 | When | one isolated site, contract untouched, net exists/trivial | several sites, moderate blast, low novelty | wide blast, contract touched, new design or weak net |
-| Recon (Ph1) | solo | 1–2 agents | full set of readers |
+| Recon (Ph1) | solo | 1–2 agents | 2–4 agents, sites grouped |
 | judge-panel (Ph2) | no | only on real ≥2 designs | yes |
-| Drift search (Ph4) | 1 skeptic + differential run | 2 skeptics/lenses | ≥3 skeptics, different lenses |
-| loop-until-clean | 1 pass | cap 2 | until critical ones dry up (log the cap) |
+| Drift search (Ph4) | 1 verifier + differential run | 1 verifier; 2 lenses only on conflict/high risk | up to 3 lenses for a confirmed critical cluster |
+| review→fix cycles | max 1 | max 2 | max 3 |
 | model/effort | cheap on map/differential-baseline extraction, strong on drift search | mixed | strong on judgment |
+
+**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed contract/security/business-critical risk or an explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` and reserve the final verifier.
+
+Every delegated context must set a turn limit: `max_turns` for a direct `Agent`, `maxTurns` in Workflow agent options/agent definitions; at most **6** for S, **8** for M, and **12** for L. A judge-panel consumes the same cap and is allowed only for at least two genuinely different target designs with a material trade-off; use at most two proposal agents in M and three in L, with scoring/synthesis in the main context. Batch sites and findings into bounded tasks; do not allocate one fresh agent per site, step, or finding.
+
+**Enforce the cap in code:** every generated Workflow script must receive the remaining delegated budget (`tier cap - contexts already used`), keep a `scheduled` counter, and route every `agent()` launch through a local `boundedAgent()` wrapper that throws before exceeding it and injects the tier's `maxTurns`. Never call raw `agent()` outside that wrapper. Never run `pipeline()` over a list longer than the remaining budget; group/slice the work first. If another Workflow is launched later, pass only the still-unused remainder.
+
+**No-progress stopping rule:** after a complete drift/review round produces **zero new confirmed, non-duplicate findings**, stop fan-out immediately. Never exceed one/two/three review→fix cycles for S/M/L. If a critical divergence remains at the cap, resolve and run the targeted check in the main context; if it cannot be closed honestly, report a blocker rather than claiming equivalence.
 
 **Safety floor (prime directive; at any tier, NOT cut by tiering):** a net catching a behavior change, green on the OLD code — before edits (no net → blocker); a **sabotage/mutation probe of the net — always**; contract-diff — always; **at least one drift-search/differential run — always** (tiering scales the number of skeptics and inputs but does not turn the check off); measured improvement on the axis — always. Tiering cuts the *width* of drift search, never these checks.
 
-**Risk-proportional verification (within any tier):** intensity follows the risk of the **specific** finding, not the tier as a whole. A safe finding (isolated, net green, contract untouched) → 1 check suffices even in L; a finding touching a contract/wide blast/behavior → a full panel of ≥3 skeptics even in S. The default is inverted: behavior is changed until equivalence is proven.
+**Risk-proportional verification (within any tier):** intensity follows the risk of the **specific** finding, not the tier as a whole. A safe finding (isolated, net green, contract untouched) → 1 check suffices even in L; a finding touching a contract/wide blast/behavior → escalate the tier and use up to three distinct lenses within the hard cap. If S is user-pinned, the one verifier covers the relevant lenses and an unresolved conflict is a blocker. The default is inverted: behavior is changed until equivalence is proven.
 
 **Model/effort tiering:** give mechanical stages a cheap model (`opts.model: 'haiku'`/`'sonnet'`) and `opts.effort: 'low'` (extracting the code map/call-sites into `schema`, taking the differential baseline, running a deterministic transformation); leave judgment stages a strong model / high effort (judge-panel, adversarial drift search, the scope-creep skeptic, designing the sabotage mutation).
 
@@ -79,7 +87,7 @@ The degree of multi-agentness is set by the candidate's complexity and **blast r
 
 ## Phase 1 — Recon and boundaries (Workflow: parallel readers)
 
-1. Launch `Workflow` (`agentType: 'Explore'`): agents return via `schema` — the target's exact code; **all call-sites** and consumers; external contracts (signatures, response/event format, schema); the target's **coverage status** (which tests already exercise it).
+1. In S, map the target directly. In M/L, group target sites and call-sites into the smallest number of recon tasks that fits the allocation in Phase 0.5 and preserves the final-verifier reserve. Agents (`agentType: 'Explore'`) return via `schema` — the target's exact code; **all call-sites** and consumers; external contracts (signatures, response/event format, schema); the target's **coverage status** (which tests already exercise it).
 2. **Synthesize the map:** what we change, who depends on it, what must stay identical. Coverage is the **gate** for Phase 1.5.
 3. **Resolve risk spikes** from the AUDIT: a targeted check of each. Fail/uncovered blocker → stop and ask (with options). Passed — continue.
 
@@ -95,7 +103,7 @@ The degree of multi-agentness is set by the candidate's complexity and **blast r
 
 ## Phase 2 — Step plan (Workflow: judge-panel for the non-trivial) — NO approval
 
-1. **For a non-trivial target design** (several reasonable "how to restructure" variants) run a judge-panel: `parallel()` of N independent proposals from different angles → scoring → synthesis of the winner. For straight-line transformations — design directly.
+1. **For a non-trivial target design only** (at least two genuinely different "how to restructure" variants with a material trade-off) run the bounded judge-panel from Phase 0.5: independent proposals → scoring and synthesis by the main agent. For straight-line transformations — design directly.
 2. **Compose the IMPL-refactor doc** `tasks/IMPL-refactor-<slug>.md`: a sequence of **small behavior-preserving steps** (DAG/order), a per-file list, the net plan (what already exists, what was added in Ph1.5), **before/after metrics** on the claimed axis, an explicit tie to the two goals — "behavior preserved" and "quality improved (a number)". This is a working artifact, **not an approval subject**.
 3. **Go straight to implementation.**
 
@@ -108,12 +116,12 @@ The degree of multi-agentness is set by the candidate's complexity and **blast r
 
 ## Phase 4 — Equivalence + quality verification (Workflow) — the main control instead of approval
 
-1. **Behavior-drift search (the heart).** `Workflow`: N independent skeptics look for **any input where old≠new** (boundaries, negative, unusual types, concurrency, errors). Where possible — a **differential run**: old vs new implementation on common inputs, comparing outputs and side effects (baseline from Ph1.5). **The default is inverted: behavior is considered changed until equivalence is proven.** Any diverging input found = a critical finding.
-2. **Sabotage probe of the net (that the net isn't theater).** A separate skeptic agent injects a plausible regression from a closed set into the new code (invert a condition; shift a boundary; flip a sign; delete a branch; return a constant), runs the net, reverts (`git checkout`; don't include mutations in a commit). No test went red → the net is leaky: **fix the net** (add a characterization case), not the refactoring. Skip an equivalent mutation only with a one-line justification.
+1. **Behavior-drift search (the heart).** The allocated verifier covers the applicable lenses (boundaries, negative, unusual types, concurrency, errors); add a separate lens only for conflict/high risk and within the cap. Where possible — a **differential run**: old vs new implementation on common inputs, comparing outputs and side effects (baseline from Ph1.5). **The default is inverted: behavior is considered changed until equivalence is proven.** Any diverging input found = a critical finding.
+2. **Sabotage probe of the net (that the net isn't theater).** The allocated independent verifier injects a plausible regression from a closed set into the new code (invert a condition; shift a boundary; flip a sign; delete a branch; return a constant), runs the net, reverts (`git checkout`; don't include mutations in a commit). No test went red → the net is leaky: **fix the net** (add a characterization case), not the refactoring. Skip an equivalent mutation only with a one-line justification.
 3. **Contract stability.** Separately check: the external API/DB schema/serialization format/public signatures — **did not change** (or all call-sites are updated and equivalence proven on them). A diff of the contract surfaces — mandatory.
-4. **Zero scope creep** (the inversion of build's DoD check, run by a **separate skeptic agent with fresh context**). Walk the whole diff: any changed literal/condition/branch/value that **changes the observable result** = a finding. A file touched outside the candidate's stated site without need = a finding. A "fixed along the way" bug = a finding (unless the candidate allowed it).
+4. **Zero scope creep** (the inversion of build's DoD check, run by the same **independent verifier with fresh context**; a separate context only if a confirmed conflict/risk justifies it within the cap). Walk the whole diff: any changed literal/condition/branch/value that **changes the observable result** = a finding. A file touched outside the candidate's stated site without need = a finding. A "fixed along the way" bug = a finding (unless the candidate allowed it).
 5. **Measured quality improvement.** Take the metric on the claimed axis **after** and compare to "before" (repo tools: complexity, duplication, length, query count, bundle size, lint-warning count). **No improvement on the claimed axis = a finding** (the refactoring missed its goal). An improvement on one axis **must not regress** another (perf/readability).
-6. **Fix the confirmed findings** (loop-until-clean for critical ones): repeat drift search → verification → fix until critical findings dry up. Adversarially verify each finding before fixing (≥ a majority of skeptics, default "confirmed if there's doubt about safety").
+6. **Fix the confirmed findings:** repeat drift search → verification → fix only within the tier's cycle cap and stop early after the first round with no new confirmed findings. Verify related findings as a cluster before fixing (default "confirmed if there's doubt about safety").
 7. **Full verification and honest report:** run the whole relevant test set, the build, and where present — migrations and smoke (commands from `CLAUDE.md`/`README`, don't invent them). Check by exit code AND the count of collected/passed tests, not by an `OK` string. Report results as they are.
 
 **Caveat (against ritual).** The Phase 4 rules are the skeptic's lenses, proven by a command run (differential run, sabotage probe, metric), not self-awarded checkboxes. Don't overdo it: aggressive drift search must not breed flaky and imaginary findings on genuinely equivalent code. The focus is **behavior equivalence** and the **achieved improvement**, NOT stylistic nitpicks. Mocking external boundaries is allowed; mocking the refactored unit itself is forbidden.
@@ -130,7 +138,7 @@ The degree of multi-agentness is set by the candidate's complexity and **blast r
 
 - **`pipeline()` by default.** A barrier (`parallel()` between stages) — only when the next stage needs ALL results of the previous one.
 - **Differential run** — the strongest proof of equivalence for pure functions and serializable outputs: old vs new on the same inputs, a diff of outputs and side effects.
-- **Adversarial drift search** — N skeptics with different lenses (boundaries, negative, concurrency, errors), default "behavior changed until proven otherwise".
+- **Adversarial drift search** — one verifier covers the relevant lenses; add contexts only for a real conflict/high risk and within the cap, default "behavior changed until proven otherwise".
 - **Sabotage probe** — an empirical check that the net really catches a behavior change; a bare net without a probe = an unproven net.
 - **Structured output** — `schema` on agents so they return validated maps, not dumps.
 - **Worktree isolation** — only for parallel file mutation; otherwise don't use it.
