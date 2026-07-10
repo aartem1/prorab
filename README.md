@@ -82,11 +82,22 @@ a near tie or if #1 fails. `refactor`/`lint-fix` take the tier from the upstream
 
 **Savings without losing quality.** The safety floor is non-negotiable at any tier (per the
 command's nature: net/baseline, contract-diff, drift search, a DoD skeptic, and a sabotage-proven
-gate whenever one is created or changed), and verification is risk-proportional: a safe isolated finding is checked cheaply, while a
-confirmed contract risk can spend more of the fixed budget. The tier can be pinned manually:
-`--fast` / `--thorough` / `--tier=S|M|L` (or by an NL request), but the 16-context ceiling remains
-absolute. `refine` has a two-Explore-context recon cap; `announce` allows one delegated context and
-one fact-check pass.
+gate whenever one is created or changed). Verification follows a cheap-first evidence hierarchy:
+executable tests/differential runs → static/type/contract evidence → one independent reviewer → a
+second only on conflict/high blast → a three-reviewer panel only for confirmed
+contract/security/business-critical risk.
+
+Mutation intensity is controlled separately from the S/M/L context tier:
+
+- **`economy`** — no mutation for low-risk, contract-untouched work with strong executable evidence;
+- **`balanced`** — the default otherwise; at most one mutation per critical invariant/risk cluster;
+- **`thorough`** — explicit or critical-risk mode; mutation of each substantial DoD/behavior boundary.
+
+Gate creation/expansion still gets one representative violation because gate coverage is itself a
+critical invariant. Verification mutations run only in temporary isolated worktrees, never in the
+user's working tree. The settings can be pinned with `--fast`, `--thorough`, `--tier=S|M|L`, or
+`--verification=economy|balanced|thorough`, but the 16-context ceiling remains absolute. `refine`
+has a two-Explore-context recon cap; `announce` allows one delegated context and one fact-check pass.
 
 ## Execution language
 

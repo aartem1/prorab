@@ -1,6 +1,6 @@
 {
   "name": "prorab",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Agentic development framework: refine (work a raw idea up to a spec), build (multi-agent turnkey implementation of a refined idea) and announce (concise result announcement for forwarding)",
   "author": {
     "name": "Artem Altukhov",

@@ -1,6 +1,6 @@
 {
   "name": "prorab-tech",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "prorab tech-quality track: audit+refactor (find and safely fix structural tech debt) and lint-audit+lint-fix (static-quality audit with an explicit gate lifecycle: prepare tools, create the first gate, then tighten it). Behavior unchanged, code cleaner. A separate namespace so it doesn't get confused with the product commands",
   "author": {
     "name": "Artem Altukhov",

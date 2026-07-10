@@ -22,6 +22,11 @@ with no new confirmed findings. `refine` allows at most two Explore contexts; `a
 delegated context and one fact-check pass. The quality floor remains mandatory. More detail — in
 the [root README](../../README.md).
 
+**Risk-based verification.** `build` prefers executable/static evidence before reviewers and uses
+one independent verifier by default. Mutation intensity is separate from S/M/L: `economy` performs
+none for low-risk work, `balanced` allows one per critical risk cluster, and `thorough` may cover
+each substantial DoD item. Selected mutations run only in a temporary isolated worktree.
+
 **Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the
 [root README](../../README.md).
