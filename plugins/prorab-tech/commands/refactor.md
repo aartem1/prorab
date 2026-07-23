@@ -17,6 +17,8 @@ This continues the tech-quality track **audit → AUDIT → refactor**. The cand
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-refactor-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active lookup, and structural archive rules. This main-context work does not consume an extra delegated context.
+
 ---
 
 ## Principles (safety invariants)
@@ -45,10 +47,12 @@ Everything else — turnkey, no pauses; resolve debatable decisions that don't a
 ## Phase 0 — Candidate intake (solo, main loop)
 
 1. **Identify the candidate** from `$ARGUMENTS`:
-   - `<id>`/slug/path → take the corresponding candidate from `tasks/audits/AUDIT-*.md`;
-   - free description → match to the nearest candidate of the latest audit;
-   - **empty → auto-pick:** take **#1** from the most recent `tasks/audits/AUDIT-*.md`. No audit at all — suggest `/prorab-tech:audit` first, **or** run a short inline scan (a mini-audit) and explicitly state the candidate was chosen without a full audit.
-2. **Read the context:** the candidate's AUDIT spec in full, `CLAUDE.md`, the project's main spec, related `IMPL-*`/`AUDIT-*`, and relevant memory.
+   - `<id>`/slug/path → take the corresponding candidate from an active `tasks/audits/AUDIT-*.md`;
+   - free description → match to the nearest candidate of the latest active audit;
+   - **empty → auto-pick:** take the highest-ranked unfinished candidate from the most recent active `tasks/audits/AUDIT-*.md`;
+   - never auto-pick from `tasks/archive/**`; use an archived candidate only when the user explicitly supplies its archive path/history;
+   - no active audit → suggest `/prorab-tech:audit` first, or run a short inline scan and state that it lacks a full audit.
+2. **Read the context:** the candidate's AUDIT spec in full, `CLAUDE.md`, the project's main spec, related active `IMPL-*`/`AUDIT-*`, and relevant memory. Recall by exact paths/symbols/component/contracts first and verify material memory claims against current source.
 3. **Extract and record:** the problem class and locations; the **behavior boundaries** (what must stay identical); external contracts at risk; the test-net status; the claimed improvement axis and before→after metric; risk spikes; blast radius.
 4. **Briefly sketch the plan** (net → steps → equivalence verification) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5.
 
@@ -130,9 +134,11 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 ## Phase 5 — Wrap-up
 
-1. **Update artifacts:** the IMPL-refactor doc (what was done step by step, **before/after metrics**, how equivalence was proven, deviations, follow-ups). Record significant decisions/defaults there too; on a cross-cutting conclusion — optionally in `CLAUDE.md`. Don't start a new file for this.
-2. **Final report:** two blocks — **"Behavior preserved"** (proven by: net green, differential run old≡new, profile-bounded mutation evidence or its justified stronger substitute, contracts stable, zero scope creep) and **"Quality improved"** (before→after metric on the axis, a number). Include the verification profile, mutation count/limit, and test/build status. State explicitly: the **refactoring** stage is done; the "last mile" — review, smoke, commit/PR — follows the project's practices and only on an explicit request.
-3. **Commit/PR only on request.** If on `main`/`master` — create a branch. A hint for the user: announce the result via `/prorab:announce <slug>`.
+1. **Finalize the IMPL-refactor:** record steps, before/after metrics, equivalence evidence, deviations, follow-ups, and an explicit final status. If the net, differential/contract evidence, mandatory checks, or claimed improvement is incomplete/red, leave artifacts active and do not archive.
+2. **Capture durable memory:** after success, deduplicate and record only confirmed new boundaries, contracts, decisions, or recurring gotchas; do not copy the audit finding or the implementation log.
+3. **Archive the completed candidate:** verify AUDIT↔candidate↔IMPL identity and follow the structural protocol in the project-knowledge contract. For a multi-candidate AUDIT with unfinished backlog, keep it active, mark/link only this candidate, create the scoped candidate snapshot, and archive that snapshot with the IMPL. Move the whole AUDIT only when no unfinished candidate remains. Update all links and report exact old → new paths.
+4. **Final report:** two blocks — **"Behavior preserved"** (net, differential/mutation evidence, stable contracts, zero scope creep) and **"Quality improved"** (numeric before→after metric). Include verification profile, mutation count/limit, test/build status, memory updates, and archive paths or the honest reason archival was skipped.
+5. **Commit/PR only on request.** If on `main`/`master` — create a branch. A hint for the user: announce the result via `/prorab:announce <archived IMPL path>`.
 
 ---
 
@@ -154,5 +160,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 - Don't change an external contract silently (API/schema/format/signatures) — that's a blocker or an update of all call-sites with proof.
 - Don't "green up" the net with workarounds (taking expected values from the new code instead of the old, mocking the refactored unit itself, skip/xfail, sabotage probe doesn't go red → that's a leaky net, not a passed check).
 - Don't declare "done" without proven equivalence AND a measured improvement AND a test/build run; don't gild the status.
+- Don't archive an unfinished candidate or move a multi-candidate AUDIT while its backlog still contains unfinished candidates.
 - Don't stage an approval checkpoint; stop only on a real blocker (net won't build, a contract change is needed, an ambiguous behavior boundary, a spike fails).
 - Don't commit/push without an explicit request.

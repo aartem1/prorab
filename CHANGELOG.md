@@ -6,6 +6,43 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.9.0 · prorab-tech 0.8.0
+
+**Built-in project memory and a structural archive for completed work.** Both tracks now recall
+small task-specific knowledge digests, verify material claims against current evidence, capture only
+durable cross-task facts, and physically separate completed task bundles from active artifacts.
+
+- **Transparent Markdown memory:** lazily created `tasks/memory/INDEX.md` plus small component,
+  decision, gotcha, and verification entries. Each entry records type/status, verification dates,
+  artifact/current-path evidence, confirmed facts separately from inference, and invalidation
+  conditions. No init step, external service, embeddings, model, daemon, or transcript storage.
+- **Current evidence remains authoritative:** worktree → repository instructions/docs →
+  tests/CI/executable evidence → task artifacts → memory. Exact path/symbol/component/domain matches
+  precede broader search; material recalled claims are reopened in current source and stale or
+  conflicting entries are updated, superseded, or marked stale.
+- **Automatic lifecycle integration:** `refine`, `build`, `audit`, `refactor`, `lint-audit`, and
+  `lint-fix` capture only durable knowledge after their own success condition. `announce` consumes
+  already-verified facts and normally captures nothing.
+- **New `/prorab:ask`:** compact read-mostly answers for current structure/behavior, historical
+  decisions, consumers, and verification. It searches memory plus active/archive artifacts,
+  verifies current claims in code/docs, uses Git history for historical questions, and separates
+  current, historical-only, and unverified statements.
+- **Completed product bundles:** after Scope/DoD and mandatory verification pass, `build` moves the
+  linked IDEA+IMPL(+existing ANNOUNCE) to `tasks/archive/<YYYY>/<task-slug>/`. `announce` finds
+  archived sources and saves beside them without restoring active copies.
+- **Safe structural edge case:** a completed candidate from a multi-candidate AUDIT gets a scoped
+  archived AUDIT snapshot with its IMPL; the original AUDIT remains active until its other
+  candidates are completed.
+- **Truthful static ladder:** each successful lint batch has a uniquely linked IMPL artifact. A
+  partial ladder remains active; only a completed or explicitly closed ladder moves its LINT and all
+  linked batch artifacts into one archive directory.
+- **Archive safety and compatibility:** explicit artifact identity checks, exact paths, traversal
+  rejection, deterministic conflict suffixes, no overwrite, link updates, destination re-read, and
+  a moved-file report. Legacy active artifact names remain readable and archive is never selected
+  as active work by default.
+- **Bundled shared contracts:** each plugin ships one `references/project-knowledge.md`, avoiding
+  repetition across command bodies without relying on files outside the installed plugin.
+
 ## prorab 0.8.0 · prorab-tech 0.7.0
 
 **Risk-based verification instead of ritual fan-out and mutations.** Both tracks now spend

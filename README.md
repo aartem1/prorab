@@ -24,6 +24,7 @@ raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──�
 | **`/prorab:refine`** | Iteratively works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md`. |
 | **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent ultracode Workflow: code recon → plan → DAG-ordered implementation → adversarial review → verification. It derives the verification recipe from repository guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack. No approval gate. Result — code + `tasks/IMPL-<slug>.md`. |
 | **`/prorab:announce`** | Prepares a concise, precise announcement of the results (what was done/new/changed, methods, how it's computed) — dense and convenient to forward in a messenger. Reads IMPL/diff/IDEA, fact-checks. Writes no code, makes no commit. |
+| **`/prorab:ask`** | Answers questions about the current project or its history. Uses bounded project memory and task artifacts to find the area, then verifies material claims against current code/docs or Git history and cites the sources. |
 
 The commands can be used separately, but they're designed as a pipeline:
 first work up the "blueprint", then build, then briefly tell people about the result.
@@ -44,7 +45,7 @@ static:     ──/prorab-tech:lint-audit──▶ LINT-<slug>.md (batch ladder)
 | **`/prorab-tech:audit`** | A multi-agent codebase audit: sweeps by smell classes + churn×complexity from git, clusters, ranks by `value × safety × size × confidence`, adversarially verifies the top. Produces the optimal candidate for a safe refactoring. Touches no code. Result — `tasks/audits/AUDIT-<slug>.md`. |
 | **`/prorab-tech:refactor`** | A turnkey safe fix via a multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of characterization tests on the old code, small steps, adversarial drift search, a differential old-vs-new run, a measured quality improvement. `refactor <id>` fixes the chosen candidate; `refactor` with no argument — auto-picks #1 from the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`. |
 | **`/prorab-tech:lint-audit`** | An audit of **static quality**: inventories the tooling (what exists / is broken / is absent), runs analyzers already available in the project read-only, and labels absent-tool estimates as manual unless an ephemeral download is explicitly authorized. Clusters into an **ordered ladder of safe passes**: A autofix → B onboarding tools → C first gate → D strictness ratchet. Touches no code. Result — `tasks/audits/LINT-<slug>.md`. |
-| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** pre-C A/B batches are preparatory and not called locked; C creates and sabotage-proves the first gate; post-C A/B/D batches tighten or expand that gate and prove the changed coverage. Doesn't fix a latent bug — routes it to the product track. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate-state evidence + `tasks/IMPL-lint-<slug>.md`. |
+| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** pre-C A/B batches are preparatory and not called locked; C creates and sabotage-proves the first gate; post-C A/B/D batches tighten or expand that gate and prove the changed coverage. Doesn't fix a latent bug — routes it to the product track. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate-state evidence + `tasks/IMPL-lint-<plan-slug>-batch-<id>.md`. |
 
 **Inversion relative to `build`:** `build` proves that *new* behavior matches a requirement;
 `refactor` and `lint-fix` prove that *old* behavior **did not change**. A different
@@ -132,7 +133,7 @@ First push the repository to GitHub, then:
 
 Both plugins live in the same `prorab` marketplace; they install separately. After installation
 the commands are available globally in all projects: product ones — `/prorab:refine`, `/prorab:build`,
-`/prorab:announce`; tech-quality — `/prorab-tech:audit`, `/prorab-tech:refactor`,
+`/prorab:announce`, `/prorab:ask`; tech-quality — `/prorab-tech:audit`, `/prorab-tech:refactor`,
 `/prorab-tech:lint-audit`, `/prorab-tech:lint-fix`.
 
 ## Updating
@@ -151,22 +152,87 @@ Each plugin has its own version (`prorab` and `prorab-tech` are versioned indepe
 
 - The commands are installed **globally**; the artifacts live **locally** in the working project.
 - `/prorab:refine` writes the refined idea to `tasks/ideas/IDEA-<slug>.md`.
-- `/prorab:build` reads that IDEA file and writes the implementation plan to `tasks/IMPL-<slug>.md`
-  (right there, in the working project).
+- `/prorab:build` reads an active IDEA, writes `tasks/IMPL-<slug>.md`, and after verified completion
+  moves the linked task bundle into `tasks/archive/<YYYY>/<task-slug>/`.
 - `/prorab-tech:audit` writes an audit report with a ranked backlog and a candidate spec to
   `tasks/audits/AUDIT-<slug>.md`; touches no code.
 - `/prorab-tech:refactor` reads the AUDIT spec and writes a refactoring plan to
-  `tasks/IMPL-refactor-<slug>.md` (the same `IMPL-*` contract that `announce` reads).
+  `tasks/IMPL-refactor-<slug>.md`. A completed candidate is archived; a multi-candidate AUDIT stays
+  active until its unfinished backlog is exhausted, with a scoped candidate snapshot in the archive.
 - `/prorab-tech:lint-audit` writes a static-quality plan (tooling inventory + a ladder of
   safe passes) to `tasks/audits/LINT-<slug>.md`; touches no code.
-- `/prorab-tech:lint-fix` reads the LINT plan, runs one batch and writes `tasks/IMPL-lint-<slug>.md`
-  (the same `IMPL-*` contract); marks the batch done in the LINT plan so the next call takes
-  the next step.
-- `/prorab:announce` reads IMPL/diff/IDEA and produces an announcement as text in the chat (on
-  request — saves it to `tasks/ANNOUNCE-<slug>.md`); changes no project code/files. It announces
-  the results of both tracks.
+- `/prorab-tech:lint-fix` reads the active LINT plan, runs one batch, writes a linked
+  `tasks/IMPL-lint-<plan-slug>-batch-<id>.md`, and marks only that batch done. The LINT and batch
+  artifacts move together only when the full ladder is completed or explicitly closed.
+- `/prorab:announce` reads active or archived IMPL/diff/IDEA and produces an announcement in chat.
+  When saved for an archived task, `ANNOUNCE-<slug>.md` goes into the same archive directory.
+- `/prorab:ask` reads current code/docs, bounded memory, active/archive artifacts, and Git history.
+  It changes no project code; it may only correct or stale a disproved memory entry.
+- All commands continue to understand legacy active `IDEA-*`, `IMPL-*`, `AUDIT-*`, `LINT-*`, and
+  `IMPL-lint-*` names. Archive is never selected as active work by default.
 - It's worth keeping these files in the project repository under version control — they document what
   was decided and why.
+
+## Project memory
+
+Prorab builds a small, version-controlled memory during normal work; there is no `init`, `remember`,
+background process, external model, or vector database. The structure is created lazily:
+
+```text
+tasks/memory/
+├── INDEX.md
+├── components/
+├── decisions/
+├── gotchas/
+└── verification/
+```
+
+Entries are small Markdown documents with typed/statused frontmatter, source artifacts/current
+paths, confirmed facts separated from inference, evidence, and explicit invalidation conditions.
+Commands recall exact paths, symbols, component names, and domain terms before broader matching and
+pass only a compact digest into the main flow.
+
+Memory is deliberately last in the source-of-truth order: current worktree → current repository
+instructions/docs → tests/CI/executable evidence → task artifacts → memory. A material memory claim
+must be checked against current source before it affects behavior, architecture, contracts, Scope,
+DoD, implementation, or verification. A conflict makes the entry updated, `superseded`, or `stale`;
+it never overrides the code. Missing memory never breaks a command.
+
+Capture is automatic but selective: durable decisions, boundaries, contracts/consumers, recurring
+gotchas, rejected alternatives, and re-verified commands may be stored. Transcripts, reasoning,
+temporary status, ordinary code facts, unmarked assumptions, and copies of task artifacts are not.
+
+## Active and archive lifecycle
+
+Active work stays in the existing paths. Verified completed bundles move to:
+
+```text
+tasks/archive/
+└── YYYY/
+    ├── <task-slug>/
+    ├── refactor-<task-slug>/
+    └── lint-<plan-slug>/
+```
+
+Before moving, the command verifies explicit artifact identity/links, refuses paths outside
+`tasks/`, never overwrites an existing directory (uses deterministic `-2`, `-3`, ... suffixes),
+updates links, re-opens destinations, and reports every moved file. A blocker, partial completion,
+or failed mandatory verification leaves artifacts active. No command commits or pushes unless the
+user explicitly requests it.
+
+Examples:
+
+1. `refine → build`: the IDEA is implemented, verified facts are captured, then IDEA+IMPL move into
+   one archive directory. A later saved ANNOUNCE joins that directory.
+2. A new task recalls an earlier decision, but opens the cited current source before relying on it.
+3. `/prorab:ask "How is X calculated?"` answers from current code and identifies historical-only
+   context separately.
+4. Another developer changes cited code: recall detects the mismatch, uses current code, and updates
+   or marks the memory entry stale.
+5. One AUDIT has three candidates and refactor completes #1: the AUDIT remains active with #2/#3;
+   the archive receives a #1 snapshot and its IMPL.
+6. A partial LINT ladder stays active with completed batch artifacts beside it. After the final
+   batch, the LINT and all linked batch IMPL files move together.
 
 ## How to add a new command
 
@@ -190,7 +256,10 @@ prorab/
 │   │   ├── commands/
 │   │   │   ├── refine.md
 │   │   │   ├── build.md
-│   │   │   └── announce.md
+│   │   │   ├── announce.md
+│   │   │   └── ask.md
+│   │   ├── references/
+│   │   │   └── project-knowledge.md
 │   │   └── README.md
 │   └── prorab-tech/               # tech-quality track
 │       ├── .claude-plugin/
@@ -200,7 +269,11 @@ prorab/
 │       │   ├── refactor.md        # structural debt: fix
 │       │   ├── lint-audit.md      # static debt: audit
 │       │   └── lint-fix.md        # static debt: ratchet pass
+│       ├── references/
+│       │   └── project-knowledge.md
 │       └── README.md
+├── tests/
+│   └── test_contracts.py         # manifests/frontmatter + lifecycle scenario checks
 ├── README.md
 └── CHANGELOG.md
 ```
