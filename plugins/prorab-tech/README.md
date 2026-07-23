@@ -21,7 +21,9 @@ different natures of debt:
   characterization tests on the old code, small steps, adversarial drift search,
   a differential old-vs-new run, a measured quality improvement. Both modes:
   `refactor <id>` fixes the chosen candidate, `refactor` with no argument — auto-picks #1 from
-  the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`.
+  the latest active audit. Result — code + `tasks/IMPL-refactor-<slug>.md`. A completed candidate
+  is archived; when its AUDIT has unfinished candidates, the AUDIT stays active and only a scoped
+  snapshot of the completed candidate joins its IMPL in the archive.
 
 Pipeline: `audit → AUDIT → refactor → IMPL → /prorab:announce`.
 
@@ -52,11 +54,22 @@ passes** that first reaches a locked state and then raises it monotonically.
   `/prorab:refine`→`/prorab:build`). Respects the ladder order (won't take a batch before its
   prerequisites). Both modes: `lint-fix <id>` — a specific batch, `lint-fix` with no argument —
   auto-picks the first undone batch with met prerequisites. Result — code + gate-state evidence +
-  `tasks/IMPL-lint-<slug>.md`; marks the batch done in the plan.
+  a uniquely linked `tasks/IMPL-lint-<plan-slug>-batch-<id>.md`; marks only that batch done.
+  The active LINT remains in place after partial progress. Once the ladder is complete/explicitly
+  closed, the LINT and all linked batch IMPL artifacts move together into the archive.
 
 Pipeline: `lint-audit → LINT → lint-fix → (repeat per batch) → /prorab:announce`.
 Each `lint-fix` call = one ratchet step; run it again until the ladder is done. Commands are
 global, artifacts are local to the project.
+
+**Project memory and archive.** Every command reads the bundled
+[`references/project-knowledge.md`](references/project-knowledge.md) contract. Recall is
+task-specific and exact-first; current code and executable tool/gate evidence always outrank
+memory. Successful commands capture only durable boundaries, contracts, recurring gotchas, and
+re-probed verification knowledge under `tasks/memory/`. Active lookup excludes
+`tasks/archive/**`; blocked/partial work is never archived. Safe movement checks explicit artifact
+identity, refuses overwrite/path traversal, updates links, and reports exact paths. Legacy
+AUDIT/LINT/IMPL names remain readable.
 
 **Inversion relative to `build`:** `/prorab:build` proves that *new* behavior matches a
 requirement; `/prorab-tech:refactor` proves that *old* behavior **did not change**.

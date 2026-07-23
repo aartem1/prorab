@@ -19,6 +19,8 @@ This is the executor of the tooling-quality sub-track **lint-audit → LINT → 
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-lint-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages, configs — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active lookup, and static-quality archive rules. Re-probe commands and gate state; memory alone never closes a batch. This main-context work does not consume an extra delegated context.
+
 ---
 
 ## Principles (safety invariants)
@@ -49,10 +51,12 @@ Everything else — turnkey, no pauses; resolve debatable decisions that don't a
 ## Phase 0 — Batch intake (solo, main loop)
 
 1. **Identify the batch** from `$ARGUMENTS`:
-   - `<id>`/slug/path → the corresponding batch from `tasks/audits/LINT-*.md`;
-   - free description (tool/rule) → the nearest batch of the latest LINT plan;
-   - **empty → auto-pick:** the first **undone** batch from the most recent `tasks/audits/LINT-*.md` **whose prerequisites are met** (respect the ladder order, don't take a batch before its predecessors). No plan — suggest `/prorab-tech:lint-audit` first, **or** run a short inline scan of one tool and explicitly state the batch was chosen without a full audit.
-2. **Read the context:** the batch spec from the LINT file, the tooling inventory and the **net commands** from there, `CLAUDE.md`, relevant memory.
+   - `<id>`/slug/path → the corresponding batch from an active `tasks/audits/LINT-*.md`;
+   - free description (tool/rule) → the nearest batch of the latest active LINT plan;
+   - **empty → auto-pick:** the first undone batch from the most recent active LINT whose prerequisites are met;
+   - never auto-pick from `tasks/archive/**`; use an archived plan only when explicitly named for historical work;
+   - no active plan → suggest `/prorab-tech:lint-audit` first, or run a short inline scan and state that it lacks a full audit.
+2. **Read the context:** the batch spec from the LINT file, tooling inventory, net commands, `CLAUDE.md`, and bounded verification memory. Search exact tool/rule/config/gate paths first, then verify current availability and gate state directly.
 3. **Extract and record:** tool + rule class + scope; the expected diff class and what must NOT get in; behavior-preservation risks; the target bar (to what level we bring it); the current gate state and this batch's gate mode (`preparatory` | `create` | `tighten/expand`); what proves no-breakage (the baseline net).
 4. **Briefly sketch the plan** (baseline → edits → gate-lifecycle action → verification) for transparency, **not as a checkpoint**. Straight to Phase 0.5.
 
@@ -124,9 +128,11 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 ## Phase 4 — Wrap-up
 
-1. **Update artifacts:** `tasks/IMPL-lint-<slug>.md` (or extend the LINT plan) — what the pass did, **violations were N → now 0**, the gate mode and evidence (`preparatory/not locked`, `created + sabotage`, or `tightened/expanded + sabotage`), deviations, found latent bugs as follow-up routes. **Mark the batch done** in the LINT plan's roadmap (☐→☑) so the next `lint-fix` auto-picks the next batch.
-2. **Final report:** two blocks — **"Behavior preserved"** (net green, diff only of the expected class, drift search clean, zero scope creep) and **"Gate lifecycle"** (preparatory and explicitly not locked; or gate created/tightened/expanded, with the injected violation that made it go red). Include the target bar, N→0 violations, and test/build status. Explicitly: **one ladder pass** is done; the next batch is `#N`.
-3. **Commit/PR only on request.** On `main`/`master` — create a branch. Hint: the next pass is `/prorab-tech:lint-fix` (auto-picks the next batch); announce the result via `/prorab:announce`.
+1. **Finalize a uniquely linked batch artifact:** write `tasks/IMPL-lint-<plan-slug>-batch-<id>.md` (legacy names remain readable) with N→0, gate mode/evidence, deviations, routes, and final batch status. Mark only this batch done in the LINT roadmap. A red net/tool, missing required sabotage, blocker, or partial batch remains active and is not archived.
+2. **Capture durable verification memory:** after success, deduplicate and record only commands/gate facts and recurring limitations that were re-probed in this run.
+3. **Decide archive state:** if any planned batch remains, keep the active LINT and all batch artifacts in place and report the next eligible batch. If the full ladder is complete, or the LINT explicitly records a justified final `closed` state, verify all LINT↔IMPL links and move the LINT plus every linked batch artifact into one `tasks/archive/<YYYY>/lint-<plan-slug>/` directory using the safe protocol. Never archive a partial ladder as complete.
+4. **Final report:** two blocks — **"Behavior preserved"** and **"Gate lifecycle"**. Include target bar, N→0, tests/build, memory updates, whether the ladder remains active or exact archive paths, and the next batch when one exists.
+5. **Commit/PR only on request.** On `main`/`master` — create a branch. Hint: continue with `/prorab-tech:lint-fix`, or announce a completed ladder via `/prorab:announce <archived IMPL path>`.
 
 ---
 
@@ -148,5 +154,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 - Don't widen scope: no incidental logic edits, no reformatting of unrelated files, no extra strictness rules beyond the batch.
 - Don't "green up" with workarounds: don't suppress violations with a mass `# noqa`/`eslint-disable`/`# type: ignore` without justification instead of really driving them to zero; don't mock the net; when sabotage is required, a gate that doesn't go red is leaky, not a passed check.
 - Don't declare "done" without a green tool at the bar, a green net, and truthful gate-state evidence (explicitly preparatory/not locked before C; sabotage-proven for C and post-C gate changes); don't gild the status.
+- Don't archive the LINT plan while any intended batch remains unfinished.
 - Don't stage an approval checkpoint; stop only on a real blocker (behavior/contract change, unmet prerequisites, red baseline, not-one-pass, unverifiable removal).
 - Don't commit/push without an explicit request.

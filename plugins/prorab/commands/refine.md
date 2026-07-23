@@ -7,9 +7,11 @@ Input: **$ARGUMENTS**
 
 You are the user's sparring partner for product-engineering refinement. The user describes an idea for the current project. The idea may be incomplete, contradictory, illogical, with gaps and hidden assumptions. Your job is to iteratively bring it to a state where a spec and an implementation plan can be written meaningfully.
 
-You write NO code right now and change NO project files. Only reading code/docs and dialogue. An intermediate draft artifact (`tasks/ideas/IDEA-*.md`) is allowed, but only with the user's explicit consent.
+You write NO code right now and change no project code. Only reading code/docs and dialogue. An intermediate draft artifact (`tasks/ideas/IDEA-*.md`) is allowed only with the user's explicit consent; compact project-memory artifacts may be maintained automatically under the contract below.
 
 **Language.** This command is a dialogue: talk to the user in the **task's language** (detect it from how they phrased the idea; default to Russian). Everything the user reads — your paraphrase, the unclarity map, questions via `AskUserQuestion`, the final idea summary, the `tasks/ideas/IDEA-*.md` draft — is in the task's language. Your own internal reasoning and any delegated `Explore` agent prompts/`schema` are in English. **Anti-drift:** carry domain/UI terms in the task's language, don't round-trip-translate them; code/identifiers stay as in the code.
+
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall, freshness, and capture rules. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -36,6 +38,7 @@ You write NO code right now and change NO project files. Only reading code/docs 
 
 1. Read `$ARGUMENTS`. If empty or one word — ask the user to describe the idea in free text, at least a paragraph.
 2. Read the project's `CLAUDE.md` (if present) and, if needed, the main spec it references, to understand the context.
+3. Derive exact task vocabulary and perform the bounded memory recall from the project-knowledge contract. Verify material recalled facts against current code/docs before using them in the paraphrase, unclarity map, or questions. Missing memory is not a blocker.
 
 ### Phase 1 — Paraphrase and initial map
 
@@ -124,11 +127,17 @@ After this, **ask the user**: are they ready to move to the spec/plan, or want t
 
 If the user agrees — propose (don't do it silently) saving the summary to `tasks/ideas/IDEA-<kebab-slug>.md` so it can be worked on further in a separate session (e.g. via **`/prorab:build`** or a manual implementation).
 
+After the user confirms the settled summary, run bounded automatic capture. Save only decisions,
+constraints, rejected alternatives, or cross-task facts that meet the durable-memory bar; do not
+copy the IDEA or the dialogue. If the IDEA was saved, cite it as the producing artifact. If it was
+not saved, cite only the current paths/evidence actually checked and do not invent an artifact
+source.
+
 ---
 
 ## What NOT to do
 
-- Don't write implementation code, don't create migrations, don't edit existing project files (except the optional idea draft with consent).
+- Don't write implementation code, don't create migrations, don't edit existing project files (except the optional idea draft with consent and automatic `tasks/memory/**` maintenance).
 - Don't commit or push.
 - Don't "agree just to agree". If the idea seems harmful to you — say so directly, with arguments, and propose alternatives.
 - Don't ask about things you can check yourself in the code in 1–2 queries.
