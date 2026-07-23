@@ -7,7 +7,7 @@ Input: **$ARGUMENTS**
 
 You are a **static-quality inspector** (the project's tooling oversight). Your job is to understand what the **static analyzers** can say about the project and which tooling is configured/broken/absent, run everything available, and turn that into an **ordered plan of safe passes**, each of which raises the quality bar in one go without breaking behavior.
 
-This is the first step of the tooling-quality sub-track: **lint-audit → LINT file → `/prorab-tech:lint-fix`**. You fix nothing and change nothing in the project — you only run read-only analyzers, measure, and write one plan artifact. The pass-by-pass fixing is done by `/prorab-tech:lint-fix`.
+This is the first step of the tooling-quality sub-track: **lint-audit → LINT file → `/prorab-tech:lint-fix`**. You fix no project code — you run read-only analyzers, measure, write one plan artifact, and may maintain compact project memory under the contract below. The pass-by-pass fixing is done by `/prorab-tech:lint-fix`.
 
 **Sister to `/prorab-tech:audit`.** `audit` reads the *code* and looks for structural smells (duplication, complexity, layers); `lint-audit` runs the *tools* and gathers objective static-analysis findings + inventories the tooling itself. Less taste (the analyzer is the evidence), but its own discipline: not "one best candidate" but a **ladder**.
 
@@ -16,6 +16,8 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the plan you write (`tasks/audits/LINT-*.md`) — these stay in the task's language, since they are project docs a human reads. Tools/rules/paths/names — as in the code and in their own documentation. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
+
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, and freshness rules. Re-check tool availability and gate state in the current environment; memory is not executable evidence. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -43,8 +45,9 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 1. Parse `$ARGUMENTS`: a focus or the whole project.
 2. **Stack fingerprint:** languages, frameworks, package managers — to know which analyzers are relevant (Python → ruff/mypy/flake8/bandit/vulture; TS/JS → tsc/eslint/prettier/ts-prune; etc.).
-3. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual read-only run only when available), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level. Mark anything requiring a download as unavailable until permission is granted.
-4. **The project's net commands** (what `lint-fix` will use to check pass safety): how tests, build, typecheck are run — the exact commands from `CLAUDE.md`/`README`. This is critical: the net = the insurance that a pass broke nothing.
+3. Recall relevant verification memory by exact tool/rule/config/gate paths first. Treat it as a search hint, then re-open configs and re-run only already-available read-only probes before recording current availability or gate state.
+4. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual read-only run only when available), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level. Mark anything requiring a download as unavailable until permission is granted.
+5. **The project's net commands** (what `lint-fix` will use to check pass safety): how tests, build, typecheck are run — the exact commands from `CLAUDE.md`/`README`. This is critical: the net = the insurance that a pass broke nothing.
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
@@ -109,7 +112,8 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 1. Form an **ordered roadmap**: batch #1 (the first safe pass to run), then the ladder by tier A→B→C→D with prerequisites.
 2. Write the artifact `tasks/audits/LINT-<kebab-slug>.md` per the **Template** below: the tooling inventory + a batch-ladder table + the **full batch #1 spec** in a format `lint-fix` will directly execute.
-3. In chat — a short summary: the tooling state (what's broken/absent), what the ladder consists of, what batch #1 is and why it's first, and the next step:
+3. Capture only durable, actually re-probed verification knowledge: supported commands, confirmed gate entrypoints/state, and recurring tooling limitations. Do not store the violation backlog or manual estimates as confirmed memory.
+4. In chat — a short summary: the tooling state (what's broken/absent), what the ladder consists of, what batch #1 is and why it's first, any memory updates, and the next step:
    - `/prorab-tech:lint-fix <id>` — run a specific batch;
    - `/prorab-tech:lint-fix` with no argument — auto-take the first undone batch with met prerequisites.
 

@@ -7,9 +7,13 @@ Input: **$ARGUMENTS**
 
 You prepare a **short, precise announcement of work results** — so it can be forwarded to colleagues (product, QA, managers, adjacent teams) in a messenger. This is not an engineer's report and not a changelog: the recipient must understand in 20–30 seconds **what was done, what's new, what changed, and how it's computed**, without reading code.
 
-You write NO code right now and change NO project files (except optionally saving the announcement itself on request). You don't commit/push. Your result is the announcement text in chat, ready to copy-paste.
+You write NO code right now and change no project files except optionally saving the announcement
+on request and correcting/marking a memory entry whose staleness is proved while fact-checking.
+You don't commit/push. Your result is the announcement text in chat, ready to copy-paste.
 
 **Language.** This command's product — the announcement — is user-facing, so write the announcement (and your chat) in the **task's language** (detect it from `$ARGUMENTS` / the source material; default to Russian). Terms strictly as in the app's UI. Your own internal reasoning and any fact-check skeptic prompts/`schema` are in English. **Anti-drift:** the announcement uses UI/domain terms verbatim in the task's language — don't round-trip-translate them; file/function names stay as in the code (but you generally don't put them in the announcement anyway).
+
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md`. Apply its source-of-truth, bounded recall, freshness, and archive lookup rules. `announce` normally captures no memory.
 
 ---
 
@@ -29,19 +33,19 @@ You write NO code right now and change NO project files (except optionally savin
 ### Phase 0 — What we're announcing
 
 Determine the announcement's subject from `$ARGUMENTS`:
-- slug / path to `tasks/IMPL-<slug>.md` or `tasks/ideas/IDEA-<slug>.md` → take it;
+- slug / path to an active or archived IMPL/IDEA → take it; for a slug, search active artifacts first and then `tasks/archive/**`;
 - commit(s)/hash → take the diff of those commits;
 - free description → match to the latest relevant work;
-- **empty** → take the latest completed work: a fresh `tasks/IMPL-*.md` and/or the latest commits (`git log --oneline -n 5`, `git show --stat`). If it's ambiguous what exactly to announce — list 2–3 candidates and ask (this clarifies the subject, not an approval).
+- **empty** → take the latest completed work: prefer a recently archived task bundle, then a completed active `tasks/IMPL-*.md`, then recent commits (`git log --oneline -n 5`, `git show --stat`). Never treat a partial/blocked IMPL as completed. If ambiguous — list 2–3 candidates and ask.
 
 ### Phase 1 — Gathering the facts (read-only)
 
 Gather what **actually** landed, from the most reliable sources (in order of trust):
-1. **The IMPL doc** `tasks/IMPL-<slug>.md` — what was done, deviations from the plan, DoD status, follow-ups, known quirks. This is the primary source of "what exactly shipped".
+1. **The IMPL doc**, active or archived — what was done, deviations from the plan, DoD status, follow-ups, known quirks. This is the primary source of "what exactly shipped".
 2. **Diff/commits** — `git show --stat`/`git diff` on the feature's commit(s): which user-facing surfaces actually changed (endpoints, screens, columns, formats). Separate user-facing changes from internal ones.
 3. **The IDEA** `tasks/ideas/IDEA-<slug>.md` — for phrasing "problem/why" and the product decisions (terms, thresholds, computation method). But take "done" from the IMPL/diff, not the IDEA.
 4. **Verification status** — from the IMPL/session: tests/build green, a production run/reconciliations. Needed so as not to over-promise.
-5. Where present — project memory and `CLAUDE.md` (terms, context).
+5. Where present — a bounded, task-specific memory digest and `CLAUDE.md` (terms, context). Verify any material memory claim against current source; if the announcement is historical and current code has moved on, label that distinction internally and announce only the completed task's verified historical result.
 
 Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have it return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents.
 
@@ -89,7 +93,8 @@ Before handing it off — run a check proportionate to the announcement's size:
 ### Phase 4 — Delivery
 
 - Hand off the final announcement **in chat, ready to copy-paste** (in one block, for easy copying).
-- Propose (don't do it silently) variants: shorter (a TL;DR version of 3–5 lines), longer (with an example/details), save to `tasks/ANNOUNCE-<slug>.md`.
+- Propose (don't do it silently) variants: shorter (a TL;DR version of 3–5 lines), longer (with an example/details), save the announcement.
+- If saving for an archived task, write `ANNOUNCE-<slug>.md` into the same archived task directory and update bundle links there; do not recreate active IDEA/IMPL files. Otherwise save to `tasks/ANNOUNCE-<slug>.md`.
 - Commit/push — you **don't do** (this task isn't about git).
 
 ---
@@ -99,5 +104,5 @@ Before handing it off — run a check proportionate to the announcement's size:
 - Don't turn the announcement into a report/changelog/wall of text. Dense and scannable.
 - Don't write about what wasn't done or wasn't verified; don't gild the status.
 - Don't sprinkle internal terms, file/function names, ticket numbers for volume — only value for the recipient.
-- Don't change project code/files (except the optional announcement file on request) and don't commit.
+- Don't change project code/files (except the optional announcement and a proved stale-memory correction) and don't commit.
 - Don't invent a computation method — take it from the IDEA/IMPL; unsure — clarify, don't make it up.

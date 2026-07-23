@@ -15,6 +15,8 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-*.md`, and any proposed edit to the project spec) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active-vs-archive lookup, and safe archive rules. This main-context work does not consume an extra delegated context.
+
 ---
 
 ## Principles
@@ -36,9 +38,10 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
 1. **Find the idea's source** from `$ARGUMENTS`:
    - a file path → read it;
    - a slug (e.g. `flow-efficiency`) → `tasks/ideas/IDEA-<slug>.md`;
-   - free text → match the nearest `tasks/ideas/IDEA-*.md`; if ambiguous — list them and ask which to take (this clarifies the source, not an approval);
+   - free text → match the nearest active `tasks/ideas/IDEA-*.md`; if ambiguous — list them and ask which to take (this clarifies the source, not an approval);
+   - do not select `tasks/archive/**` by default; use an archived IDEA only when the user explicitly supplies its archive path or clearly asks to resume/rebuild that archived task;
    - if there's no IDEA file at all — warn that quality will suffer without refinement, and suggest `/prorab:refine` first.
-2. **Read the context:** the IDEA file itself in full, repository guidance (`CLAUDE.md` when present), the project's main spec, README, package/build scripts, CI configuration, Makefile/task-runner files, existing test conventions, related `IDEA-*`/`IMPL-*`, and relevant memory.
+2. **Read the context:** the IDEA file itself in full, repository guidance (`CLAUDE.md` when present), the project's main spec, README, package/build scripts, CI configuration, Makefile/task-runner files, existing test conventions, related active `IDEA-*`/`IMPL-*`, and relevant memory. Perform bounded recall using exact task paths/symbols/terms first, then verify every material recalled claim against current source. Use archived artifacts only when explicitly relevant.
 3. **Derive the project verification recipe before planning.** Record the exact supported commands for targeted tests, the full test suite, lint/typecheck/build, and — only where the repository defines them — migrations and runtime smoke checks. Prefer explicit project guidance, then CI, task runners/package scripts, and existing test conventions. Don't invent commands or assume a language, framework, container runtime, or backend/frontend split; if the repository does not define a check, record that gap.
 4. **Extract from the idea** and record for yourself: Scope IN/OUT, the **ordered work stages** (including pre-stages/prerequisites), the Definition of Done, open risks and **risk spikes**, the list of affected parts.
 5. **Briefly sketch the plan** (stages, order, spike vs build, fan-out size) — for transparency, **not as a checkpoint**. Go straight to Phase 0.5, don't wait for a reply.
@@ -126,9 +129,11 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 ## Phase 5 — Wrap-up
 
-1. **Update artifacts:** the IMPL doc (what was done, deviations from the plan, follow-ups); on a large change — propose an edit to the main spec (in the task's language). Record significant decisions/findings/chosen defaults in the IMPL doc's decisions/deviations section (a cross-idea decision — optionally in `CLAUDE.md` too); don't start a new file for this.
-2. **Final report:** what was implemented (by task), test/build status, which defaults you chose along the way, what was consciously deferred (e.g. a pre-stage as a separate branch/PR). State explicitly: the **implementation** stage is done; the "last mile" — reviewing changes, run/smoke, commit/PR — follows the project's practices and only on an explicit request (see item 3).
-3. **Commit/PR only on request.** If on `main`/`master` — create a branch. Commit messages and the PR body — per the project's rules.
+1. **Finalize the IMPL:** record what was done, deviations, follow-ups, exact verification results, and an explicit final status. Re-check Scope-IN and every mandatory DoD item. A blocker, partial implementation, skipped mandatory check, or failed mandatory check must remain active and must not be archived.
+2. **Capture durable memory:** only from the implemented and verified result, never from IDEA intent alone. Deduplicate and record only cross-task architecture, contracts/consumers, component relationships, recurring gotchas, rejected alternatives, or verified commands that meet the project-knowledge contract.
+3. **Archive a successful bundle:** after — and only after — item 1 confirms completion, verify the IDEA↔IMPL identity and move the linked IDEA, IMPL, and any existing ANNOUNCE into `tasks/archive/<YYYY>/<task-slug>/` using the safe archive protocol. Update links and report each old → new path. If the destination exists, use the contract's deterministic suffix; never overwrite. The implementation remains uncommitted unless requested.
+4. **Final report:** what was implemented (by task), test/build status, defaults, deferred work, memory entries created/updated, and exact archive paths (or the reason archival was correctly skipped). State explicitly that the implementation stage is done; reviewing changes, run/smoke, commit/PR follows project practice.
+5. **Commit/PR only on request.** If on `main`/`master` — create a branch. Commit messages and the PR body — per the project's rules.
 
 ---
 
@@ -148,5 +153,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 - Don't "green up" tests with workarounds (`assert True`, skip/xfail, a snapshot from your own code, mocking the unit-under-test itself, a hardcode for the test input) and don't derive the expected from the implementation's actual output — the test proves a DoD item, otherwise it's a Phase 4 finding, not a closed DoD.
 - Don't re-open product decisions fixed in the IDEA (unless you found a direct contradiction with the code — then highlight it and ask).
 - Don't declare "done" without a test/build run; don't gild the status.
+- Don't archive a blocked/partial task or an artifact bundle whose identity was inferred only from a similar slug.
 - Don't commit/push without an explicit request; don't widen scope beyond the IDEA.
 - Don't build the implementation on an unverified spike.

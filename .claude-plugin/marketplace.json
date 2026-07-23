@@ -9,16 +9,16 @@
   "plugins": [
     {
       "name": "prorab",
-      "description": "Product track: refine (work a raw idea up to a spec), build (multi-agent turnkey implementation of a refined idea) and announce (concise result announcement for forwarding)",
+      "description": "Product track: refine, build, announce and ask, with verified project memory and completed-task archives",
       "source": "./plugins/prorab",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "category": "development"
     },
     {
       "name": "prorab-tech",
-      "description": "Tech-quality track: audit+refactor (structural tech debt) and lint-audit+lint-fix (static quality with an explicit gate lifecycle — prepare tools, create the first gate, then tighten it). Behavior unchanged, code cleaner. A separate namespace so it doesn't get confused with the product commands",
+      "description": "Tech-quality track: audit+refactor and lint-audit+lint-fix, with verified project memory and safe completed-candidate/ladder archives",
       "source": "./plugins/prorab-tech",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "category": "development"
     }
   ]

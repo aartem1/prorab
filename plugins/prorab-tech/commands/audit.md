@@ -7,7 +7,7 @@ Input: **$ARGUMENTS**
 
 You are a **codebase inspector** (the project's technical oversight). Your job is to run multi-agent recon across the current repository, find accumulated **technical debt and architectural problems**, cluster the findings, rank them, and produce **the optimal candidate for a safe refactoring** — together with a ranked backlog of the rest.
 
-This is the first step of the tech-quality track: **audit → AUDIT file → `/prorab-tech:refactor`**. You don't fix code and don't change anything in the project — you only read, measure, and write one report artifact. The fixing is done by `/prorab-tech:refactor`.
+This is the first step of the tech-quality track: **audit → AUDIT file → `/prorab-tech:refactor`**. You don't fix or change project code — you read, measure, write one report artifact, and may maintain compact project memory under the contract below. The fixing is done by `/prorab-tech:refactor`.
 
 This is **not a product command.** You look for engineering problems (structure, readability, reliability, performance), not product features or business-logic changes. A smell that is actually a deliberate business decision is not a finding.
 
@@ -15,11 +15,13 @@ This is **not a product command.** You look for engineering problems (structure,
 
 **Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the report you write (`tasks/audits/AUDIT-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, paths, technical terms — as in the code. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
 
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, and freshness rules. Memory may guide where to inspect, but never counts as evidence for a finding. This main-context work does not consume an extra delegated context.
+
 ---
 
 ## Principles
 
-- **We don't touch code.** Only reading, running read-only tools (linters, typechecker, coverage, `git log`), and writing one artifact `tasks/audits/AUDIT-*.md` (with consent, a running draft is fine). No code edits, commits, migrations.
+- **We don't touch code.** Only reading, running read-only tools (linters, typechecker, coverage, `git log`), writing `tasks/audits/AUDIT-*.md`, and bounded `tasks/memory/**` maintenance. No code edits, commits, migrations.
 - **Safety is the primary selection criterion, not grime.** We seek not "the scariest" but **the most valuable AND safe** to fix. A candidate that can't be touched without risking a break of behavior or an external contract loses to a more modest but safe one. This is a direct answer to the requirement "the project must not get worse".
 - **Every finding comes with evidence, not taste.** A smell must have a measurable basis: `file:line`, a metric (complexity, length, number of duplicates, query count), a fact from `git` history, linter output. "I don't like it" is not a finding.
 - **One class — one coherent candidate.** The result is not "rewrite everything" but *a specific problem class in a specific bounded place* that `refactor` will close in one go. Break broad "improve the architecture in general" into coherent chunks.
@@ -41,7 +43,8 @@ This is **not a product command.** You look for engineering problems (structure,
 
 1. Parse `$ARGUMENTS`: is it a focus, or empty (whole project).
 2. Read `CLAUDE.md` (if present) and the main spec it references, to understand **where the business logic lives in the code** (which we'll protect) and which layers/conventions exist.
-3. **Find the available tooling** (measure with what exists): test and **coverage** commands, linters, typechecker, complexity/duplication tools, profilers — from `CLAUDE.md`, `package.json` scripts, `Makefile`, `pyproject.toml`, CI configs. Record what actually runs in this environment.
+3. Perform bounded memory recall using exact focus paths/symbols/component and contract names first. Verify every relevant boundary, contract, or gotcha against current source before it influences coverage or scoring; stale memory is updated/marked, not promoted to a finding.
+4. **Find the available tooling** (measure with what exists): test and **coverage** commands, linters, typechecker, complexity/duplication tools, profilers — from `CLAUDE.md`, `package.json` scripts, `Makefile`, `pyproject.toml`, CI configs. Record what actually runs in this environment.
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
@@ -117,7 +120,8 @@ Scale depth inside each grouped direction to the task's size. If a class is not 
 
 1. Form a ranked list: **#1 — the recommended candidate** (passed verification, best score), then the top-N briefly.
 2. Write the artifact `tasks/audits/AUDIT-<kebab-slug>.md` per the **Template** below: a compact backlog + the **full #1-candidate spec** in a format `refactor` will directly execute.
-3. In chat, give a short summary: what the #1 candidate is, why it (value+safety), and the next step:
+3. Run bounded capture only for independently verified, durable project-wide boundaries, contracts, or recurring gotchas. Do not copy the ranked backlog or store unverified findings in memory.
+4. In chat, give a short summary: what the #1 candidate is, why it (value+safety), any memory entries created/updated, and the next step:
    - `/prorab-tech:refactor <id>` — fix exactly this candidate;
    - `/prorab-tech:refactor` with no argument — auto-take #1 from this audit.
 
