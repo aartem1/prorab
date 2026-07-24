@@ -60,6 +60,7 @@ Before asking substantive questions:
 
 - Find the relevant files in the repo (models, schemas, services, endpoints, migrations, frontend components, types). Use `Grep`/`Glob`; when it takes > 3 queries — delegate to `Agent` (`subagent_type: Explore`).
 - Record for yourself: **what already exists** (ready for reuse), **what will have to change**, **what conflicts** with the idea.
+- **Keep a running note for the Phase 4 handoff `Code map`**: for every file you actually opened — its path, its role in the idea, and the `file:line` anchors worth reusing. This is bookkeeping over reading you already did; it is **not** a reason to widen recon, open extra files, or spend another `Explore` context to fill the template. What you didn't study goes on the map's "Not studied" line honestly.
 - If the idea breaks an existing contract (API, DB schema, pipeline behavior) — that's a separate discussion item, don't bury it.
 
 Report briefly to the user in one message: "I looked at X, Y, Z — here's what I found relevant: …".
@@ -105,6 +106,16 @@ When you consider the idea mature (no 🟥, no key 🟧 left), give the **final 
 - External integrations: …
 - Reuse points (file:line): … — ready primitives that build must reuse rather than write from scratch
 
+### Code map (handoff for build — so it does not re-study what is still fresh)
+- Provenance: commit `<sha>`, recorded `<YYYY-MM-DD>`
+- Files studied (`path` — role — `sha1`): …
+- Ready to reuse (file:line → what it already gives): …
+- Change points (file:line → what has to change): …
+- Conflicts / contracts at risk (file:line → what breaks): …
+- Local conventions to mirror (file:line → the pattern): …
+- Not studied (deliberate gaps build must cover itself): …
+- Verification commands OBSERVED (unverified hint — build must confirm before running): …
+
 ### Order of stages (what comes first, prerequisites/pre-stages)
 - …
 
@@ -123,9 +134,13 @@ Each item is numbered and phrased as a checkable input→expected pair (given X 
 2. …
 ```
 
+**Filling the `Code map`.** It carries forward only what this dialogue already read — never study more to complete it. Stamp provenance in one call: `git rev-parse HEAD` for the commit and `git hash-object -- <paths…>` for the per-file content hashes (blob hash of the current content, so modified and untracked files are covered too). Not a git repository, or a command unavailable → drop the `Provenance` line and the `sha1` column, and say so on the line; build then re-derives the map itself. Never guess a hash. On the `Verification commands OBSERVED` line put only commands you actually saw defined in repository guidance, CI, a task runner, or package scripts — mark them as observed-not-run; if you saw none, write "none observed". The `Code map` is a handoff artifact: write it only into the saved IDEA file, don't recite it in chat.
+
 After this, **ask the user**: are they ready to move to the spec/plan, or want to churn the idea more. Don't declare readiness yourself.
 
 If the user agrees — propose (don't do it silently) saving the summary to `tasks/ideas/IDEA-<kebab-slug>.md` so it can be worked on further in a separate session (e.g. via **`/prorab:build`** or a manual implementation).
+
+Once it is saved, name the exact next step: **`/clear`, then `/prorab:build <slug>`**. The fresh context is deliberate, not a chore — build's DoD check has to be independent of this dialogue, and the saved `Code map` is what keeps the fresh session from re-studying the code. If what actually remains is a one-or-two-file change with no external contract touched, say so and point at **`/prorab:quick`** instead: same discipline, far less ceremony.
 
 After the user confirms the settled summary, run bounded automatic capture. Save only decisions,
 constraints, rejected alternatives, or cross-task facts that meet the durable-memory bar; do not

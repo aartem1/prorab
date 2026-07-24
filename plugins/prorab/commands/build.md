@@ -85,6 +85,13 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 ## Phase 1 — Code recon + resolve spikes (Workflow: parallel readers)
 
+0. **Reuse the IDEA's `Code map` before spending a single recon context.** If the IDEA carries that handoff block, check its freshness deterministically — re-run `git hash-object -- <the listed paths>` and compare against the recorded `sha1`s (a missing hash column, a non-git project, or an unreachable recorded commit = treat every entry as stale). Then:
+   - **all hashes match** → adopt the map as the Phase 1 result, spend **zero** recon contexts, and go straight to item 2 with it;
+   - **some match** → adopt the matching entries and scope recon to the stale ones plus whatever the map lists under "Not studied";
+   - **no map / unparseable / no hashes** → run recon normally. A missing or malformed map is never a blocker, only a lost saving.
+
+   Log `recon reused: <n> files fresh, <m> stale`. Contexts saved this way are **not** freed for other work — bank the saving, don't respend it. Two limits on trust: a matching hash proves the file is unchanged, **not** that refine read it correctly, so any map claim that materially drives an external-contract edit still gets its current source opened per the source-of-truth order; and the map's `Verification commands OBSERVED` line is a hint only — Phase 0 item 3 still derives the recipe from repository guidance/CI/task runners and confirms each command. Never run a command merely because the IDEA listed it.
+
 1. **Codebase map.** In S, map the code directly. In M/L, partition the affected subsystems and **reuse points** into at most the recon contexts allocated in the table; never launch one agent per subsystem if that would consume the verification reserve or exceed the cap. Each recon agent (`agentType: 'Explore'`) returns (via `schema`) a structured map: what already exists and is reusable (`file:line`), what to change, what conflicts, which local conventions to mirror. Use `parallel()` only when all maps are needed together for synthesis.
 2. **Synthesis** — assemble a "Codebase map" section from the maps (ready primitives, change points, conflicts, conventions). If needed, read key code stretches directly so the plan is precise.
 3. **Resolve spikes.** For each risk spike from the IDEA, run a targeted check (an agent or directly) and record the conclusion. **Only if a spike failed or uncovered a blocker — stop and tell the user** with options; don't build an unverified assumption into the implementation. A passed spike — continue without a pause.

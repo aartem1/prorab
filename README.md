@@ -17,17 +17,30 @@ was run.
 
 ```
 raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──▶ implementation + IMPL ──/prorab:announce──▶ announcement to forward
+                             (carries a hashed Code map)
+
+small change ──/prorab:quick──▶ implementation, no artifacts   (escalates to refine+build if it turns out not to be small)
 ```
 
 | Command | What it does |
 |---|---|
-| **`/prorab:refine`** | Iteratively works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md`. |
-| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent ultracode Workflow: code recon → plan → DAG-ordered implementation → adversarial review → verification. It derives the verification recipe from repository guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack. No approval gate. Result — code + `tasks/IMPL-<slug>.md`. |
+| **`/prorab:refine`** | Iteratively works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md`, including a `Code map` handoff of what it already read. |
+| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent ultracode Workflow: code recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match, so fresh recon isn't paid for twice. It derives the verification recipe from repository guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack. No approval gate. Result — code + `tasks/IMPL-<slug>.md`. |
+| **`/prorab:quick`** | The cheap lane for a 1–2 file everyday change: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. An eligibility gate hands the task over to `refine`+`build` (or the tech track) the moment it turns out not to be small. Result — code + a short chat report. |
 | **`/prorab:announce`** | Prepares a concise, precise announcement of the results (what was done/new/changed, methods, how it's computed) — dense and convenient to forward in a messenger. Reads IMPL/diff/IDEA, fact-checks. Writes no code, makes no commit. |
 | **`/prorab:ask`** | Answers questions about the current project or its history. Uses bounded project memory and task artifacts to find the area, then verifies material claims against current code/docs or Git history and cites the sources. |
 
 The commands can be used separately, but they're designed as a pipeline:
 first work up the "blueprint", then build, then briefly tell people about the result.
+
+**Choosing the lane.** `refine → build` is for anything that touches an external contract, spans
+several files or layers, or has a requirement that can be read more than one way. `quick` is for the
+daily two-file change where the pipeline's ceremony would cost more than the work. You don't have to
+guess right: `quick` re-checks its eligibility gate after it has read the code and hands the task
+over instead of finishing it on the wrong budget, and `refine` points at `quick` when a settled idea
+turns out to be tiny. `refine` and `build` are deliberately **not** merged into one command — see the
+[CHANGELOG](CHANGELOG.md) entry for `prorab 0.10.0` for why the token saving people expect from
+merging is really recon reuse, which needs no merge.
 
 ## Pipeline: the tech-quality track (`prorab-tech`)
 
@@ -98,7 +111,17 @@ Gate creation/expansion still gets one representative violation because gate cov
 critical invariant. Verification mutations run only in temporary isolated worktrees, never in the
 user's working tree. The settings can be pinned with `--fast`, `--thorough`, `--tier=S|M|L`, or
 `--verification=economy|balanced|thorough`, but the 16-context ceiling remains absolute. `refine`
-has a two-Explore-context recon cap; `announce` allows one delegated context and one fact-check pass.
+has a two-Explore-context recon cap; `announce` allows one delegated context and one fact-check pass;
+`quick` is fixed at two contexts (itself plus one independent verifier) with no Workflow at all.
+
+**Recon is not paid for twice.** `refine` records a `Code map` in the IDEA — the files it already
+opened, with a `git hash-object` content hash each, plus reuse points, change points, contracts at
+risk, conventions to mirror and its honest "not studied" gaps. `build` re-hashes those paths: all
+fresh → recon costs zero contexts; partly fresh → recon is scoped to the stale entries and the
+declared gaps; no map or no hashes → normal recon. Saved contexts are banked, not respent. A matching
+hash proves only that the file is unchanged, so a map claim driving an external-contract edit is still
+verified in current source, and the map's observed verification commands stay a hint that Phase 0 must
+confirm.
 
 ## Execution language
 
@@ -133,7 +156,7 @@ First push the repository to GitHub, then:
 
 Both plugins live in the same `prorab` marketplace; they install separately. After installation
 the commands are available globally in all projects: product ones — `/prorab:refine`, `/prorab:build`,
-`/prorab:announce`, `/prorab:ask`; tech-quality — `/prorab-tech:audit`, `/prorab-tech:refactor`,
+`/prorab:quick`, `/prorab:announce`, `/prorab:ask`; tech-quality — `/prorab-tech:audit`, `/prorab-tech:refactor`,
 `/prorab-tech:lint-audit`, `/prorab-tech:lint-fix`.
 
 ## Updating
@@ -151,9 +174,13 @@ Each plugin has its own version (`prorab` and `prorab-tech` are versioned indepe
 ## Artifact contract
 
 - The commands are installed **globally**; the artifacts live **locally** in the working project.
-- `/prorab:refine` writes the refined idea to `tasks/ideas/IDEA-<slug>.md`.
-- `/prorab:build` reads an active IDEA, writes `tasks/IMPL-<slug>.md`, and after verified completion
-  moves the linked task bundle into `tasks/archive/<YYYY>/<task-slug>/`.
+- `/prorab:refine` writes the refined idea to `tasks/ideas/IDEA-<slug>.md`, including the `Code map`
+  handoff (files studied with content hashes, reuse/change points, conflicts, conventions, gaps).
+- `/prorab:build` reads an active IDEA, reuses its `Code map` where the hashes still match, writes
+  `tasks/IMPL-<slug>.md`, and after verified completion moves the linked task bundle into
+  `tasks/archive/<YYYY>/<task-slug>/`.
+- `/prorab:quick` writes **no** artifact at all — only project code and tests, plus a short chat
+  report. It creates no IDEA/IMPL, archives nothing, and at most adds one memory entry.
 - `/prorab-tech:audit` writes an audit report with a ranked backlog and a candidate spec to
   `tasks/audits/AUDIT-<slug>.md`; touches no code.
 - `/prorab-tech:refactor` reads the AUDIT spec and writes a refactoring plan to
@@ -256,6 +283,7 @@ prorab/
 │   │   ├── commands/
 │   │   │   ├── refine.md
 │   │   │   ├── build.md
+│   │   │   ├── quick.md         # cheap lane for small changes
 │   │   │   ├── announce.md
 │   │   │   └── ask.md
 │   │   ├── references/

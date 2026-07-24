@@ -33,7 +33,7 @@ class ManifestAndCommandTests(unittest.TestCase):
 
     def test_command_frontmatter_and_reference_links(self) -> None:
         commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
-        self.assertEqual(8, len(commands))
+        self.assertEqual(9, len(commands))
         for command in commands:
             text = read(command)
             match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
@@ -98,6 +98,54 @@ class LifecycleScenarioTests(unittest.TestCase):
         self.assertIn("Historical context", self.ask)
         self.assertIn("Git history", self.ask)
         self.assertIn("Do not write project code", self.ask)
+
+
+class ReconHandoffTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.refine = read(PRODUCT / "commands" / "refine.md")
+        self.build = read(PRODUCT / "commands" / "build.md")
+
+    def test_refine_writes_a_hashed_code_map(self) -> None:
+        self.assertIn("Code map (handoff for build", self.refine)
+        self.assertIn("git hash-object", self.refine)
+        self.assertIn("Not studied", self.refine)
+        self.assertIn("Verification commands OBSERVED", self.refine)
+
+    def test_build_reuses_only_a_fresh_map(self) -> None:
+        self.assertIn("Reuse the IDEA's `Code map`", self.build)
+        self.assertIn("git hash-object", self.build)
+        self.assertIn("recon reused:", self.build)
+        self.assertIn("is never a blocker", self.build)
+
+    def test_observed_commands_stay_a_hint(self) -> None:
+        self.assertIn("unverified hint", self.refine)
+        self.assertIn("is a hint only", self.build)
+
+    def test_refine_names_the_fresh_context_handoff(self) -> None:
+        self.assertIn("`/clear`, then `/prorab:build <slug>`", self.refine)
+
+
+class QuickLaneTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.quick = read(PRODUCT / "commands" / "quick.md")
+
+    def test_quick_is_hard_bounded(self) -> None:
+        self.assertIn("2 model contexts total", self.quick)
+        self.assertIn("No `Workflow`", self.quick)
+        self.assertIn("Write no `IDEA-*`", self.quick)
+
+    def test_quick_escalates_instead_of_overreaching(self) -> None:
+        self.assertIn("Eligibility gate", self.quick)
+        self.assertIn("external contract", self.quick)
+        self.assertIn("Escalation is mandatory", self.quick)
+        self.assertIn("/prorab:refine", self.quick)
+        self.assertIn("/prorab-tech:refactor", self.quick)
+
+    def test_quick_keeps_the_evidence_floor(self) -> None:
+        self.assertIn("Red first", self.quick)
+        self.assertIn("AssertionError", self.quick)
+        self.assertIn("One independent verifier", self.quick)
+        self.assertIn("refuted if in doubt", self.quick)
 
 
 if __name__ == "__main__":

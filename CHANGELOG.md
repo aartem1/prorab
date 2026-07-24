@@ -6,6 +6,48 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.10.0 · prorab-tech 0.8.0
+
+**A cheap lane for small changes, and a recon handoff so `build` stops re-studying the code.** Both
+changes target the same cost — the duplicated work and the fixed ceremony around a small task —
+without touching the quality floor of the heavy path. Deliberately *not* done: merging `refine` and
+`build` into one command. Prompt-body deduplication saves under 1% of a heavy run, while carrying the
+refine transcript into build's phases costs more context than it saves, unfreezes the DoD before the
+implementation exists, and turns the final Scope/DoD re-grounding into self-assessment by the author
+of the idea. The saving people expect from merging is the recon reuse below, which does not require
+it.
+
+- **`Code map` handoff in the IDEA (proposal 11):** `refine` now records what it *already* read —
+  files studied with their role and a `git hash-object` content hash, reuse points, change points,
+  contracts at risk, conventions to mirror, honest "not studied" gaps, and observed-but-unrun
+  verification commands. Bookkeeping only: it is never a reason to widen recon or spend another
+  `Explore` context.
+- **`build` reuses only a provably fresh map:** it re-hashes the listed paths and compares. All
+  fresh → zero recon contexts spent; partly fresh → recon scoped to the stale entries and the
+  declared gaps; no map, no hashes, or a non-git project → normal recon. Saved contexts are banked,
+  not respent, and progress logs report `recon reused: <n> fresh, <m> stale`.
+- **Trust stays bounded:** a matching hash proves the file is unchanged, not that `refine` read it
+  correctly, so a map claim that drives an external-contract edit is still opened in current source.
+  The observed-commands line is a hint; the verification recipe is still derived and confirmed in
+  Phase 0. A missing or malformed map is a lost saving, never a blocker.
+- **New `/prorab:quick` (proposal 12):** a standalone short command for a 1–2 file everyday change —
+  no IDEA/IMPL, no archive, no `Workflow`, at most 2 model contexts (itself plus one independent
+  verifier with `max_turns: 6`). It keeps the evidence floor: a DoD stated as `input → expected`
+  before any edit, a red-for-the-right-reason test (`AssertionError`, not `ImportError`), the
+  project's own check commands, and a verifier that defaults to refuted-if-in-doubt.
+- **`quick` cannot quietly do a big task:** an eligibility gate is checked before editing and again
+  after locating the code. An external contract, more than ~2–3 files or one layer, two incompatible
+  readings, security/auth/payment logic, behavior-preserving restructuring, or a missing
+  secret/access forces a handover to `/prorab:refine`+`build` or the tech track. A second confirmed
+  verification round also escalates instead of grinding.
+- **Explicit fresh-context handoff:** after saving an IDEA, `refine` names the next step —
+  `/clear`, then `/prorab:build <slug>` — and explains that the fresh context is what keeps build's
+  DoD check independent, or routes a genuinely tiny remainder to `/prorab:quick`.
+- **Contract tests extended** for the hashed handoff, the reuse/staleness rules, and `quick`'s
+  bounds, gate, and evidence floor.
+- **Not covered yet:** the same recon handoff for `audit → refactor` and `lint-audit → lint-fix`;
+  the tech track is unchanged at `prorab-tech 0.8.0`.
+
 ## prorab 0.9.0 · prorab-tech 0.8.0
 
 **Built-in project memory and a structural archive for completed work.** Both tracks now recall
