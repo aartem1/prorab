@@ -121,9 +121,11 @@ Scale depth inside each grouped direction to the task's size. If a class is not 
 1. Form a ranked list: **#1 — the recommended candidate** (passed verification, best score), then the top-N briefly.
 2. Write the artifact `tasks/audits/AUDIT-<kebab-slug>.md` per the **Template** below: a compact backlog + the **full #1-candidate spec** in a format `refactor` will directly execute.
 3. Run bounded capture only for independently verified, durable project-wide boundaries, contracts, or recurring gotchas. Do not copy the ranked backlog or store unverified findings in memory.
-4. In chat, give a short summary: what the #1 candidate is, why it (value+safety), any memory entries created/updated, and the next step:
+4. In chat, give a short summary: what the #1 candidate is, why it (value+safety), any memory entries created/updated, and the next step — **`/clear`, then** one of:
    - `/prorab-tech:refactor <id>` — fix exactly this candidate;
    - `/prorab-tech:refactor` with no argument — auto-take #1 from this audit.
+
+   Name the `/clear` deliberately: you are the one who judged this candidate **safe**, and `refactor` is the one who must **independently prove behavior didn't shift**. In a shared context that judgment is never re-examined and the scope-creep check is run by the same reasoning that picked the target. The saved `Provenance and freshness` block is what keeps the fresh session from re-studying the code, so the fresh context costs almost nothing.
 
 ---
 
@@ -197,6 +199,14 @@ Score each cluster on four axes (low/med/high); the result is the priority:
 ### Blast radius
 - Affected call-sites/sites: <list or estimate>
 
+### Provenance and freshness (handoff for refactor — re-check before trusting anything above)
+- Recorded: commit `<sha>`, date `<YYYY-MM-DD>`
+- Target files (`path` — `sha1`): …
+- Test files the net status rests on (`path` — `sha1`): …
+- Call-site files (`path` — `sha1`): … — so a caller changing behind an untouched target is detectable
+- Signal probes and when they ran: <coverage / complexity / lint command → date>
+- Goes stale with the hashes above: `safety`, `blast_radius`, `coverage_nearby`, the size/confidence scoring — they describe the code as it was at that commit, not as it is now
+
 ### Risk spikes (for refactor to check BEFORE fixing: risk → how to check)
 - …
 
@@ -205,6 +215,8 @@ Score each cluster on four axes (low/med/high); the result is the priority:
 ```
 
 Adapt/drop sections to the candidate; for runners-up the backlog rows are enough.
+
+**Filling `Provenance and freshness`.** Stamp it in one call: `git rev-parse HEAD` for the commit and `git hash-object -- <paths…>` for the per-file content hashes (blob hash of the current content, so modified and untracked files are covered too). Hash the target sites, the tests the net status rests on, and the call-site files — a caller can change while the target stays byte-identical, which would silently invalidate the blast-radius claim. Not a git repository, or the command unavailable → drop the block and say so; `refactor` then re-derives the map and its own tier. Never guess a hash. This block is what lets `refactor` tell "the audit is still valid" from "the audit describes code that no longer exists" — without it, stale scoring is invisible.
 
 ---
 

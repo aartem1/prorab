@@ -48,6 +48,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 3. Recall relevant verification memory by exact tool/rule/config/gate paths first. Treat it as a search hint, then re-open configs and re-run only already-available read-only probes before recording current availability or gate state.
 4. **Tooling inventory — what exists / is broken / is absent.** Walk `CLAUDE.md`, `package.json` (scripts+devDeps), `pyproject.toml`/`setup.cfg`/`requirements*`, `Makefile`, `.pre-commit-config.yaml`, CI configs (`.github/workflows`, `.gitlab-ci.yml`, `.gitea/`), the tools' own configs. Record for each: **is it installed**, **is it configured**, **does it run** (check with an actual read-only run only when available), **does it work** (a broken config is a finding). Separately — is there a **gate** (pre-commit / CI), what it actually runs, and at what strictness level. Mark anything requiring a download as unavailable until permission is granted.
 5. **The project's net commands** (what `lint-fix` will use to check pass safety): how tests, build, typecheck are run — the exact commands from `CLAUDE.md`/`README`. This is critical: the net = the insurance that a pass broke nothing.
+6. **Record every invocation verbatim, as a handoff.** Keep the exact command string for each analyzer you actually ran read-only, for each net command, and for the **gate entrypoint** if one exists (its config path plus the command that runs it). `lint-fix` will re-run these rather than rediscover them — a recorded command is a pointer that saves the search, not proof it still works, so it re-probes anyway. Mark anything you did not execute as not executed.
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
@@ -113,9 +114,11 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 1. Form an **ordered roadmap**: batch #1 (the first safe pass to run), then the ladder by tier A→B→C→D with prerequisites.
 2. Write the artifact `tasks/audits/LINT-<kebab-slug>.md` per the **Template** below: the tooling inventory + a batch-ladder table + the **full batch #1 spec** in a format `lint-fix` will directly execute.
 3. Capture only durable, actually re-probed verification knowledge: supported commands, confirmed gate entrypoints/state, and recurring tooling limitations. Do not store the violation backlog or manual estimates as confirmed memory.
-4. In chat — a short summary: the tooling state (what's broken/absent), what the ladder consists of, what batch #1 is and why it's first, any memory updates, and the next step:
+4. In chat — a short summary: the tooling state (what's broken/absent), what the ladder consists of, what batch #1 is and why it's first, any memory updates, and the next step — **`/clear`, then** one of:
    - `/prorab-tech:lint-fix <id>` — run a specific batch;
    - `/prorab-tech:lint-fix` with no argument — auto-take the first undone batch with met prerequisites.
+
+   Name the `/clear` deliberately: you are the one who judged each batch behavior-preserving and one-pass, and `lint-fix` is the one who must independently prove no drift and a truthful gate state. A shared context lets your own reasoning stand in for that proof. The recorded invocations and gate entrypoint mean the fresh session doesn't have to hunt for them.
 
 ---
 
@@ -158,6 +161,13 @@ Each batch — on four axes (low/med/high) + order:
 - What was run: <the whole project | focus>
 - Net commands (pass insurance): <tests / build / typecheck — exact commands>
 - Uncovered (cuts): <classes not checkable by statics; tools not run in the environment; debt outside behavior-preserving bounds>
+
+## Verified invocations and gate entrypoint (handoff for lint-fix)
+- Analyzer commands, exactly as run read-only here: <tool → exact command string> (mark any as `not executed`)
+- Net commands, exactly as run: <tests / build / typecheck>
+- Gate entrypoint: <config path + the exact command that runs it | `none — batch <id> creates the first one`>
+- Probed on: <YYYY-MM-DD>, commit `<sha>`
+- **The violation counts below are a snapshot, not a handoff.** Every batch takes its own baseline by re-running the tool: earlier batches change the code, so an audit-time count is stale by construction.
 
 ## Tooling inventory
 | Tool | Status | Gate | Findings now |

@@ -56,7 +56,9 @@ Everything else — turnkey, no pauses; resolve debatable decisions that don't a
    - **empty → auto-pick:** the first undone batch from the most recent active LINT whose prerequisites are met;
    - never auto-pick from `tasks/archive/**`; use an archived plan only when explicitly named for historical work;
    - no active plan → suggest `/prorab-tech:lint-audit` first, or run a short inline scan and state that it lacks a full audit.
-2. **Read the context:** the batch spec from the LINT file, tooling inventory, net commands, `CLAUDE.md`, and bounded verification memory. Search exact tool/rule/config/gate paths first, then verify current availability and gate state directly.
+2. **Read the context:** the batch spec from the LINT file, tooling inventory, the recorded invocations and gate entrypoint, net commands, `CLAUDE.md`, and bounded verification memory. Search exact tool/rule/config/gate paths first, then verify current availability and gate state directly.
+   - Also read the **most recent completed `tasks/IMPL-lint-<plan-slug>-batch-*.md` of this plan.** It records the gate mode and evidence its batch left behind, and that — not the audit-time inventory — is the gate state you must tighten or expand. Reuse its entrypoint and the plan's recorded commands as pointers that save the search; still re-run them, because a recorded command is never proof it works now. No completed batch yet → the plan's inventory is the only baseline.
+   - The LINT plan's **violation counts are a snapshot from audit time and are not reusable**: earlier batches changed the code. Phase 1 takes its own count by re-running the tool — that is deterministic, nearly free, and authoritative.
 3. **Extract and record:** tool + rule class + scope; the expected diff class and what must NOT get in; behavior-preservation risks; the target bar (to what level we bring it); the current gate state and this batch's gate mode (`preparatory` | `create` | `tighten/expand`); what proves no-breakage (the baseline net).
 4. **Briefly sketch the plan** (baseline → edits → gate-lifecycle action → verification) for transparency, **not as a checkpoint**. Straight to Phase 0.5.
 
@@ -93,7 +95,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **Cheap-first escalation:** a mechanical batch surfaced a runtime shift (autofix touched semantics; "dead" is reachable dynamically; or a required gate sabotage probe doesn't go red) → **raise the tier** (and "fixing" a latent bug is a blocker-route), log it. No downgrading mid-run.
 
-**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L`/`--verification=economy|balanced|thorough` or a NL request in `$ARGUMENTS` pins the requested setting — the human beats the auto-triage. Log the chosen tier, verification profile, `used/cap`, mutation `used/cap`, escalation reason, and what was consciously skipped.
+**Override and visibility:** `--fast`/`--thorough`/`--tier=S|M|L`/`--verification=economy|balanced|thorough` or a NL request in `$ARGUMENTS` pins the requested setting — the human beats the auto-triage. Log the chosen tier, verification profile, `used/cap`, mutation `used/cap`, escalation reason, and what was consciously skipped. **A pure Tier A autofix batch belongs at `--tier=S`** — 2 contexts, no Workflow, `economy` — and needs no separate lightweight command; the mandatory gate evidence for a create/change batch is unaffected by the tier.
 
 ## Phase 1 — Baseline (key; solo/Workflow) — BEFORE any edits
 

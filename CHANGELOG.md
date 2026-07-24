@@ -6,6 +6,50 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.10.0 · prorab-tech 0.9.0
+
+**The tech track gets its own handoff — shaped by what each pair actually wastes.** `prorab` is
+unchanged in this release. This entry **supersedes the "not covered yet" note below**: the structural
+pair does need the hashed handoff, and it buys more safety than tokens; the static pair does **not**,
+because its numbers go stale by construction and re-probing them is a deterministic command that
+costs almost nothing.
+
+- **`audit` records provenance (structural pair):** the #1 candidate spec now carries the recorded
+  commit plus `git hash-object` hashes of the target files, the test files its net status rests on,
+  and the call-site files — a caller can change while the target stays byte-identical, which would
+  otherwise invalidate the blast-radius claim invisibly.
+- **`refactor` checks that provenance in Phase 0, before choosing a tier** — deliberately earlier
+  than recon, because the tier depends on it. `refactor` previously took `safety`,
+  `coverage_nearby`, `blast_radius` and the size/confidence scoring straight from the AUDIT and was
+  told not to re-derive them, so a month-old audit silently set the budget and the safety assessment
+  of a behavior-preservation change. Now staleness is explicit and typed: a stale **target** makes
+  the candidate obsolete unless the smell is re-confirmed in current code (not a blocker — a
+  finished candidate, with the next one offered); a stale **test** file voids the coverage claim and
+  forces a from-scratch net assessment in Phase 1.5; a stale **call-site** file voids the blast
+  radius. Any staleness at all means the tier is re-derived rather than inherited.
+- **`refactor` reuses only the fresh part of the map:** fresh paths are adopted as the Phase 1
+  result at zero recon cost, recon is scoped to the stale ones and to call-sites that were never
+  hashed, and the saving is banked rather than respent. Freshness is explicitly **not** evidence of
+  equivalence — the net green on the OLD code, the contract diff, and at least one drift/differential
+  run remain mandatory.
+- **`lint-audit` hands over commands, not counts:** the plan now records each analyzer invocation
+  verbatim as run read-only, the net commands, and the gate entrypoint (config path + the command
+  that runs it), with the probe date and commit. The violation counts are labeled a snapshot, not a
+  handoff.
+- **`lint-fix` reads the previous completed batch:** the gate state to tighten or expand comes from
+  the most recent completed `IMPL-lint-*-batch-*.md` of the plan rather than being rediscovered,
+  since that batch is what last changed it. Recorded commands are pointers that save the search and
+  are still re-run — a recorded command is never proof it works now — and every batch still takes
+  its own baseline count.
+- **No new tech-track command, deliberately.** `refactor --tier=S` is already two contexts with no
+  Workflow and already runs without an AUDIT, and `lint-fix` is already one batch at a time, so a
+  "quick" analogue would only drop the IMPL artifact — which on a behavior-preservation track *is*
+  the record of what equivalence evidence was produced. Both commands now point at `--tier=S` as the
+  intended cheap lane instead.
+- **`/clear` handoff in both audits,** with the reason stated: the command that judged a candidate
+  safe should not also be the one proving nothing drifted, and the recorded provenance/invocations
+  are what make the fresh context nearly free.
+
 ## prorab 0.10.0 · prorab-tech 0.8.0
 
 **A cheap lane for small changes, and a recon handoff so `build` stops re-studying the code.** Both

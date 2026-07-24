@@ -125,6 +125,46 @@ class ReconHandoffTests(unittest.TestCase):
         self.assertIn("`/clear`, then `/prorab:build <slug>`", self.refine)
 
 
+class TechHandoffTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.audit = read(TECH / "commands" / "audit.md")
+        self.refactor = read(TECH / "commands" / "refactor.md")
+        self.lint_audit = read(TECH / "commands" / "lint-audit.md")
+        self.lint_fix = read(TECH / "commands" / "lint-fix.md")
+
+    def test_audit_stamps_hashed_provenance(self) -> None:
+        self.assertIn("Provenance and freshness", self.audit)
+        self.assertIn("git hash-object", self.audit)
+        self.assertIn("Call-site files", self.audit)
+
+    def test_refactor_checks_freshness_before_choosing_a_tier(self) -> None:
+        self.assertIn("Check the AUDIT's freshness", self.refactor)
+        self.assertIn("only while Phase 0's freshness check came back fully fresh", self.refactor)
+        order = self.refactor.index("Check the AUDIT's freshness")
+        self.assertLess(order, self.refactor.index("## Phase 0.5"))
+
+    def test_refactor_types_each_kind_of_staleness(self) -> None:
+        for marker in ("stale target file", "stale test file", "stale call-site file"):
+            self.assertIn(marker, self.refactor)
+        self.assertIn("recon reused:", self.refactor)
+        self.assertIn("never evidence of equivalence", self.refactor)
+
+    def test_static_pair_hands_over_commands_not_counts(self) -> None:
+        self.assertIn("Verified invocations and gate entrypoint", self.lint_audit)
+        self.assertIn("a snapshot, not a handoff", self.lint_audit)
+        self.assertIn("most recent completed", self.lint_fix)
+        self.assertIn("snapshot from audit time", self.lint_fix)
+
+    def test_both_audits_name_the_fresh_context_handoff(self) -> None:
+        self.assertIn("**`/clear`, then**", self.audit)
+        self.assertIn("**`/clear`, then**", self.lint_audit)
+
+    def test_cheap_lane_is_a_tier_not_a_new_command(self) -> None:
+        self.assertIn("`--tier=S` is the intended cheap lane", self.refactor)
+        self.assertIn("belongs at `--tier=S`", self.lint_fix)
+        self.assertFalse((TECH / "commands" / "quick.md").exists())
+
+
 class QuickLaneTests(unittest.TestCase):
     def setUp(self) -> None:
         self.quick = read(PRODUCT / "commands" / "quick.md")

@@ -80,9 +80,22 @@ cumulative limits: S = 2 model contexts and no Workflow; M = 6; L = 12 by defaul
 16 only for confirmed critical risk or explicit `--thorough`. Delegated contexts have mandatory
 `maxTurns`; review/verification cycles are capped at 1/2/3 and stop immediately after a round with
 no new confirmed findings. `audit` groups its catalog into three scan directions and verifies #1 by
-default; runners-up only on a near tie or #1 failure. `refactor`/`lint-fix` take the tier straight
-from the upstream artifact. **The safety floor is non-negotiable at any tier.** More detail — in
+default; runners-up only on a near tie or #1 failure. `refactor` takes the tier straight from the
+AUDIT **only while that spec's recorded file hashes still match**; any staleness makes it re-derive
+the tier from current signals. `lint-fix` takes it from the batch tag in the LINT plan.
+**The safety floor is non-negotiable at any tier.** More detail — in
 the [root README](../../README.md).
+
+**Handoff between the pairs, shaped by what each actually wastes.** `audit` stamps the #1 candidate
+with its commit and `git hash-object` hashes of the target files, the tests its net status rests on,
+and the call-site files. `refactor` re-hashes them **in Phase 0, before choosing a tier**: fresh paths
+are adopted at zero recon cost, while a stale target makes the candidate obsolete until the smell is
+re-confirmed, a stale test voids the coverage claim, and a stale call-site voids the blast radius.
+Freshness never replaces evidence — the net green on the old code, the contract diff, and a
+drift/differential run stay mandatory. The static pair gets a different handoff on purpose: `lint-audit`
+records the exact analyzer/net invocations and the gate entrypoint, `lint-fix` reads the gate state
+from the last completed batch artifact rather than rediscovering it, and violation counts are never
+carried over — they go stale by construction, and re-running the tool is deterministic and nearly free.
 
 **Risk-based verification.** Deterministic executable/static evidence comes before reviewers; one
 independent verifier is the default, with extra lenses only for conflict or high blast radius.

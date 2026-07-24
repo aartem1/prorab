@@ -55,10 +55,10 @@ static:     ──/prorab-tech:lint-audit──▶ LINT-<slug>.md (batch ladder)
 
 | Command | What it does |
 |---|---|
-| **`/prorab-tech:audit`** | A multi-agent codebase audit: sweeps by smell classes + churn×complexity from git, clusters, ranks by `value × safety × size × confidence`, adversarially verifies the top. Produces the optimal candidate for a safe refactoring. Touches no code. Result — `tasks/audits/AUDIT-<slug>.md`. |
-| **`/prorab-tech:refactor`** | A turnkey safe fix via a multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of characterization tests on the old code, small steps, adversarial drift search, a differential old-vs-new run, a measured quality improvement. `refactor <id>` fixes the chosen candidate; `refactor` with no argument — auto-picks #1 from the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`. |
-| **`/prorab-tech:lint-audit`** | An audit of **static quality**: inventories the tooling (what exists / is broken / is absent), runs analyzers already available in the project read-only, and labels absent-tool estimates as manual unless an ephemeral download is explicitly authorized. Clusters into an **ordered ladder of safe passes**: A autofix → B onboarding tools → C first gate → D strictness ratchet. Touches no code. Result — `tasks/audits/LINT-<slug>.md`. |
-| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** pre-C A/B batches are preparatory and not called locked; C creates and sabotage-proves the first gate; post-C A/B/D batches tighten or expand that gate and prove the changed coverage. Doesn't fix a latent bug — routes it to the product track. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate-state evidence + `tasks/IMPL-lint-<plan-slug>-batch-<id>.md`. |
+| **`/prorab-tech:audit`** | A multi-agent codebase audit: sweeps by smell classes + churn×complexity from git, clusters, ranks by `value × safety × size × confidence`, adversarially verifies the top. Produces the optimal candidate for a safe refactoring. The candidate spec carries hashed provenance, so `refactor` can tell a still-valid audit from one describing code that has moved on. Touches no code. Result — `tasks/audits/AUDIT-<slug>.md`. |
+| **`/prorab-tech:refactor`** | A turnkey safe fix via a multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of characterization tests on the old code, small steps, adversarial drift search, a differential old-vs-new run, a measured quality improvement. It re-hashes the AUDIT's provenance before choosing a tier and reuses only the fresh part of the map. `refactor <id>` fixes the chosen candidate; `refactor` with no argument — auto-picks #1 from the latest audit. Result — code + `tasks/IMPL-refactor-<slug>.md`. |
+| **`/prorab-tech:lint-audit`** | An audit of **static quality**: inventories the tooling (what exists / is broken / is absent), runs analyzers already available in the project read-only, and labels absent-tool estimates as manual unless an ephemeral download is explicitly authorized. Clusters into an **ordered ladder of safe passes**: A autofix → B onboarding tools → C first gate → D strictness ratchet. Records the exact analyzer/net invocations and the gate entrypoint for `lint-fix` to reuse; violation counts are explicitly a snapshot, not a handoff. Touches no code. Result — `tasks/audits/LINT-<slug>.md`. |
+| **`/prorab-tech:lint-fix`** | Runs **ONE** batch of the ladder turnkey via Workflow. **Prime directive — behavior preservation + a truthful gate lifecycle:** pre-C A/B batches are preparatory and not called locked; C creates and sabotage-proves the first gate; post-C A/B/D batches tighten or expand that gate and prove the changed coverage. Doesn't fix a latent bug — routes it to the product track. Takes the current gate state from the last completed batch artifact instead of rediscovering it, and re-runs every command it reuses. `lint-fix <id>` — a batch, no argument — auto-picks the next. Result — code + gate-state evidence + `tasks/IMPL-lint-<plan-slug>-batch-<id>.md`. |
 
 **Inversion relative to `build`:** `build` proves that *new* behavior matches a requirement;
 `refactor` and `lint-fix` prove that *old* behavior **did not change**. A different
@@ -92,7 +92,8 @@ the same cap. Generated Workflow scripts enforce their remaining allowance with 
 catalog into three directions (structure; reliability/security;
 performance/maintainability) and verifies candidate #1 by default; runners-up are verified only on
 a near tie or if #1 fails. `refactor`/`lint-fix` take the tier from the upstream artifact
-(AUDIT/LINT), not re-deriving it.
+(AUDIT/LINT) instead of re-deriving it — except that `refactor` inherits it only while the AUDIT's
+recorded hashes still match (see below); any staleness makes it re-derive.
 
 **Savings without losing quality.** The safety floor is non-negotiable at any tier (per the
 command's nature: net/baseline, contract-diff, drift search, a DoD skeptic, and a sabotage-proven
@@ -122,6 +123,18 @@ declared gaps; no map or no hashes → normal recon. Saved contexts are banked, 
 hash proves only that the file is unchanged, so a map claim driving an external-contract edit is still
 verified in current source, and the map's observed verification commands stay a hint that Phase 0 must
 confirm.
+
+The tech track gets the same idea in two different shapes, because the pairs waste different things.
+`audit` stamps its #1 candidate with the commit plus hashes of the target files, the tests its net
+status rests on, and the call-site files; `refactor` re-hashes them **before choosing a tier**, since
+it otherwise inherits `safety`/`coverage_nearby`/`blast_radius` from an audit that may describe code
+which no longer exists. Fresh paths cost zero recon; a stale target makes the candidate obsolete until
+the smell is re-confirmed, a stale test voids the coverage claim, a stale call-site voids the blast
+radius, and any staleness forces the tier to be re-derived. For the static pair a hashed map would be
+the wrong instrument — violation counts go stale the moment a batch lands, and re-running the analyzer
+is deterministic and nearly free — so `lint-audit` hands over the **exact invocations and the gate
+entrypoint** instead, and `lint-fix` reads the current gate state from the last completed batch
+artifact rather than rediscovering it.
 
 ## Execution language
 
