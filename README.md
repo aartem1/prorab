@@ -97,14 +97,14 @@ points at `quick` when a settled idea turns out to be tiny.
 raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──▶ code + IMPL ──/prorab:announce──▶ message
                              (carries a hashed Code map)
 
-small change ──/prorab:quick──▶ code, no artifacts   (escalates to refine+build if it isn't small)
+small change ──/prorab:quick──▶ code + QUICK-<slug>.md   (escalates to refine+build if it isn't small)
 ```
 
 | Command | What it does |
 |---|---|
 | **`/prorab:refine`** | Works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md` with a `Code map` handoff of what it read. |
 | **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Result — code + `tasks/IMPL-<slug>.md`. |
-| **`/prorab:quick`** | The cheap lane: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. Result — code + a short chat report. |
+| **`/prorab:quick`** | The cheap lane: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. Result — code + one compact `tasks/quick/QUICK-<slug>.md` record. |
 | **`/prorab:announce`** | A concise, precise announcement of the results (what was done/new/changed, methods, how it's computed), dense enough to forward in a messenger. Reads IMPL/diff/IDEA and fact-checks. Writes no code, makes no commit. |
 | **`/prorab:ask`** | Answers questions about the project or its history. Finds the area via project memory and task artifacts, then verifies material claims against current code, docs or Git history — and cites the sources. |
 
@@ -143,6 +143,7 @@ these files document what was decided and why.
 tasks/
 ├── ideas/IDEA-<slug>.md                     # refine
 ├── IMPL-<slug>.md                           # build
+├── quick/QUICK-<slug>.md                    # quick
 ├── audits/AUDIT-<slug>.md                   # audit
 ├── audits/LINT-<slug>.md                    # lint-audit
 ├── IMPL-refactor-<slug>.md                  # refactor
@@ -151,8 +152,9 @@ tasks/
 └── archive/<YYYY>/<task-slug>/              # completed, verified bundles
 ```
 
-`/prorab:quick` writes **no** artifact at all — only code and tests, plus a chat report (it may add
-at most one memory entry). `/prorab:announce` produces its text in chat, and saves
+`/prorab:quick` leaves one short record and nothing else — no IDEA, no IMPL, no archive entry. It
+exists so the written history of the project doesn't skip small changes; if it can't be stated in
+about a screen, the change wasn't small. `/prorab:announce` produces its text in chat, and saves
 `ANNOUNCE-<slug>.md` into the archive directory only when the task is already archived.
 `/prorab:ask` changes no project code; at most it corrects or stales a disproved memory entry.
 
@@ -164,6 +166,12 @@ at most one memory entry). `/prorab:announce` produces its text in chat, and sav
 - `/prorab:build` reads an active IDEA, reuses its `Code map` where hashes still match, writes
   `tasks/IMPL-<slug>.md`, and after verified completion moves the linked bundle into
   `tasks/archive/<YYYY>/<task-slug>/`.
+- `/prorab:quick` writes one compact `tasks/quick/QUICK-<slug>.md`: what changed and why, the DoD
+  table, the exact checks and their results, the documentation it corrected, and the verifier's
+  verdict. On a slug collision it uses the same deterministic `-2`, `-3` suffix and never overwrites.
+  It creates no IDEA/IMPL, archives nothing, and adds at most one memory entry. A run that escalates
+  after already editing files still leaves the record, marked `escalated`; one that escalates before
+  touching anything leaves nothing.
 - `/prorab-tech:audit` writes a ranked backlog plus a candidate spec to `tasks/audits/AUDIT-<slug>.md`;
   touches no code.
 - `/prorab-tech:refactor` reads that spec and writes `tasks/IMPL-refactor-<slug>.md`. A completed
@@ -193,6 +201,26 @@ tasks/archive/
 ```
 
 </details>
+
+## Documentation doesn't drift away from the code
+
+Every command that changes code owns the documentation that change falsifies. A stale document left
+behind counts as an incomplete change, not a follow-up — it is part of the command's completion
+condition and the reviewers treat a contradiction between the diff and a current-state document as
+a finding.
+
+The line that keeps this from turning into an endless documentation project runs between two kinds
+of file:
+
+| | Examples | What a command does |
+|---|---|---|
+| **Current state** — claims to describe how the project works *now* | `README`, `docs/`, the spec, API and configuration references, runbooks, `CLAUDE.md` and other agent guidance, docstrings and comments, `--help` text | Corrects exactly what the change made factually wrong — a renamed symbol or path, a changed default, flag, signature, limit, format or command, an example that would now behave differently. In place, minimally, in the document's own language. |
+| **Historical** — records what *happened* | `CHANGELOG.md`, release notes, ADRs, migration notes, `tasks/archive/**`, completed task artifacts | Never rewritten to match new code. A new entry is added where the project's convention calls for one; a past entry stays as it was written. |
+
+Anything wider — a style rewrite, a documentation gap that predates the change, a restructure, or a
+correction that needs a product decision — is reported with the follow-up named, not absorbed into
+the diff. And "nothing was affected" has to be earned by actually searching the docs for the
+symbols, paths and values the change touched.
 
 ## Cost is bounded, quality is not negotiable
 

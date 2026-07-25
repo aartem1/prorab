@@ -11,14 +11,14 @@
       "name": "prorab",
       "description": "Product track: refine, build, quick, announce and ask, with recon handoff, verified project memory and completed-task archives",
       "source": "./plugins/prorab",
-      "version": "0.10.0",
+      "version": "0.11.0",
       "category": "development"
     },
     {
       "name": "prorab-tech",
       "description": "Tech-quality track: audit+refactor and lint-audit+lint-fix, with verified project memory and safe completed-candidate/ladder archives",
       "source": "./plugins/prorab-tech",
-      "version": "0.9.0",
+      "version": "0.10.0",
       "category": "development"
     }
   ]

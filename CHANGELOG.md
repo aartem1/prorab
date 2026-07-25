@@ -6,6 +6,50 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.11.0 · prorab-tech 0.10.0
+
+**Documentation stops drifting away from the code, and `quick` stops being invisible.** Two changes
+with one motive: the written state of a project should not silently fall behind what the code does.
+
+- **New shared contract — `Documentation sync`** (in both `references/project-knowledge.md` files).
+  A command that changes code now **owns the documentation that change falsifies**; a stale document
+  left behind is an incomplete change, not a follow-up, and it counts against the command's own
+  completion condition. The dividing line is what a file is *for*: *current-state* documents (README,
+  `docs/`, the spec, API/configuration references, runbooks, `CLAUDE.md` and other agent guidance,
+  docstrings, comments, `--help` text) are corrected in place; *historical* documents
+  (`CHANGELOG.md`, release notes, ADRs, migration notes, `tasks/archive/**`, completed task
+  artifacts) are **never** rewritten to match new code — a new entry may be added where the project's
+  convention calls for one, but a past entry stays as it was written.
+- **Bounded on purpose.** The duty covers only what the change makes *factually wrong* — a renamed
+  symbol or path, a changed default, flag, signature, limit, format or command, an example that
+  would now behave differently, a step that no longer exists. Style rewrites, pre-existing gaps,
+  restructuring, and corrections needing a product decision are **reported with a follow-up named**,
+  not absorbed into the diff. A correction larger than the code change itself is reported, not made.
+  And "nothing was affected" must be earned by searching the docs for the symbols, paths, flags and
+  literal values the change touched.
+- **Wired into every executor, each where it belongs.** `build` corrects docs as tasks land (Phase 3)
+  and discharges the duty explicitly during Phase 4 re-grounding — a current-state document still
+  contradicting the diff is a *finding of that phase*. `refactor` gets the case behavior preservation
+  would otherwise excuse: a rename or a moved module leaves docs wrong even though nothing observable
+  changed. `lint-fix` gets the case that matters most for it — the documented way to run the checks
+  and the documented strictness bar must match the gate that now exists, and a pre-C preparatory
+  batch must not describe a gate it has not created. In all three, scope-creep review was taught the
+  distinction: a *declared* documentation edit is not creep, an undeclared or over-wide one is, and a
+  rewritten historical document always is.
+- **`quick` now leaves one compact artifact — `tasks/quick/QUICK-<slug>.md`.** Previously it wrote
+  nothing at all, which kept it cheap but made small changes invisible to `ask`, to a later `audit`,
+  and to anyone reading the project's history. The record holds what changed and why, the DoD table,
+  the exact checks and their real results, the documentation corrected, and the verifier's verdict.
+  It costs one `Write` in a context `quick` already has — no new context, no Workflow, no archive,
+  still no IDEA/IMPL. Slug collisions use the same deterministic `-2`/`-3` suffix as the archive
+  protocol and never overwrite.
+- **The artifact is a floor, not an IMPL.** It is capped at about a screen — if the change can't be
+  stated honestly in that space, the eligibility gate should have fired, so the size of the record is
+  itself a signal. A run that escalates *after* already editing files still writes the record with
+  `status: escalated`, naming what is half-done and which command takes over; a run that escalates
+  before touching anything writes nothing. An abandoned edit with no record was exactly the
+  divergence this change is meant to prevent.
+
 ## prorab 0.10.0 · prorab-tech 0.9.0
 
 **The tech track gets its own handoff — shaped by what each pair actually wastes.** `prorab` is

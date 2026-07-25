@@ -104,6 +104,15 @@ low-risk behavior mutation, `balanced` allows one per critical risk cluster, and
 cover each substantial behavior boundary. Gate creation/expansion still receives one representative
 violation. Selected mutations run only in a temporary isolated worktree.
 
+**Documentation sync.** Behavior preservation is not an exemption. `refactor` corrects the
+current-state documents its renames and moves make wrong (paths, symbols, architecture notes);
+`lint-fix` keeps the documented way to run the checks and the documented strictness bar matching the
+gate that actually exists — a pre-C batch must not claim a gate it hasn't created. Historical
+documents (`CHANGELOG.md`, release notes, ADRs, migration notes, the archive) are never rewritten to
+match new code: an ADR explaining why the old shape was chosen stays true history. A stale
+current-state document is a verification finding. The full rule lives in
+[`references/project-knowledge.md`](references/project-knowledge.md).
+
 **Language.** Command bodies and the internal work are in English; artifacts
 (`AUDIT`/`LINT`/`IMPL-*`) and the dialogue are in the task's language (Russian by default). See the
 [root README](../../README.md).

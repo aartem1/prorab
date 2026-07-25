@@ -15,7 +15,8 @@ Five agentic-development commands for Claude Code:
   no IDEA/IMPL, no archive, no Workflow, at most two contexts. Keeps the floor (DoD stated before
   editing, red-for-the-right-reason test, the project's own checks, one independent verifier) and
   hands the task over to `refine`+`build` or the tech track as soon as its eligibility gate fires.
-  Result — code + a short chat report.
+  Result — code + one compact `tasks/quick/QUICK-<slug>.md` record (change, DoD table, checks,
+  documentation corrected, verifier verdict), so small changes still leave a trace.
 - **`/prorab:announce`** (`commands/announce.md`) — a concise, precise announcement of the
   results (after `build` or a manual implementation): what was done/new/changed, methods and
   how it's computed. Dense, scannable, ready to forward in a messenger. Writes no code, makes no commit.
@@ -50,6 +51,13 @@ the [root README](../../README.md).
 one independent verifier by default. Mutation intensity is separate from S/M/L: `economy` performs
 none for low-risk work, `balanced` allows one per critical risk cluster, and `thorough` may cover
 each substantial DoD item. Selected mutations run only in a temporary isolated worktree.
+
+**Documentation sync.** `build` and `quick` own the documentation their change falsifies: current-state
+documents (README, `docs/`, the spec, `CLAUDE.md`, usage text, docstrings and comments) are corrected
+in place as part of the change, while historical ones (`CHANGELOG.md`, release notes, ADRs, the
+archive) are never rewritten to match new code. A current-state document still contradicting the diff
+is a review finding, not a follow-up. The full rule lives in
+[`references/project-knowledge.md`](references/project-knowledge.md).
 
 **Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the

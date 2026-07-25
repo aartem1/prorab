@@ -172,7 +172,20 @@ class QuickLaneTests(unittest.TestCase):
     def test_quick_is_hard_bounded(self) -> None:
         self.assertIn("2 model contexts total", self.quick)
         self.assertIn("No `Workflow`", self.quick)
-        self.assertIn("Write no `IDEA-*`", self.quick)
+        self.assertIn("Still no `IDEA-*`", self.quick)
+        self.assertIn("nothing is archived", self.quick)
+
+    def test_quick_leaves_exactly_one_record(self) -> None:
+        self.assertIn("tasks/quick/QUICK-<slug>.md", self.quick)
+        self.assertIn("## Artifact template", self.quick)
+        for field in ("type: quick", "status: done | partial | escalated"):
+            self.assertIn(field, self.quick)
+        # written after the verifier, so it records the real outcome
+        self.assertIn("after the verifier", self.quick)
+        # never overwrite a colliding slug
+        self.assertIn("first free deterministic suffix", self.quick)
+        # an abandoned partial edit still leaves a trace
+        self.assertIn("`status: escalated`", self.quick)
 
     def test_quick_escalates_instead_of_overreaching(self) -> None:
         self.assertIn("Eligibility gate", self.quick)
@@ -186,6 +199,56 @@ class QuickLaneTests(unittest.TestCase):
         self.assertIn("AssertionError", self.quick)
         self.assertIn("One independent verifier", self.quick)
         self.assertIn("refuted if in doubt", self.quick)
+
+
+class DocumentationSyncTests(unittest.TestCase):
+    """A code-changing command owns the docs its change falsifies, and only those."""
+
+    REFERENCES = (
+        PRODUCT / "references" / "project-knowledge.md",
+        TECH / "references" / "project-knowledge.md",
+    )
+    # every command that writes code
+    EXECUTORS = (
+        PRODUCT / "commands" / "build.md",
+        PRODUCT / "commands" / "quick.md",
+        TECH / "commands" / "refactor.md",
+        TECH / "commands" / "lint-fix.md",
+    )
+    HISTORICAL = ("CHANGELOG.md", "release notes", "ADR", "tasks/archive/**")
+
+    def test_both_references_define_the_contract(self) -> None:
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("## Documentation sync", text, reference)
+            self.assertIn("owns the documentation that change falsifies", text, reference)
+            self.assertIn(
+                "Current-state documents are corrected. Historical documents are never rewritten.",
+                text,
+                reference,
+            )
+            self.assertIn("factually wrong", text, reference)
+            for marker in self.HISTORICAL:
+                self.assertIn(marker, text, f"{reference}: {marker}")
+
+    def test_every_executor_applies_it(self) -> None:
+        for command in self.EXECUTORS:
+            text = read(command)
+            self.assertIn("`Documentation sync` contract", text, command)
+            self.assertIn("tasks/archive/**", text, command)
+            self.assertIn("CHANGELOG.md", text, command)
+
+    def test_read_only_commands_do_not_touch_documentation(self) -> None:
+        for command in ("refine.md", "announce.md", "ask.md"):
+            text = read(PRODUCT / "commands" / command)
+            self.assertNotIn("`Documentation sync` contract", text, command)
+        for command in ("audit.md", "lint-audit.md"):
+            text = read(TECH / "commands" / command)
+            self.assertNotIn("`Documentation sync` contract", text, command)
+
+    def test_declared_doc_edits_are_not_treated_as_scope_creep(self) -> None:
+        for command in (TECH / "commands" / "refactor.md", TECH / "commands" / "lint-fix.md"):
+            self.assertIn("is **not** scope creep", read(command), command)
 
 
 if __name__ == "__main__":
