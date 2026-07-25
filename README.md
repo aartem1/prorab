@@ -134,6 +134,60 @@ verification discipline entirely. Their results are announced by the same `/pror
 
 ---
 
+## How does Prorab compare?
+
+Prorab sits between a hand-written Claude Code setup and a full product-development framework. Its
+narrower bet is that an existing codebase needs two things at the same time: a repeatable path from
+an unclear task to verified code, and a separate, behavior-preserving path for paying down debt.
+
+The closest popular, actively maintained approaches are compared below. This is a comparison of
+their **documented default workflows as of 2026-07-25**, not a benchmark of model output. All of
+them are extensible, so “not in the default workflow” does not mean “impossible to add.”
+
+| Approach | Best fit | What its default workflow emphasizes | Deliberate trade-off |
+|---|---|---|---|
+| **Prorab** | Existing codebases where verification and bounded agent fan-out matter | Separate feature and tech-quality tracks; red-first tests; independent review; versioned task history; hashed handoffs; a hard cumulative context budget | Claude Code only; the evidence trail creates more project files and ceremony than an ad-hoc prompt |
+| **[Superpowers](https://github.com/obra/superpowers)** | Teams wanting a strong TDD methodology across several coding agents | Brainstorming → design approval → worktree → implementation plan → subagent development → two-stage review; skills activate automatically | Its published basic workflow does not define a cumulative context ceiling or dedicated structural-debt and static-quality ladders |
+| **[GitHub Spec Kit](https://github.github.com/spec-kit/)** | Teams wanting portable, highly customizable spec-driven development | Spec → Plan → Tasks → Implement, with cross-artifact analysis, many agent integrations, presets and extensions | It is a broader toolkit: the exact verification discipline, debt workflow and spend limits depend on the selected workflow and extensions |
+| **[BMAD Method](https://docs.bmad-method.org/)** | Product discovery and delivery that benefit from explicit analyst, PM, architect, UX and developer roles | Progressive context and artifacts across analysis, planning, solutioning and implementation; specialized agents and optional modules | Broader lifecycle coverage brings more concepts and ceremony; counted context budgets and Prorab-style debt/static ladders are not part of the documented default |
+| **[Native Claude Code customization](https://code.claude.com/docs/en/plugins)** | A small or highly project-specific workflow | Composable skills, agents, hooks and commands, packaged locally or as plugins | It supplies the primitives, not a delivery contract: the team must design its own gates, artifacts, budget and failure handling |
+
+### Capability matrix
+
+**Built in** means the default documented workflow makes the capability explicit. **Configurable**
+means the approach provides a mechanism or extension point, but does not make one policy universal.
+
+| Capability | Prorab | Superpowers | Spec Kit | BMAD | Native Claude Code |
+|---|---|---|---|---|---|
+| Refine an unclear feature before coding | Built in | Built in | Built in | Built in | Configurable |
+| Red-first TDD in the implementation path | Required | Required | Configurable | Configurable | Configurable |
+| Independent implementation review | Required | Built in | Configurable | Built in | Configurable |
+| Persistent, linked task artifacts | Built in | Design + plan | Built in | Built in | Configurable |
+| Dedicated structural-debt workflow | Built in | Not in the basic workflow | Extension/custom workflow | Not in the default method | Configurable |
+| Dedicated lint/type/gate ratchet | Built in | Not in the basic workflow | Extension/custom workflow | Custom/module-dependent | Configurable |
+| Hard cumulative agent-context limit | Built in: 2/6/12, ceiling 16 | Not documented | Not documented | Not documented | Configurable |
+| Coding-agent portability | Claude Code | Multiple agents | Multiple agents | Multiple agents | Claude Code |
+
+### Choosing without ideology
+
+- Choose **Prorab** when auditability, behavior-preserving maintenance and a hard context boundary are
+  more important than agent portability.
+- Choose **Superpowers** when you want a prescriptive TDD/subagent methodology that follows you
+  across coding tools.
+- Choose **Spec Kit** when specifications are the primary organizing artifact and you want a large
+  integration and extension surface.
+- Choose **BMAD** when the work starts before engineering — market/domain analysis, PRDs,
+  architecture and UX — and role separation is useful.
+- Use **native Claude Code customization** when the workflow is small or unusual enough that owning
+  the policy is cheaper than adopting a framework.
+
+Sources: [Superpowers basic workflow](https://github.com/obra/superpowers#the-basic-workflow),
+[Spec Kit agentic SDD reference](https://github.github.com/spec-kit/reference/agentic-sdd.html),
+[BMAD workflow map](https://docs.bmad-method.org/reference/workflow-map/) and
+[BMAD agent catalog](https://docs.bmad-method.org/reference/agents/).
+
+---
+
 ## What lands in your project
 
 Commands are global; everything they write is local to the working project and worth committing —
