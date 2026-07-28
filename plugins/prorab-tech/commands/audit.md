@@ -28,7 +28,7 @@ This is **not a product command.** You look for engineering problems (structure,
 - **A false positive is worse than a miss.** Recommending a harmful or non-existent refactoring costs more than missing one smell. So the top candidates are **adversarially verified** (default "reject on doubt").
 - **Rely on the repo's real tooling, don't invent.** Find out which linters/typechecker/tests/coverage/profilers actually exist (from `CLAUDE.md`, `package.json`/`pyproject`/`Makefile`/CI) and use them as signals. No tool — say so, assess manually, don't fabricate a metric.
 - **Don't conflate tech-quality with product.** If an "improvement" changes observable behavior, an output, a contract, or a business rule — it's not a candidate for this track (that's `/prorab:refine` → `/prorab:build`). Here, only behavior-preserving changes.
-- **Keep the main loop's context clean.** Delegate heavy reading/scanning to agents; they return **structured findings** (via `schema`), not file dumps.
+- **Keep the main loop's context clean.** Delegate heavy reading/scanning to agents; they return **structured findings** (via `schema`), not file dumps. Apply the `Context hygiene` contract from the project-knowledge reference: the read-only tool runs this command lives on (linter, typechecker, coverage, `git log`) go to a file outside the working tree and come back as a digest — command, exit code, counters, one identifying line per class; a scanner returns a capsule of findings with `path:line` evidence pointers at roughly 1500 tokens, never the code it read. Its `Deterministic steps` list covers the churn and freshness data: those are commands, not readings.
 
 ---
 
@@ -226,7 +226,7 @@ Adapt/drop sections to the candidate; for runners-up the backlog rows are enough
 - **Barrier only on clustering/scoring** — dedup needs all findings at once; run the scanners themselves in parallel with no barrier between them.
 - **Adversarial verification** — verify #1 by default; a runner-up only on near tie or #1 failure. One bounded verifier covers real/safe/useful; split only on conflict/high risk.
 - **Completeness check** — main-agent by default; one bounded critic only in L with reserved budget.
-- **Structured output** — give agents `schema` so they return validated findings, not text to parse.
+- **Structured output** — give agents `schema` so they return validated findings, not text to parse. A return is a capsule of claims and evidence pointers at roughly 1500 tokens; tool output reaches it as counters and one example per class, never as a dump.
 - **Visibility** — `phase()`/`log()` for progress; show tier, `used/cap`, covered directions, and any no-progress stop.
 
 ## What NOT to do

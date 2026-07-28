@@ -40,7 +40,10 @@ never the only source.
    affected entry; do not change project code. If evidence is insufficient, state the uncertainty.
 8. Answer compactly. Use one delegated `Explore` context only when the source set is genuinely
    bulky; otherwise work directly. A delegated context must use `max_turns: 6`, return a source map
-   rather than dumps, and does not justify extra fan-out.
+   rather than dumps, and does not justify extra fan-out. Per the `Delegated context returns` limit
+   in the project-knowledge reference, that map is a capsule of claims and pointers — `path:line`,
+   symbol, artifact section, commit SHA — at roughly 1500 tokens; you open a named narrow range
+   yourself when a specific claim needs the source.
 
 ## Answer contract
 

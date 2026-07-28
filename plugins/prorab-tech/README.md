@@ -83,7 +83,18 @@ no new confirmed findings. `audit` groups its catalog into three scan directions
 default; runners-up only on a near tie or #1 failure. `refactor` takes the tier straight from the
 AUDIT **only while that spec's recorded file hashes still match**; any staleness makes it re-derive
 the tier from current signals. `lint-fix` takes it from the batch tag in the LINT plan.
-**The safety floor is non-negotiable at any tier.** More detail — in
+**The safety floor is non-negotiable at any tier.**
+
+**Bounded occupancy, too.** A tier caps how many contexts open; the shared `Context hygiene` contract
+caps how full each one gets — and on this track the bulk is **analyzer output**, so it is the limit
+that pays most. Every tool run goes to a file outside the working tree and comes back as a ~40-line
+digest: command, exit code, violations per rule with their file spread, one example per class. Two
+hundred violations of one rule never become two hundred lines. `lint-fix` takes its before→after
+`N→0` from two digests of the same invocation, and `refactor` reduces a differential run to the
+compared input set, the divergence count and one line per divergence. A delegated context returns a
+~1500-token capsule of claims and pointers; above tier S the main loop holds the batch spec, the
+gate-state table and the ledger while the runs happen elsewhere. Compaction never hides a result:
+exit codes and violation counts are always reported in full. More detail — in
 the [root README](../../README.md).
 
 **Handoff between the pairs, shaped by what each actually wastes.** `audit` stamps the #1 candidate

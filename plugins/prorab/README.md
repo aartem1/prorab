@@ -44,8 +44,15 @@ with no new confirmed findings. `refine` allows at most two Explore contexts; `a
 delegated context and one fact-check pass; `ask` allows one delegated context; `quick` is fixed at two
 contexts with no Workflow. Recon carried in the IDEA's `Code map` and still hash-fresh costs `build`
 zero recon contexts, and the saving is banked rather than respent. The quality floor
-remains mandatory. More detail — in
-the [root README](../../README.md).
+remains mandatory.
+
+**Bounded occupancy, too.** A tier caps how many contexts open; the shared `Context hygiene` contract
+caps how full each one gets. Run output is captured outside the working tree and read back as a
+~40-line digest (command, exit code, counters, one line per failure), a delegated context returns a
+~1500-token capsule of claims and `path:line` pointers rather than the material, and above tier S the
+main loop holds the plan and the ledger while the reading happens elsewhere — at tier S it *is* the
+executor and reads directly. Compaction never hides a result: exit codes and failure counts are
+always reported in full. More detail — in the [root README](../../README.md).
 
 **Risk-based verification.** `build` prefers executable/static evidence before reviewers and uses
 one independent verifier by default. Mutation intensity is separate from S/M/L: `economy` performs

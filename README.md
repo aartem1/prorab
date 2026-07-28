@@ -292,6 +292,19 @@ The count is cumulative for the whole command and includes the main context plus
 Workflow context, retries included. You can pin the choice with `--fast`, `--thorough`,
 `--tier=S|M|L` or `--verification=economy|balanced|thorough`; the 16-context ceiling stays absolute.
 
+**A tier bounds how many contexts open, not how full each one gets** — those are two different
+things, and a context stuffed with material nobody reads judges worse than one given the range that
+matters. So a second, orthogonal limit applies at every tier: raw output from a test suite or an
+analyzer never enters a context (it goes to a file outside the working tree and comes back as a
+~40-line digest — command, exit code, counters, one line per failure), a delegated context returns a
+capsule of claims and `path:line` pointers rather than the material itself, and above the smallest
+tier the orchestrator holds the plan, the DoD table and the ledger while the reading happens in
+delegated contexts. At tier S the main loop *is* the executor and reads and runs directly — that is
+the intended shape of the cheap lane, not an exception to the rule.
+
+Compaction never buys silence: the exit code and the failure counts are always reported in full.
+Shortening *what* failed is allowed; concealing *that* something failed is a false report.
+
 What the budget never buys back: the safety floor is non-negotiable at every tier — the
 characterization net or baseline, the contract diff, the drift search, a DoD skeptic, and a
 sabotage-proven gate whenever one is created or changed.
@@ -305,6 +318,22 @@ at 1/2/3. A completed round that produces no new confirmed, non-duplicate findin
 immediately. Judge panels are used only when there are at least two genuinely different designs, and
 they consume the same cap. Generated Workflow scripts enforce their remaining allowance with a
 counter and a `boundedAgent()` wrapper; unbounded `agent()`/`pipeline()` fan-out is forbidden.
+
+**Occupancy limits** (the second axis, in the shared `Context hygiene` contract). *Run output:*
+captured to a file outside the working tree, read back as a digest of ~40 lines — the command, its
+exit code, its own counters, and one identifying line per failure; ten failures of one class become
+one example plus a count, and a specific failure is grepped out of the file on disk when it needs
+detail. A run is judged by exit code **and** counters, never by an `OK` string. *Returns:* a
+delegated context hands back one `schema` capsule of roughly 1500 tokens — claims plus `path:line`,
+symbol or command pointers, never file contents, a full diff or raw output; an oversized return is
+not forwarded verbatim into the next prompt. *Main loop:* above tier S it holds the artifact, the
+plan, the status table, the capsules and the `used/cap` ledger, with two bounded exceptions that the
+source-of-truth order requires — a named narrow range of current source when a capsule claim drives
+an external-contract or behavior decision, and the digest of a run it ordered. *Deterministic
+steps:* enumerable facts come from a command, not a reading — `git hash-object` for content identity,
+`git status --porcelain` / `git diff --name-only` for the change set, `git diff --stat` for the diff
+class, and a `grep` per touched symbol for documentation reach, where an empty result *is* the
+evidence that nothing was affected.
 
 **Per-command caps.** `refine` gets at most two Explore contexts; `announce` one delegated context
 plus a fact-check pass; `ask` one delegated context; `quick` is fixed at two contexts with no

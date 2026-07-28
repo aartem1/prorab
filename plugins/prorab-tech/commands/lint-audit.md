@@ -32,7 +32,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 - **A latent bug ≠ a reason to change behavior.** A strict analyzer often **surfaces a real bug** (a dead branch, an unreachable None path, a swallowed exception). This track **doesn't fix** the bug — that's a behavior change, another track (`/prorab:refine`→`/prorab:build`). Record it as a route finding; on the pass itself — an annotation/suppression at the agreed bar with a TODO, behavior unchanged.
 - **Rely on the repo's real tooling.** What's actually installed/runs (from `CLAUDE.md`, `package.json`, `pyproject.toml`/`setup.cfg`, `Makefile`, `.pre-commit-config.yaml`, CI configs), measure with that. **Broken tooling is itself a finding** (e.g. `eslint` without a flat-config → `npm run lint` fails → the frontend net is incomplete).
 - **Safety is the primary selection filter.** A batch that can't be run green-in-one-pass, or whose fix isn't behavior-preserving, is demoted in tier or moved to "cautious/manual". A falsely-safe autofix (removed a live export called dynamically) costs more than an unfixed warning.
-- **Keep the main loop's context clean.** Delegate heavy runs/parsing to agents; they return **structured findings** (via `schema`), not dumps of tool output.
+- **Keep the main loop's context clean.** Delegate heavy runs/parsing to agents; they return **structured findings** (via `schema`), not dumps of tool output. Apply the `Context hygiene` contract from the project-knowledge reference — and on this command it is the load-bearing rule, because **your entire input is analyzer output**: a first lenient run of a fresh tool over a large repository routinely emits thousands of lines. Every run goes to a file outside the working tree and comes back as a digest: command, exit code, violations per rule/code with their file spread, one example per class. That digest is exactly what the plan's batches are built from, and the per-rule counters are what its snapshot records; a delegated context returns that capsule, never the log.
 
 ---
 
@@ -222,7 +222,7 @@ Adapt sections to the batch; for the other batches the roadmap rows are enough.
 - **Grouped runners** — one bounded runner per stack/tool family, each may execute several read-only analyzers and returns `schema` findings; a barrier only on clustering/scoring.
 - **"Onboarding cost" estimate** — run a lenient read-only check only when the tool is already available; an ephemeral download requires explicit permission; otherwise give a clearly labeled manual estimate.
 - **Adversarial batch verification** — verify the first executable batch by default; a runner-up only when it can change the order. One bounded verifier checks behavior-preserving/one-pass/order; "reject or demote on doubt".
-- **Structured output** — `schema` on agents; don't parse raw tool output in the main loop.
+- **Structured output** — `schema` on agents; don't parse raw tool output in the main loop. A return is a capsule of per-rule counters, file spread and one example per class at roughly 1500 tokens — the digest, never the log.
 - **Visibility** — `phase()`/`log()`; show tier, `used/cap`, grouped runner coverage, and any no-progress stop; **don't stay silent about cuts** (a tool not run → say so).
 
 ## What NOT to do

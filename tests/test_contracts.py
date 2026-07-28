@@ -251,5 +251,108 @@ class DocumentationSyncTests(unittest.TestCase):
             self.assertIn("is **not** scope creep", read(command), command)
 
 
+class ContextHygieneTests(unittest.TestCase):
+    """Occupancy is bounded per context, orthogonally to the S/M/L context count."""
+
+    REFERENCES = (
+        PRODUCT / "references" / "project-knowledge.md",
+        TECH / "references" / "project-knowledge.md",
+    )
+    ALL_COMMANDS = tuple(sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md")))
+    # commands that run the project's own checks or analyzers
+    RUNNERS = (
+        PRODUCT / "commands" / "build.md",
+        PRODUCT / "commands" / "quick.md",
+        TECH / "commands" / "refactor.md",
+        TECH / "commands" / "lint-fix.md",
+        TECH / "commands" / "audit.md",
+        TECH / "commands" / "lint-audit.md",
+    )
+
+    def test_both_references_define_the_three_limits(self) -> None:
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("## Context hygiene", text, reference)
+            for limit in (
+                "### Run output discipline",
+                "### Delegated context returns",
+                "### Main-loop discipline",
+            ):
+                self.assertIn(limit, text, f"{reference}: {limit}")
+            # orthogonal to the tier, not a substitute for it
+            self.assertIn("orthogonal to the orchestration tier", text, reference)
+
+    def test_raw_run_output_never_reaches_a_context(self) -> None:
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("Raw run output never enters a model context", text, reference)
+            # captured outside the worktree, so the log cannot be committed
+            self.assertIn('>"${TMPDIR:-/tmp}/prorab-run.log" 2>&1', text, reference)
+            self.assertIn("never commit it", text, reference)
+            # a digest is identified by command, exit code and counters
+            self.assertIn("exit code", text, reference)
+            self.assertIn("counters", text, reference)
+
+    def test_compaction_may_not_hide_a_failure(self) -> None:
+        """The whole point of the honest report survives compaction."""
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("Compaction must never hide a result", text, reference)
+            self.assertIn("concealing *that* something failed is a false report", text, reference)
+            self.assertIn("~0 collected is a finding", text, reference)
+
+    def test_returns_are_capsules_of_claims_and_pointers(self) -> None:
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("1500 tokens", text, reference)
+            self.assertIn("pointers to\nevidence, never the evidence itself", text, reference)
+            self.assertIn("never forwarded verbatim", text, reference)
+
+    def test_main_loop_discipline_exempts_the_smallest_tier(self) -> None:
+        """At 2 contexts the main loop IS the executor; the rule starts above it."""
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("the main loop *is* the executor", text, reference)
+            self.assertIn("used/cap", text, reference)
+            # the source-of-truth order still outranks a clean context
+            self.assertIn("named, narrow range", text, reference)
+        for command in (
+            PRODUCT / "commands" / "build.md",
+            TECH / "commands" / "refactor.md",
+        ):
+            self.assertIn("Context occupancy", read(command), command)
+            self.assertIn("At **S the main loop is the executor**", read(command), command)
+        quick = read(PRODUCT / "commands" / "quick.md")
+        self.assertIn("main-loop rule of the `Context hygiene` contract does not apply", quick)
+
+    def test_enumerable_facts_come_from_a_command(self) -> None:
+        for reference in self.REFERENCES:
+            text = read(reference)
+            self.assertIn("## Deterministic steps", text, reference)
+            for command in (
+                "git hash-object",
+                "git status --porcelain",
+                "git diff --name-only",
+                "grep -rIn",
+            ):
+                self.assertIn(command, text, f"{reference}: {command}")
+            # a project's own command wins over the generic one
+            self.assertIn("that one wins", text, reference)
+
+    def test_every_command_is_wired_to_the_contract(self) -> None:
+        self.assertEqual(9, len(self.ALL_COMMANDS))
+        for command in self.ALL_COMMANDS:
+            text = read(command)
+            self.assertTrue(
+                "`Context hygiene` contract" in text
+                or "`Delegated context returns`" in text,
+                command,
+            )
+
+    def test_every_runner_reduces_its_output(self) -> None:
+        for command in self.RUNNERS:
+            self.assertIn("digest", read(command), command)
+
+
 if __name__ == "__main__":
     unittest.main()

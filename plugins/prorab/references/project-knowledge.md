@@ -95,6 +95,86 @@ Do not conclude that nothing is affected without looking: search the documentati
 paths, flags and literal values the change touched. Report both the documents corrected and the
 stale places deliberately left, in the same place the code changes are reported.
 
+## Context hygiene
+
+Three limits on what may enter a model context. They are budget rules, not tidiness: a context
+filled with material nobody reads degrades the judgement of everything that follows it. They are
+orthogonal to the orchestration tier — the tier bounds how *many* contexts a command opens, these
+bound how *full* each one gets.
+
+### Run output discipline
+
+One command run — a test suite, an analyzer, a typechecker, a build, a migration — can emit more
+text than the whole task it checks. **Raw run output never enters a model context.** Send it to a
+file outside the working tree and bring back a digest:
+
+```sh
+<the project's exact command> >"${TMPDIR:-/tmp}/prorab-run.log" 2>&1; echo "exit=$?"
+```
+
+The log stays outside the repository: never add it to the project, never commit it.
+
+A digest always states the exact command as invoked, its **exit code**, the run's own counters
+(collected/passed/failed/skipped; violations per rule; the build result), and for each failure its
+identifying line only — the test or rule name plus the assertion/error line. Keep it near 40 lines:
+ten failures of one class become one example and a count. Dropped: progress output, passing test
+names, repeated identical tracebacks, dependency resolution, warnings unrelated to the change, and
+tables nobody asked for. When one failure needs detail, grep it by name out of the file on disk —
+one bounded read, not the whole log.
+
+**Compaction must never hide a result.** The exit code and the failure/violation counts are reported
+in full; shortening *what* failed is allowed, concealing *that* something failed is a false report.
+Judge a run by its exit code **and** its counters — never by an `OK`/`passed` string, and `passed`
+with ~0 collected is a finding, not a pass.
+
+### Delegated context returns
+
+A delegated context returns one compact structured result through `schema`: claims plus pointers to
+evidence, never the evidence itself. Keep a return near 1500 tokens.
+
+It carries the finding or map entry and where to verify it — `path:line`, a symbol, an artifact
+section, or a command with its exit code. It does **not** carry file contents beyond a minimum quoted
+line, a full diff, raw run output, a directory listing, the agent's reasoning, or a restatement of
+its own prompt. When material genuinely has to be seen, the return names it and the orchestrator
+opens that one range, so the reading happens once where it is needed instead of being copied through
+a context that only passes it along. An oversized return is never forwarded verbatim into another
+prompt: extract the claim, drop the bulk.
+
+### Main-loop discipline
+
+The orchestrating context lives from intake to the final report and is the only one in the run that
+cannot be replaced, so it is the one to keep small.
+
+- **At the smallest tier** (2 contexts, no `Workflow`) the main loop *is* the executor: reading code,
+  editing it and running the checks there is correct.
+- **Above it** the main loop holds the task artifact, the plan and its order, the DoD or
+  behavior-boundary table with per-item status, the returns received, and the `used/cap` ledger. Bulk
+  reading, scanning and full runs belong in delegated contexts that hand back capsules.
+- **Two bounded exceptions**, because the source-of-truth order outranks tidiness: the main loop
+  opens a **named, narrow range** of current source when a returned claim materially drives an
+  external-contract or behavior decision, and it reads the **digest** of a run it ordered. A sweep is
+  not a narrow range.
+- Needing broad reading in the main loop above the smallest tier is a signal the work was
+  under-delegated: delegate the read and take the capsule.
+
+## Deterministic steps
+
+An enumerable fact is established by a command, not by a model reading around for it. These are
+cheap, exact and repeatable, and their answer is stronger than an impression:
+
+- **Content identity and freshness** — `git hash-object -- <paths>`; the commit is
+  `git rev-parse HEAD`.
+- **The change set** — `git status --porcelain` (it includes untracked files); against a known base,
+  `git diff --name-only <base>...HEAD`. A scope review's diff class comes from `git diff --stat` and
+  then `git diff -- <path>` per file.
+- **Documentation reach** — for every symbol, path, flag or literal value the change touched, grep
+  for it instead of judging from memory, with history excluded:
+  `grep -rIn --exclude-dir=.git --exclude-dir=archive -e '<symbol>' .` An empty result is the
+  evidence that nothing was affected.
+- **Run results** — the exit code and counters from the digest above.
+
+Where the repository already defines its own command for one of these, that one wins.
+
 ## Recall
 
 1. Derive a short search vocabulary from the task: exact paths, symbols, component names, event/API

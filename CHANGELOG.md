@@ -6,6 +6,68 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.12.0 · prorab-tech 0.11.0
+
+**A second budget axis: a tier bounds how many contexts open, not how full each one gets.** The
+S/M/L caps have always counted *contexts*. They say nothing about occupancy, and the two are
+independent — twelve contexts each stuffed to the brim is a legal L run and a bad one, because a
+context filled with material nobody reads judges worse than one given the range that matters. A
+measurement made the priority obvious: the fat is not the set of files an executor is given (a
+well-scoped node reads a small fraction of what fits), it is the **tail of tool output** inside it.
+One failing suite or one first lenient analyzer run can cost more context than the entire task.
+
+- **New shared contract — `Context hygiene`** (in both `references/project-knowledge.md` files),
+  with three limits that hold at every tier. **Run output discipline:** raw output from a test suite,
+  linter, typechecker, build or migration never enters a model context — it is captured to a file
+  outside the working tree (`>"${TMPDIR:-/tmp}/prorab-run.log" 2>&1`, never committed) and read back
+  as a digest of ~40 lines: the exact command, its exit code, the run's own counters, and one
+  identifying line per failure. Ten failures of one class become one example plus a count; a specific
+  failure is grepped out of the file on disk when it needs detail. **Delegated context returns:** one
+  `schema` capsule of roughly 1500 tokens — claims plus `path:line`, symbol or command pointers,
+  never file contents, a full diff or raw output, and an oversized return is not forwarded verbatim
+  into the next prompt. **Main-loop discipline:** above the smallest tier the orchestrator holds the
+  artifact, the plan, the status table, the received capsules and the `used/cap` ledger, while the
+  bulk reading happens in delegated contexts.
+- **Compaction never buys silence.** The exit code and the failure/violation counts are always
+  reported in full: shortening *what* failed is allowed, concealing *that* something failed is a
+  false report. A run is judged by exit code **and** counters, never by an `OK`/`passed` string, and
+  `passed` with ~0 collected stays a finding. The honest-report invariant outranks the budget.
+- **Two deliberate exceptions, because the source-of-truth order outranks a tidy context.** Above
+  tier S the main loop may still open a **named, narrow range** of current source when a capsule
+  claim materially drives an external-contract or behavior decision, and it reads the digest of any
+  run it ordered. A sweep is not a narrow range. And at **tier S the main loop *is* the executor** —
+  reading, editing and running the checks there is the intended shape of the cheap lane, so `build`
+  and `refactor` say so explicitly and `quick` states outright that the main-loop rule does not
+  apply to it. This resolves a real contradiction: `build` demanded a clean main loop while also
+  telling it to read key stretches, edit tightly coupled code and run the full suite itself.
+- **New shared contract — `Deterministic steps`.** An enumerable fact is established by a command,
+  not by a model reading around for it: `git hash-object` for content identity, `git rev-parse HEAD`
+  for the commit, `git status --porcelain` (untracked included) or `git diff --name-only <base>...HEAD`
+  for the change set, `git diff --stat` plus per-file `git diff` for a scope review's diff class, and
+  a `grep` per touched symbol for documentation reach — where an empty result *is* the evidence that
+  nothing was affected. A repository's own command for one of these always wins. Each such step is a
+  step that costs no context at all.
+- **Wired into all nine commands, each where its bulk actually is.** `lint-audit` gets it hardest,
+  because its entire input *is* analyzer output; `lint-fix` takes its before→after `N→0` counts from
+  two digests of the same invocation rather than from an impression; `refactor` reduces the
+  differential run to the compared input set, the divergence count and one line per divergence
+  instead of two output dumps; `build` applies it to the red-first run and to the full Phase 4
+  recipe, its bulkiest output; `audit` to the read-only tool runs it lives on; `quick` because two
+  contexts is all it has and one failing suite can spend one of them. `refine` is the one context
+  that genuinely cannot be split — a dialogue with a human in it — so it keeps capsules and the
+  unclarity map between rounds instead of file contents.
+- **Measured, not estimated.** The figure in `IMPROVEMENT-PROPOSALS.md` (4.5–5.5k input tokens per
+  heavy command) was too low: `build` is ~9.2k, `refactor` ~9.1k, `lint-fix` ~8.4k, plus ~3.3k of
+  shared reference — 10–12.5k before the first file is read. The same measurement corrected a second
+  belief worth recording: a delegated subagent does **not** receive the command body, only its brief
+  (1–2k), so that preamble is the *main* context's cost, not each executor's. Proposals 7 and 16 move
+  to `◐`, and 16 to P0, since this release implements their contracts but not an executable wrapper.
+- **What this release deliberately does not do.** It bounds occupancy; it does not yet *estimate* it
+  before dispatch or split an executor that would exceed it. Those are new proposals 21 (a per-context
+  usage journal, needed to calibrate any threshold by fact rather than assertion) and 22 (pre-dispatch
+  estimation with three outcomes — fits, split by seam, or return to `refine` for decomposition,
+  never a forced shard of coherent work). 22 depends on 21.
+
 ## prorab 0.11.0 · prorab-tech 0.10.0
 
 **Documentation stops drifting away from the code, and `quick` stops being invisible.** Two changes
