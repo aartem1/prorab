@@ -1,6 +1,6 @@
 {
   "name": "prorab-tech",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "prorab tech-quality track: audit+refactor and lint-audit+lint-fix, with verified project memory and safe completed-candidate/ladder archives",
   "author": {
     "name": "Artem Altukhov",

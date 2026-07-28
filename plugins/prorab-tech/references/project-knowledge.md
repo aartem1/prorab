@@ -1,7 +1,20 @@
 # Project knowledge contract
 
-This contract is shared by the tech-quality commands. Apply it without increasing the command's
-orchestration tier or fan-out: recall, capture, and archival are main-context filesystem work.
+Shared by the tech-quality commands. Apply it without increasing the command's orchestration tier or
+fan-out: recall, capture, and archival are main-context filesystem work.
+
+Siblings, loaded only by the commands that need them: `execution.md` (run output, main-loop
+discipline, deterministic steps) and `documentation-sync.md`.
+
+## Language
+
+Reason, prompt agents, and fill `schema` fields in **English**. Everything a human reads is in the
+**task's language** — detected from how the request was phrased, Russian by default: your chat and
+the task artifacts you write, which are project documents. Code, identifiers, paths, tool and rule
+names, comments, commit messages and configs stay as in the code and its own documentation. Carry
+user-visible domain/report terms verbatim in the task's language; never round-trip-translate them. A
+template printed inside a command is in English for reference — render its headings and prose in the
+task's language.
 
 ## Source-of-truth and memory
 
@@ -67,74 +80,11 @@ line per entry: link, type, status, topic, and key paths/symbols.
 Do not capture the audit backlog, transcripts, reasoning, temporary status, ordinary facts cheaper
 to read from code, one-off failures, unmarked assumptions, or copies of AUDIT/LINT/IMPL content.
 
-## Documentation sync
+## Delegated context returns
 
-A command that changes code owns the documentation that change falsifies. A stale document left
-behind is an incomplete change, not a follow-up, and it is part of the command's own completion
-condition. Behavior preservation does not exempt a command from this: a rename, a moved module, a
-changed entrypoint, a new gate or a tightened rule set can all leave a current-state document wrong
-while behavior is untouched.
-
-**Current-state documents are corrected. Historical documents are never rewritten.**
-
-- *Current state* — anything claiming to describe how the project works now: `README`, `docs/`, the
-  project spec, API/configuration references, runbooks, contributor and tooling guides, `CLAUDE.md`
-  and other agent guidance, docstrings, comments, `--help`/usage text, and their examples.
-- *Historical* — anything recording what happened: `CHANGELOG.md`, release notes, ADRs and other
-  dated decision records, migration notes, `tasks/archive/**`, completed task artifacts, and any
-  section explicitly written as a record of a past state. Add a new entry where the project's
-  convention calls for one; never edit a past entry so it matches new code.
-
-Scope is what the change makes **factually wrong**: a renamed symbol or path, a moved module, a
-changed default, flag, signature, limit, format, command or entrypoint, an example that would now
-behave differently, a step that no longer exists. For a gate change, the documented way to run the
-checks locally and in CI, and the documented strictness bar, are current-state documentation and
-must match the gate that now exists. Fix in place, minimally, in the document's existing language
-and style.
-
-Out of scope, and reported instead of edited: style rewrites, pre-existing documentation gaps,
-restructuring, and corrections needing a product decision. A correction larger than the code change
-itself is reported with the follow-up command named, not absorbed into the diff.
-
-Do not conclude nothing is affected without searching the documentation for the symbols, paths,
-rule IDs, flags and literal values the change touched. Report the documents corrected and the stale
-places deliberately left alongside the code changes.
-
-## Context hygiene
-
-Three limits on what may enter a model context. They are budget rules, not tidiness: a context
-filled with material nobody reads degrades the judgement of everything that follows it. They are
-orthogonal to the orchestration tier — the tier bounds how *many* contexts a command opens, these
-bound how *full* each one gets. On this track the dominant bulk is **analyzer and test output**, so
-the first limit is the one that pays most.
-
-### Run output discipline
-
-One command run — a linter, a typechecker, a test suite, a build, a coverage or dead-code pass — can
-emit more text than the whole batch it checks. **Raw run output never enters a model context.** Send
-it to a file outside the working tree and bring back a digest:
-
-```sh
-<the project's exact command> >"${TMPDIR:-/tmp}/prorab-run.log" 2>&1; echo "exit=$?"
-```
-
-The log stays outside the repository: never add it to the project, never commit it.
-
-A digest always states the exact command as invoked, its **exit code**, the run's own counters
-(violations per rule/code and their file spread; collected/passed/failed/skipped; the build result),
-and for each failure or violation class its identifying line only — the rule or test name plus the
-message. Keep it near 40 lines: two hundred violations of one rule become the rule, the count, the
-file spread and one example, never two hundred lines. Dropped: progress output, passing test names,
-repeated identical tracebacks, dependency resolution, and warnings unrelated to the batch. When one
-violation needs detail, grep it by name out of the file on disk — one bounded read, not the whole log.
-
-**Compaction must never hide a result.** The exit code and the failure/violation counts are reported
-in full; shortening *what* failed is allowed, concealing *that* something failed is a false report.
-Judge a run by its exit code **and** its counters — never by an `OK`/`passed` string, and `passed`
-with ~0 collected is a finding, not a pass. A before→after count claim (N→0) is taken from two
-digests of the same invocation, not from an impression of the output.
-
-### Delegated context returns
+One of three context-occupancy limits, orthogonal to the orchestration tier: the tier bounds how
+*many* contexts a command opens, these bound how *full* each one gets. The other two — run output
+discipline and main-loop discipline — are in `execution.md`.
 
 A delegated context returns one compact structured result through `schema`: claims plus pointers to
 evidence, never the evidence itself. Keep a return near 1500 tokens.
@@ -146,41 +96,6 @@ a restatement of its own prompt. When material genuinely has to be seen, the ret
 orchestrator opens that one range, so the reading happens once where it is needed instead of being
 copied through a context that only passes it along. An oversized return is never forwarded verbatim
 into another prompt: extract the claim, drop the bulk.
-
-### Main-loop discipline
-
-The orchestrating context lives from intake to the final report and is the only one in the run that
-cannot be replaced, so it is the one to keep small.
-
-- **At the smallest tier** (2 contexts, no `Workflow`) the main loop *is* the executor: reading code,
-  editing it and running the checks there is correct.
-- **Above it** the main loop holds the task artifact, the plan and its order, the behavior-boundary or
-  gate-state table with per-item status, the returns received, and the `used/cap` ledger. Bulk
-  reading, scanning and full runs belong in delegated contexts that hand back capsules.
-- **Two bounded exceptions**, because the source-of-truth order outranks tidiness: the main loop
-  opens a **named, narrow range** of current source when a returned claim materially drives a
-  contract, behavior or gate decision, and it reads the **digest** of a run it ordered. A sweep is not
-  a narrow range.
-- Needing broad reading in the main loop above the smallest tier is a signal the work was
-  under-delegated: delegate the read and take the capsule.
-
-## Deterministic steps
-
-An enumerable fact is established by a command, not by a model reading around for it. These are
-cheap, exact and repeatable, and their answer is stronger than an impression:
-
-- **Content identity and freshness** — `git hash-object -- <paths>`; the commit is
-  `git rev-parse HEAD`.
-- **The change set** — `git status --porcelain` (it includes untracked files); against a known base,
-  `git diff --name-only <base>...HEAD`. A scope-creep review's diff class comes from
-  `git diff --stat` and then `git diff -- <path>` per file.
-- **Documentation reach** — for every symbol, path, rule ID, flag or literal value the change
-  touched, grep for it instead of judging from memory, with history excluded:
-  `grep -rIn --exclude-dir=.git --exclude-dir=archive -e '<symbol>' .` An empty result is the
-  evidence that nothing was affected.
-- **Run results and before→after counts** — the exit codes and counters from the digests above.
-
-Where the repository already defines its own command for one of these, that one wins.
 
 ## Safe archive protocol
 

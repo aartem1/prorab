@@ -1,5 +1,5 @@
 ---
-description: "Run ONE safe ordered pass from the LINT plan turnkey — preserve behavior and follow the gate lifecycle: prepare before C, create the gate at C, tighten it after C. No approval gate."
+description: "Runs ONE safe ordered pass from the LINT plan turnkey — behavior preserved, gate lifecycle honoured: prepare before C, create the gate at C, tighten it after C. No approval gate."
 argument-hint: empty = auto-pick the first undone batch with met prerequisites from the latest LINT-*; or <id>/slug of a batch, a path to the LINT file, a free description (tool/rule)
 ---
 
@@ -17,9 +17,7 @@ This is the executor of the tooling-quality sub-track **lint-audit → LINT → 
 
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded fan-out (recon, drift search, gate check) only where the selected tier allows it. Spend the budget **according to the batch's type and size** and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **safety floor (baseline net, truthful gate state, sabotage whenever a gate is created/changed, drift search for non-mechanical edits) is non-negotiable at any tier**; behavior preservation and gate reliability are the constraint; within it, don't spend fan-out where the edit is purely mechanical.
 
-**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-lint-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages, configs — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active lookup, and static-quality archive rules. Re-probe commands and gate state; memory alone never closes a batch. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness, active lookup, static-quality archive), `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps) and `${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md`. Re-probe commands and gate state; memory alone never closes a batch. `tasks/IMPL-lint-*.md` is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -32,7 +30,7 @@ This is the executor of the tooling-quality sub-track **lint-audit → LINT → 
 5. **Zero scope creep.** We touch only this batch's files/rules. No incidental logic edits, no reformatting of unrelated files, no adding extra strictness rules beyond the batch, no dependency changes without need.
 6. **Measure the improvement with a number.** The claimed effect is confirmed: there were N violations of the rule/class → now 0 (on the target scope), the tool is green. Not "it's cleaner now" in words.
 7. **Repo conventions beat generic best practices.** Take the strictness bar, config style, and gate format from how similar things are already done here; read `CLAUDE.md`. Don't impose a foreign preset if the project has its own.
-8. **Keep the main loop's context clean.** Delegate heavy runs/drift search to agents (structured `schema`), don't drag dumps into the main loop. The `Context hygiene` contract in the project-knowledge reference sets the three limits this rests on, and on this pass the first one carries most of the weight: **analyzer output is the bulk of everything you touch**, so it is reduced to a digest — command, exit code, violations per rule and their file spread, one example per class — before anyone reads it. A delegated context hands back a capsule; above tier S the main loop stops doing the reading itself. Its `Deterministic steps` list is the other half — the change set, the diff class and the documentation reach come from a command, not from an impression.
+8. **Keep the main loop's context clean.** Delegate heavy runs/drift search to agents (structured `schema`), don't drag dumps into the main loop. `Run output discipline` carries most of the weight on this pass, because **analyzer output is the bulk of everything you touch**: it is reduced to a digest before anyone reads it. A delegated context hands back a capsule; above tier S the main loop stops reading itself; and the change set, diff class and documentation reach come from a `Deterministic steps` command rather than an impression.
 9. **Honest report; git on request.** Call the failing failing; don't declare "done" without a green tool, a green net, and the planned gate state proven (or explicitly preparatory/not locked before C). Don't commit/push without an explicit request; on `main`/`master` — first create a working branch (allowed without asking; commit/push/PR only on request).
 
 ---
@@ -64,7 +62,7 @@ Everything else — turnkey, no pauses; resolve debatable decisions that don't a
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
-The degree of multi-agentness follows the **batch type and size**, not always the top setting. Take the tier **from the LINT plan** (the batch tier tag A/B/C/D + violation count + auto/manual) — don't re-derive it.
+The degree of multi-agentness follows the **batch type and size**, not always the top setting. Take the tier from the LINT plan's durable batch properties — the **tier tag A/B/C/D**, the auto-versus-manual nature of the fix, and the scope it names — rather than re-deriving them from the code. The plan's **violation count is not one of those inputs**: Phase 1 re-runs the tool for the authoritative "before" number, so pick the tier from type and scope, and if the fresh count lands the batch in a different size band, adjust the tier there and log it.
 
 **Batch-tier → budget mapping:**
 
@@ -118,7 +116,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
    - **C:** create the first relevant pre-commit/CI gate for the already-green tools, following repository conventions;
    - **post-C A/B/D:** tighten or expand the identified existing gate to enforce the achieved scope/bar; don't create a parallel ad-hoc gate.
 4. **Hygiene only.** At each step ask: am I changing observable behavior? If yes and it's not "pure hygiene" — stop, that's a latent bug/scope creep, not this pass.
-5. **The documented bar must match the real bar.** Apply the `Documentation sync` contract from the project-knowledge reference. How contributors run the checks locally and in CI, which tools the project uses, what the enforced strictness is, and any documented "we don't lint X yet" are current-state documentation: an onboarded tool, a new gate, a tightened rule set or a changed entrypoint falsifies them. Correct exactly those places — contributor guide, README, `docs/`, `CLAUDE.md` and other agent guidance, tooling section, `--help`/usage text — in place, in the document's own language. A pre-C preparatory batch must not claim a gate that does not exist yet; describe only what is actually enforced now. Never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**`. Record each edit in the batch artifact.
+5. **The documented bar must match the real bar.** Apply the `Documentation sync` contract. How contributors run the checks locally and in CI, which tools the project uses, what the enforced strictness is, and any documented "we don't lint X yet" are current-state documentation: an onboarded tool, a new gate, a tightened rule set or a changed entrypoint falsifies them. Correct exactly those places. A pre-C preparatory batch must not claim a gate that does not exist yet; describe only what is actually enforced now. Never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**`. Record each edit in the batch artifact.
 
 ## Phase 3 — Verification (Workflow) — the main control instead of approval
 
@@ -140,16 +138,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 5. **Commit/PR only on request.** On `main`/`master` — create a branch. Hint: continue with `/prorab-tech:lint-fix`, or announce a completed ladder via `/prorab:announce <archived IMPL path>`.
 
 ---
-
-## Workflow-pattern cheatsheet (apply deliberately)
-
-- **`pipeline()` by default;** a barrier (`parallel()` between stages) — only when the next one needs ALL results of the previous.
-- **Differential run** — the strongest proof of equivalence for edits where a runtime shift is possible (code removal, annotations): old vs new on the same inputs.
-- **Gate lifecycle + sabotage** — pre-C A/B are preparatory and make no locked claim; C creates the gate; post-C A/B/D change the existing gate. Every create/change is proven empirically by an injected violation that turns the gate red.
-- **Adversarial drift search** — one verifier covers the relevant lenses; add contexts only on conflict/high risk and within the cap, default "behavior changed until proven otherwise"; lighten it for purely mechanical edits.
-- **Structured output** — `schema` on agents, not dumps of tool output. A return is a capsule of claims and pointers (`path:line`, rule ID, command + exit code) at roughly 1500 tokens; an oversized one is never forwarded verbatim into the next prompt.
-- **Worktree isolation** — required for verification mutations and concurrent agent edits; otherwise avoid its setup/disk cost.
-- **Visibility** — `phase()`/`log()`; **don't stay silent about cuts** (limited the differential run/sample — `log()`).
 
 ## What NOT to do
 

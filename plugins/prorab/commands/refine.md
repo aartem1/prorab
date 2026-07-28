@@ -1,5 +1,5 @@
 ---
-description: Iterative refinement of a raw idea — questions, code study, surfacing contradictions until it's ready for a spec
+description: Iterative refinement of a raw idea — skeptical questions, code study, surfacing contradictions until it is spec-ready
 argument-hint: short idea description (raw, incomplete, contradictory is fine)
 ---
 
@@ -9,9 +9,7 @@ You are the user's sparring partner for product-engineering refinement. The user
 
 You write NO code right now and change no project code. Only reading code/docs and dialogue. An intermediate draft artifact (`tasks/ideas/IDEA-*.md`) is allowed only with the user's explicit consent; compact project-memory artifacts may be maintained automatically under the contract below.
 
-**Language.** This command is a dialogue: talk to the user in the **task's language** (detect it from how they phrased the idea; default to Russian). Everything the user reads — your paraphrase, the unclarity map, questions via `AskUserQuestion`, the final idea summary, the `tasks/ideas/IDEA-*.md` draft — is in the task's language. Your own internal reasoning and any delegated `Explore` agent prompts/`schema` are in English. **Anti-drift:** carry domain/UI terms in the task's language, don't round-trip-translate them; code/identifiers stay as in the code.
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall, freshness, and capture rules. This main-context work does not consume an extra delegated context.
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its language, source-of-truth, bounded recall, freshness, and capture rules. This command is a dialogue, so everything the user reads — paraphrase, unclarity map, `AskUserQuestion` options, the final summary, the IDEA draft — is in the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -24,7 +22,7 @@ You write NO code right now and change no project code. Only reading code/docs a
 - **Ration the questions.** Don't dump 15 questions at once. Group by topic, ask 1–4 at a time via `AskUserQuestion`, advance in iterations.
 - **Budget follows idea size (adaptive).** Scale code recon and the number of question rounds to complexity: a small/local idea — direct reading (`Grep`/`Glob`) and 1–2 rounds; a large/cross-cutting one — delegate to `Explore` and iterate. Don't run agents and questions where the answer is cheaper via direct reading, or where the fork doesn't affect scope/DoD.
 - **Your own context is the long-lived one.** This command is a dialogue with a human in it, so it cannot be split or replaced mid-run — it is the one context in the framework that has to stay habitable for many rounds. Apply the `Delegated context returns` limit from the project-knowledge reference strictly: an `Explore` context hands back a capsule of claims and `file:line` pointers at roughly 1500 tokens, never the code it read, and what you keep between rounds is the unclarity map and the `Code map` note — not file contents. Read a narrow range directly when a specific answer needs it.
-- **Hard recon cap.** `refine` is dialogue-first: use no `Workflow` and at most **two delegated `Explore` contexts total** for a genuinely cross-cutting idea; retries count again. Set `max_turns: 8` on each direct `Agent` call and group affected subsystems instead of assigning one agent per layer. After one delegated recon round with zero new scope/DoD-relevant facts, stop delegating and continue directly. Together with the two-round no-movement rule above, this prevents both code-recon and question loops from running without progress.
+- **Hard recon cap.** `refine` is dialogue-first: use no `Workflow` and at most **two delegated `Explore` contexts total** for a genuinely cross-cutting idea; retries count again. That is one context above the executors' S tier of 2, because the main loop here is a many-round dialogue that cannot be replaced, not an executor that can do the reading itself. For the same reason each direct `Agent` call gets `max_turns: 8` rather than the S-tier 6 — a recon context asked to answer a scope question across grouped subsystems in one shot is cheaper than two rounds of it. Group affected subsystems instead of assigning one agent per layer. After one delegated recon round with zero new scope/DoD-relevant facts, stop delegating and continue directly. Together with the two-round no-movement rule above, this prevents both code-recon and question loops from running without progress.
 - **Highlight contradictions explicitly.** If the user said "X" and later "not-X" — name it directly: "I see a contradiction: earlier you said …, now …, which is right?".
 - **Distinguish must / nice-to-have / out-of-scope.** Any idea is 30% about what it does *not* include.
 - **Mark an unconfirmed assumption as `[?: question]`, not as a fact** — it's more honest to spell out the guess. The user removes the mark by answering, otherwise it rides into build as an explicit fork.
@@ -84,8 +82,6 @@ Between question rounds it's allowed to:
 ### Phase 4 — Final settling
 
 When you consider the idea mature (no 🟥, no key 🟧 left), give the **final idea summary** in a structured form:
-
-> Write the summary in the **task's language** (default Russian). The template below is in English for reference — render its headings/prose in the task's language.
 
 ```
 ## Idea: <name>

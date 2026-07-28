@@ -63,7 +63,12 @@ Each `lint-fix` call = one ratchet step; run it again until the ladder is done. 
 global, artifacts are local to the project.
 
 **Project memory and archive.** Every command reads the bundled
-[`references/project-knowledge.md`](references/project-knowledge.md) contract. Recall is
+[`references/project-knowledge.md`](references/project-knowledge.md) contract — language,
+source-of-truth order, memory, delegated-return capsules and the safe archive protocol. All four
+also read [`references/execution.md`](references/execution.md) (run output discipline, main-loop
+discipline, deterministic steps), since all four run analyzers or the project's checks;
+[`references/documentation-sync.md`](references/documentation-sync.md) is loaded only by `refactor`
+and `lint-fix`, the two that change code. Recall is
 task-specific and exact-first; current code and executable tool/gate evidence always outrank
 memory. Successful commands capture only durable boundaries, contracts, recurring gotchas, and
 re-probed verification knowledge under `tasks/memory/`. Active lookup excludes
@@ -122,7 +127,7 @@ gate that actually exists — a pre-C batch must not claim a gate it hasn't crea
 documents (`CHANGELOG.md`, release notes, ADRs, migration notes, the archive) are never rewritten to
 match new code: an ADR explaining why the old shape was chosen stays true history. A stale
 current-state document is a verification finding. The full rule lives in
-[`references/project-knowledge.md`](references/project-knowledge.md).
+[`references/documentation-sync.md`](references/documentation-sync.md).
 
 **Language.** Command bodies and the internal work are in English; artifacts
 (`AUDIT`/`LINT`/`IMPL-*`) and the dialogue are in the task's language (Russian by default). See the

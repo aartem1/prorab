@@ -305,6 +305,13 @@ the intended shape of the cheap lane, not an exception to the rule.
 Compaction never buys silence: the exit code and the failure counts are always reported in full.
 Shortening *what* failed is allowed; concealing *that* something failed is a false report.
 
+The same principle applies to the commands' own text. The shared rules live in three contracts, and a
+command loads only the ones it can act on: `project-knowledge.md` (language, source-of-truth order,
+memory, delegated-return capsules, archive) is read by all nine; `execution.md` (run output and
+main-loop discipline, deterministic steps) only by the six that run checks or analyzers; and
+`documentation-sync.md` only by the four that change code. `ask`, `announce` and `refine` load
+neither of the last two, which is where the biggest part of their prompt used to go.
+
 What the budget never buys back: the safety floor is non-negotiable at every tier — the
 characterization net or baseline, the contract diff, the drift search, a DoD skeptic, and a
 sabotage-proven gate whenever one is created or changed.
@@ -319,7 +326,8 @@ immediately. Judge panels are used only when there are at least two genuinely di
 they consume the same cap. Generated Workflow scripts enforce their remaining allowance with a
 counter and a `boundedAgent()` wrapper; unbounded `agent()`/`pipeline()` fan-out is forbidden.
 
-**Occupancy limits** (the second axis, in the shared `Context hygiene` contract). *Run output:*
+**Occupancy limits** (the second axis; `Delegated context returns` sits in the shared
+`project-knowledge.md` because every command needs it, the other two in `execution.md`). *Run output:*
 captured to a file outside the working tree, read back as a digest of ~40 lines — the command, its
 exit code, its own counters, and one identifying line per failure; ten failures of one class become
 one example plus a count, and a specific failure is grepped out of the file on disk when it needs
@@ -430,12 +438,12 @@ prorab/
 │   ├── prorab/                    # product track
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── commands/              # refine.md build.md quick.md announce.md ask.md
-│   │   ├── references/project-knowledge.md
+│   │   ├── references/            # project-knowledge.md execution.md documentation-sync.md
 │   │   └── README.md
 │   └── prorab-tech/               # tech-quality track
 │       ├── .claude-plugin/plugin.json
 │       ├── commands/              # audit.md refactor.md lint-audit.md lint-fix.md
-│       ├── references/project-knowledge.md
+│       ├── references/            # project-knowledge.md execution.md documentation-sync.md
 │       └── README.md
 ├── tests/test_contracts.py        # manifests/frontmatter + lifecycle scenario checks
 ├── README.md

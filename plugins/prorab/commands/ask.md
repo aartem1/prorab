@@ -1,5 +1,5 @@
 ---
-description: "Answers a question about the current project using current code, docs, task history, and bounded project memory; verifies important claims and cites sources."
+description: "Answers a question about the current project from current code, docs, task history and bounded memory; verifies claims and cites sources."
 argument-hint: "question about architecture, behavior, history, consumers, ownership, or verification"
 ---
 
@@ -13,13 +13,10 @@ This is a **read-mostly** command. Do not write project code, run mutating check
 commit, or push. The only allowed writes are correcting a project-memory entry whose staleness is
 proved by the read-only investigation, or marking it `stale`/`superseded`.
 
-**Language.** Reasoning, search notes, and delegated prompts are English. Answer in the question's
-language (Russian by default), preserving code/domain names exactly.
-
 **Project knowledge.** First read
-`${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md`. Follow its source-of-truth order, bounded
-recall, freshness, active/archive lookup, and memory-correction rules. Memory is an accelerator,
-never the only source.
+`${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md`. Follow its language, source-of-truth order,
+bounded recall, freshness, active/archive lookup, and memory-correction rules. Memory is an
+accelerator, never the only source.
 
 ## Method
 

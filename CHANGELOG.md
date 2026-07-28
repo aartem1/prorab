@@ -6,6 +6,60 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.13.0 · prorab-tech 0.12.0
+
+**A command loads only the contracts it can act on, and stops re-teaching what it already has.** A
+measurement of every command's actual input found ~3.9k tokens of near-duplicate paragraphs across
+the nine command files, one rule stated three and four times inside a single file, and — the largest
+single item — a shared reference read in full by commands that could not use two thirds of it. None
+of it was load-bearing: no tier, cap, floor, DoD rule or gate rule changed in this release.
+
+- **The shared reference is split in three, per plugin.** `project-knowledge.md` keeps what every
+  command needs — language, source-of-truth order, memory layout, recall/capture, the archive
+  lifecycle, and `Delegated context returns`. `execution.md` takes the other two occupancy limits
+  (`Run output discipline`, `Main-loop discipline`) plus `Deterministic steps`, and is loaded by the
+  six commands that actually run checks or analyzers. `documentation-sync.md` is loaded by the four
+  that change code. `ask`, `announce` and `refine` load neither of the last two, so they no longer
+  carry rules they are forbidden to act on: **`ask` −33 %, `announce` −27 %, `refine` −21 %** of the
+  tokens they load. `audit` and `lint-audit` skip documentation sync: **−8 % each**. A new test locks
+  the wiring in both directions — a runner must cite `execution.md`, a read-only command must not.
+- **The `Language` rule moved into the shared contract.** It was five near-verbatim copies plus three
+  variants (709 tokens of pure duplication) saying the same thing: reason in English, write everything
+  a human reads in the task's language, never round-trip a domain term. It is now stated once, and a
+  command adds only the clause specific to it — `announce`'s "terms strictly as in the app's UI",
+  `refine`'s dialogue surfaces, each executor's artifact. The four repeated "the template below is in
+  English for reference" blockquotes are covered by the same sentence and gone.
+- **The `Workflow-pattern cheatsheet` sections are removed** from `build`, `audit`, `refactor`,
+  `lint-audit` and `lint-fix` (~1.4k tokens). They re-taught the `Workflow` tool's own documentation,
+  which is already in the same context — pipeline by default, a barrier only when the next stage needs
+  every result, worktree isolation being expensive, `phase()`/`log()`, `schema` returns, logging a
+  bounded sample. Worse than redundant: a second copy of someone else's docs is a copy that can drift
+  out of agreement with them. Everything they said operationally is still said where it applies, in
+  Principles and in the phase that acts on it.
+- **A rule now appears at most twice** — once in the contract, once in the step that acts on it.
+  `digest` was stated four times in `build` and four in `lint-fix`, `used/cap` four times in `build`,
+  the mutation-worktree rule five times; the "≈1500-token capsule" figure lived in all nine commands
+  *and* both references, eleven places for one number. The inline restatements of
+  `Documentation sync` in the four executors are one pointer each now, keeping only the
+  current-state-versus-historical line that carries the actual decision.
+- **Three real defects, found by the same read.** `lint-fix` derived its tier from "the batch tier tag
+  + violation count", twenty lines after declaring the plan's violation counts a stale snapshot that
+  must be re-run — the tier now comes from the batch's durable properties, and a fresh count that
+  moves the size band adjusts the tier and is logged. `refactor` said "take the tier from the AUDIT
+  spec"; the AUDIT template records `blast_radius`/`coverage_nearby`/`risk_hint` and the safety-size
+  scoring, never a tier, so it now says to derive it from those inputs. And `refine`'s `max_turns: 8`
+  and third context, which every other non-Workflow command sets to 6 and 2, are no longer an
+  unexplained divergence: the reason (a many-round dialogue main loop that cannot be replaced) is
+  written down.
+- **Frontmatter descriptions trimmed** from 793 to ~660 tokens. Those nine lines are loaded into every
+  session whether a command runs or not.
+- **Net effect, measured per command** (body plus the contracts it loads): 74.1k → 67.7k tokens across
+  the nine, with the cheap read-only lane cutting a third. The heavy executors move least (−1 to −3 %)
+  because their bulk is the Phase 0.5 budget machinery, which is command-specific prose that
+  compressing further would mean rewriting rather than de-duplicating — deliberately left for a
+  separate pass, as were the `What NOT to do` sections, where roughly half the bullets restate the
+  body but the negative framing is what keeps a skeptic honest.
+
 ## prorab 0.12.0 · prorab-tech 0.11.0
 
 **A second budget axis: a tier bounds how many contexts open, not how full each one gets.** The

@@ -8,6 +8,43 @@ ROOT = Path(__file__).resolve().parents[1]
 PRODUCT = ROOT / "plugins" / "prorab"
 TECH = ROOT / "plugins" / "prorab-tech"
 
+# The shared contracts, split so a command loads only what it needs.
+KNOWLEDGE = (
+    PRODUCT / "references" / "project-knowledge.md",
+    TECH / "references" / "project-knowledge.md",
+)
+EXECUTION = (
+    PRODUCT / "references" / "execution.md",
+    TECH / "references" / "execution.md",
+)
+DOC_SYNC = (
+    PRODUCT / "references" / "documentation-sync.md",
+    TECH / "references" / "documentation-sync.md",
+)
+
+# Commands that run the project's checks or analyzers, and so load execution.md.
+RUNNERS = (
+    PRODUCT / "commands" / "build.md",
+    PRODUCT / "commands" / "quick.md",
+    TECH / "commands" / "refactor.md",
+    TECH / "commands" / "lint-fix.md",
+    TECH / "commands" / "audit.md",
+    TECH / "commands" / "lint-audit.md",
+)
+# Commands that write code, and so also load documentation-sync.md.
+EXECUTORS = (
+    PRODUCT / "commands" / "build.md",
+    PRODUCT / "commands" / "quick.md",
+    TECH / "commands" / "refactor.md",
+    TECH / "commands" / "lint-fix.md",
+)
+# Commands that neither run checks nor change code: they load neither extra contract.
+READ_ONLY = (
+    PRODUCT / "commands" / "refine.md",
+    PRODUCT / "commands" / "announce.md",
+    PRODUCT / "commands" / "ask.md",
+)
+
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -44,7 +81,24 @@ class ManifestAndCommandTests(unittest.TestCase):
             self.assertIn(
                 "${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md", text, command
             )
-            self.assertTrue((command.parents[1] / "references" / "project-knowledge.md").is_file())
+            for reference in ("project-knowledge.md", "execution.md", "documentation-sync.md"):
+                self.assertTrue((command.parents[1] / "references" / reference).is_file())
+
+    def test_each_command_loads_only_the_contracts_it_needs(self) -> None:
+        """The split is the saving: a read-only command must not pull in the executor contracts."""
+        execution = "${CLAUDE_PLUGIN_ROOT}/references/execution.md"
+        doc_sync = "${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md"
+        for command in RUNNERS:
+            self.assertIn(execution, read(command), command)
+        for command in EXECUTORS:
+            self.assertIn(doc_sync, read(command), command)
+        # audit/lint-audit run analyzers but change no code
+        for command in (TECH / "commands" / "audit.md", TECH / "commands" / "lint-audit.md"):
+            self.assertNotIn(doc_sync, read(command), command)
+        for command in READ_ONLY:
+            text = read(command)
+            self.assertNotIn(execution, text, command)
+            self.assertNotIn(doc_sync, text, command)
 
 
 class LifecycleScenarioTests(unittest.TestCase):
@@ -59,7 +113,7 @@ class LifecycleScenarioTests(unittest.TestCase):
 
     def test_new_project_without_memory_or_archive_is_supported(self) -> None:
         self.assertIn("Missing memory", read(PRODUCT / "commands" / "refine.md"))
-        self.assertIn("missing/unreadable memory tree is non-fatal", self.product_contract)
+        self.assertIn("memory tree\nis non-fatal", self.product_contract)
 
     def test_existing_and_stale_memory_are_verified(self) -> None:
         self.assertIn("exact paths, symbols", self.product_contract)
@@ -204,23 +258,14 @@ class QuickLaneTests(unittest.TestCase):
 class DocumentationSyncTests(unittest.TestCase):
     """A code-changing command owns the docs its change falsifies, and only those."""
 
-    REFERENCES = (
-        PRODUCT / "references" / "project-knowledge.md",
-        TECH / "references" / "project-knowledge.md",
-    )
-    # every command that writes code
-    EXECUTORS = (
-        PRODUCT / "commands" / "build.md",
-        PRODUCT / "commands" / "quick.md",
-        TECH / "commands" / "refactor.md",
-        TECH / "commands" / "lint-fix.md",
-    )
+    REFERENCES = DOC_SYNC
+    EXECUTORS = EXECUTORS
     HISTORICAL = ("CHANGELOG.md", "release notes", "ADR", "tasks/archive/**")
 
     def test_both_references_define_the_contract(self) -> None:
         for reference in self.REFERENCES:
             text = read(reference)
-            self.assertIn("## Documentation sync", text, reference)
+            self.assertIn("# Documentation sync contract", text, reference)
             self.assertIn("owns the documentation that change falsifies", text, reference)
             self.assertIn(
                 "Current-state documents are corrected. Historical documents are never rewritten.",
@@ -254,33 +299,25 @@ class DocumentationSyncTests(unittest.TestCase):
 class ContextHygieneTests(unittest.TestCase):
     """Occupancy is bounded per context, orthogonally to the S/M/L context count."""
 
-    REFERENCES = (
-        PRODUCT / "references" / "project-knowledge.md",
-        TECH / "references" / "project-knowledge.md",
-    )
+    REFERENCES = EXECUTION
     ALL_COMMANDS = tuple(sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md")))
-    # commands that run the project's own checks or analyzers
-    RUNNERS = (
-        PRODUCT / "commands" / "build.md",
-        PRODUCT / "commands" / "quick.md",
-        TECH / "commands" / "refactor.md",
-        TECH / "commands" / "lint-fix.md",
-        TECH / "commands" / "audit.md",
-        TECH / "commands" / "lint-audit.md",
-    )
+    RUNNERS = RUNNERS
 
-    def test_both_references_define_the_three_limits(self) -> None:
-        for reference in self.REFERENCES:
+    def test_the_three_limits_are_defined_where_their_readers_look(self) -> None:
+        """Returns ride with the knowledge contract every command reads; the other two with execution."""
+        for reference in KNOWLEDGE:
+            text = read(reference)
+            self.assertIn("## Delegated context returns", text, reference)
+            self.assertIn("orthogonal to the orchestration tier", text, reference)
+            # and it points at where the siblings live
+            self.assertIn("execution.md", text, reference)
+        for reference in EXECUTION:
             text = read(reference)
             self.assertIn("## Context hygiene", text, reference)
-            for limit in (
-                "### Run output discipline",
-                "### Delegated context returns",
-                "### Main-loop discipline",
-            ):
+            for limit in ("### Run output discipline", "### Main-loop discipline"):
                 self.assertIn(limit, text, f"{reference}: {limit}")
-            # orthogonal to the tier, not a substitute for it
             self.assertIn("orthogonal to the orchestration tier", text, reference)
+            self.assertIn("`Delegated context returns`, is in `project-knowledge.md`", text, reference)
 
     def test_raw_run_output_never_reaches_a_context(self) -> None:
         for reference in self.REFERENCES:
@@ -302,7 +339,7 @@ class ContextHygieneTests(unittest.TestCase):
             self.assertIn("~0 collected is a finding", text, reference)
 
     def test_returns_are_capsules_of_claims_and_pointers(self) -> None:
-        for reference in self.REFERENCES:
+        for reference in KNOWLEDGE:
             text = read(reference)
             self.assertIn("1500 tokens", text, reference)
             self.assertIn("pointers to\nevidence, never the evidence itself", text, reference)
@@ -339,13 +376,14 @@ class ContextHygieneTests(unittest.TestCase):
             # a project's own command wins over the generic one
             self.assertIn("that one wins", text, reference)
 
-    def test_every_command_is_wired_to_the_contract(self) -> None:
+    def test_every_command_names_an_occupancy_limit(self) -> None:
         self.assertEqual(9, len(self.ALL_COMMANDS))
         for command in self.ALL_COMMANDS:
             text = read(command)
             self.assertTrue(
-                "`Context hygiene` contract" in text
-                or "`Delegated context returns`" in text,
+                "`Context hygiene`" in text
+                or "`Delegated context returns`" in text
+                or "`Run output discipline`" in text,
                 command,
             )
 

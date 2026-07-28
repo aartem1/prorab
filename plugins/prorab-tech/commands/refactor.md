@@ -1,5 +1,5 @@
 ---
-description: "Turnkey safe refactoring via a multi-agent ultracode Workflow. Prime directive — behavior preservation: business logic and observable outputs identical, the code gets cleaner. A characterization-test net, adversarial drift search, measured quality improvement. No approval gate."
+description: "Turnkey safe refactoring via a multi-agent Workflow. Prime directive — behavior preservation: a characterization-test net, adversarial drift search, measured quality improvement. No approval gate."
 argument-hint: "empty = auto-pick #1 from the latest AUDIT; or <id>/slug of a candidate from tasks/audits/AUDIT-*, a file path, a free problem description"
 ---
 
@@ -15,9 +15,7 @@ This continues the tech-quality track **audit → AUDIT → refactor**. The cand
 
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded fan-out (recon, drift search, verification) only where the selected tier allows it. Spend the budget **according to the candidate's complexity and blast radius** and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **safety floor (net, drift search, differential/contract evidence) is non-negotiable at any tier**; behavior preservation is the constraint; within it, don't spend fan-out where it doesn't buy proof of equivalence.
 
-**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-refactor-*.md`) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active lookup, and structural archive rules. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness, active lookup, structural archive), `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps) and `${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md`. `tasks/IMPL-refactor-*.md` is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -30,7 +28,7 @@ This continues the tech-quality track **audit → AUDIT → refactor**. The cand
 5. **Zero scope creep.** We change structure, not behavior. No incidental features, no "I'll fix this bug while I'm here", no cosmetics in unrelated files, no dependency changes without need. Scope expansion = a Phase 4 finding.
 6. **Measure the improvement, don't declare it.** The claimed benefit (complexity↓, duplication−, queries↓, …) is confirmed by a **before/after number** from the repo's tools, not by the words "it's cleaner now".
 7. **Repo conventions beat generic best practices.** Take the target design from how similar things are already done here (layers, patterns, tests, style). Read `CLAUDE.md` and the spec.
-8. **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps. The `Context hygiene` contract in the project-knowledge reference sets the three limits this rests on: a run's output is reduced to a digest before anyone reads it, a delegated context hands back a capsule of claims and pointers, and above tier S the main loop stops doing the reading itself. Its `Deterministic steps` list is the other half — the change set, the diff class and the documentation reach come from a command, not from a model's impression.
+8. **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps. The `Context hygiene` and `Deterministic steps` contracts govern this: a run is reduced to a digest, a delegated context hands back a capsule, above tier S the main loop stops reading itself, and the change set, diff class and documentation reach come from a command rather than an impression.
 9. **Honest report; git on request.** Call the failing failing. Don't declare "done" until you've proven equivalence and improvement. Don't commit/push without an explicit request; on the default branch (`main`/`master`) — first create a working branch (that's allowed without asking; commit/push/PR only on request).
 
 ---
@@ -63,7 +61,7 @@ Everything else — turnkey, no pauses; resolve debatable decisions that don't a
 
 ## Phase 0.5 — Budget triage (solo, before fan-out)
 
-The degree of multi-agentness is set by the candidate's complexity and **blast radius**, not always at the top setting. Take the tier **from the AUDIT spec** (it already gave `blast_radius`, `coverage_nearby`, `risk_hint`, the safety/size scoring) — don't re-derive it, **but only while Phase 0's freshness check came back fully fresh**. Any stale target, test, or call-site path means those scoring inputs describe code that no longer exists, and a stale `safety`/`coverage_nearby` is exactly the input you must not take on trust on a behavior-preservation track: re-derive the tier from current signals and log that you did. No audit, or no provenance block — assess it yourself from cheap signals.
+The degree of multi-agentness is set by the candidate's complexity and **blast radius**, not always at the top setting. Derive the tier from the **AUDIT spec's own scoring inputs** (`blast_radius`, `coverage_nearby`, `risk_hint`, the safety/size scoring — the spec records those, not a tier) rather than re-deriving them from the code, **but only while Phase 0's freshness check came back fully fresh**. Any stale target, test, or call-site path means those scoring inputs describe code that no longer exists, and a stale `safety`/`coverage_nearby` is exactly the input you must not take on trust on a behavior-preservation track: re-derive the tier from current signals and log that you did. No audit, or no provenance block — assess it yourself from cheap signals.
 
 **Signals:** size (number of sites/call-sites, LOC delta); blast radius (is an external contract touched — API/DB schema/serialization/public signatures); novelty of the target design (≥2 reasonable variants → judge-panel, or a straight-line transformation); reversibility (is there a ready net, is the step deterministic).
 
@@ -130,7 +128,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 2. **Perform the transformations in small steps.** After **each** step — the net is green (run the relevant set). Tightly coupled refactoring with already-precise context is often cleaner done **solo** or with `pipeline()`; **`isolation: 'worktree'` — only** if parallel agents edit files at the same time (otherwise they clobber each other), then a separate integration pass.
 3. **Structure only.** At each step ask yourself: am I changing observable behavior? If yes and it's not stated in the candidate — stop, this is no longer a refactoring.
 4. **Minimal, consistent edits.** Take names/structure/patterns from neighboring analogs; don't widen scope.
-5. **Documentation follows the structure you moved.** Behavior preservation is not an exemption: apply the `Documentation sync` contract from the project-knowledge reference. A renamed symbol, a moved module, a changed import path, a split or merged component leaves current-state documents factually wrong — README, `docs/`, the project spec, architecture notes, `CLAUDE.md` and other agent guidance, docstrings and comments. Correct exactly those places, in place and in the document's own language; a documented behavior that reads the same after the refactor is left alone. Never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**` to match the new structure — an ADR describing why the old shape was chosen stays true history. Record each edit in the IMPL-refactor.
+5. **Documentation follows the structure you moved.** Behavior preservation is not an exemption: apply the `Documentation sync` contract. A renamed symbol, a moved module, a changed import path, a split or merged component leaves current-state documents factually wrong; correct exactly those places, while a documented behavior that reads the same after the refactor is left alone. Never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**` to match the new structure — an ADR describing why the old shape was chosen stays true history. Record each edit in the IMPL-refactor.
 
 ## Phase 4 — Equivalence + quality verification (Workflow) — the main control instead of approval
 
@@ -153,16 +151,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 5. **Commit/PR only on request.** If on `main`/`master` — create a branch. A hint for the user: announce the result via `/prorab:announce <archived IMPL path>`.
 
 ---
-
-## Workflow-pattern cheatsheet (apply deliberately)
-
-- **`pipeline()` by default.** A barrier (`parallel()` between stages) — only when the next stage needs ALL results of the previous one.
-- **Differential run** — the strongest proof of equivalence for pure functions and serializable outputs: old vs new on the same inputs, a diff of outputs and side effects.
-- **Adversarial drift search** — one verifier covers the relevant lenses; add contexts only for a real conflict/high risk and within the cap, default "behavior changed until proven otherwise".
-- **Profile-bounded sabotage** — empirical mutation evidence is spent only on critical clusters (`balanced`) or every substantial boundary (`thorough`); `economy` substitutes deterministic evidence.
-- **Structured output** — `schema` on agents so they return validated maps, not dumps. A return is a capsule of claims and pointers (`path:line`, symbol, command + exit code) at roughly 1500 tokens; an oversized one is never forwarded verbatim into the next prompt.
-- **Worktree isolation** — required for verification mutations and concurrent agent edits; otherwise avoid its setup/disk cost.
-- **Visibility** — `phase()`/`log()`; scale fan-out to the refactoring's size; **don't stay silent about cuts** (limited the differential-run scope/sample — `log()`).
 
 ## What NOT to do
 

@@ -1,5 +1,5 @@
 ---
-description: Prepares a concise, precise announcement of work results (after /prorab:build or a manual implementation) — what was done/new/changed, methods and how it's computed; dense and easy to forward in a messenger.
+description: A concise, fact-checked announcement of shipped work — what's new/changed and how it's computed, dense enough to forward in a messenger.
 argument-hint: feature slug / path to IMPL or IDEA / commit(s) / free "what we shipped"; empty = latest work
 ---
 
@@ -11,9 +11,7 @@ You write NO code right now and change no project files except optionally saving
 on request and correcting/marking a memory entry whose staleness is proved while fact-checking.
 You don't commit/push. Your result is the announcement text in chat, ready to copy-paste.
 
-**Language.** This command's product — the announcement — is user-facing, so write the announcement (and your chat) in the **task's language** (detect it from `$ARGUMENTS` / the source material; default to Russian). Terms strictly as in the app's UI. Your own internal reasoning and any fact-check skeptic prompts/`schema` are in English. **Anti-drift:** the announcement uses UI/domain terms verbatim in the task's language — don't round-trip-translate them; file/function names stay as in the code (but you generally don't put them in the announcement anyway).
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md`. Apply its source-of-truth, bounded recall, freshness, and archive lookup rules. `announce` normally captures no memory.
+**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md`. Apply its language, source-of-truth, bounded recall, freshness, and archive lookup rules. The announcement itself is the user-facing product, so it follows the task's language with **terms strictly as in the app's UI**. `announce` normally captures no memory.
 
 ---
 
@@ -47,15 +45,13 @@ Gather what **actually** landed, from the most reliable sources (in order of tru
 4. **Verification status** — from the IMPL/session: tests/build green, a production run/reconciliations. Needed so as not to over-promise.
 5. Where present — a bounded, task-specific memory digest and `CLAUDE.md` (terms, context). Verify any material memory claim against current source; if the announcement is historical and current code has moved on, label that distinction internally and announce only the completed task's verified historical result.
 
-Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have it return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents. Per the `Delegated context returns` limit in the project-knowledge reference that digest is a capsule at roughly 1500 tokens, carrying the user-visible facts and where each was found, never the diff itself; and per `Deterministic steps`, the change set comes from `git status --porcelain` or `git diff --name-only <base>...HEAD` rather than from guessing at scope.
+Keep the context clean: delegate bulky reading to `Agent` (`subagent_type: Explore`), have it return a "what changed for the user + numbers/terms" digest, not file dumps — and only on a **bulky** diff/source set; read a small change directly, without deploying agents. Per the `Delegated context returns` limit in the project-knowledge reference that digest is a capsule at roughly 1500 tokens, carrying the user-visible facts and where each was found, never the diff itself. Take the change set from `git status --porcelain` or `git diff --name-only <base>...HEAD` rather than guessing at scope.
 
 **Hard orchestration cap:** `announce` is an S-sized read-only task: no `Workflow`, at most **one delegated context total** (main + verifier/reader = at most two model contexts), and `max_turns: 6` on the direct `Agent` call. If that context is spent on bulky source reading, the main agent performs the final fact-check. Run at most one adversarial fact-check pass; zero new unsupported claims means stop immediately.
 
 ### Phase 2 — Announcement draft
 
 Assemble the announcement per the structure below (adapt/drop sections to the feature):
-
-> Write the announcement in the **task's language** (default Russian). The structure below is in English for reference — render its labels/prose in the task's language, terms as in the UI.
 
 ```
 <emoji> <One-line header: what shipped and where>

@@ -29,7 +29,14 @@ time, and `quick` is a separate short lane beside the pipeline for changes too s
 Commands are global; artifacts, memory, and archive are local to the working project.
 
 **Project memory and archive.** All five commands read the bundled
-[`references/project-knowledge.md`](references/project-knowledge.md) contract. Memory is a lazy,
+[`references/project-knowledge.md`](references/project-knowledge.md) contract — language,
+source-of-truth order, memory, delegated-return capsules and the archive lifecycle. Two sibling
+contracts are loaded only by the commands that need them:
+[`references/execution.md`](references/execution.md) (run output discipline, main-loop discipline,
+deterministic steps) by `build` and `quick`, and
+[`references/documentation-sync.md`](references/documentation-sync.md) by the same two. `refine`,
+`announce` and `ask` load neither, so they no longer pay for contracts they cannot use. Memory is a
+lazy,
 small Markdown structure under `tasks/memory/`; exact paths/symbols/terms are recalled first, and
 material claims are re-checked because current code remains the source of truth. Successful
 `refine`/`build` runs capture only durable cross-task knowledge. After a fully verified `build`,
@@ -64,7 +71,7 @@ documents (README, `docs/`, the spec, `CLAUDE.md`, usage text, docstrings and co
 in place as part of the change, while historical ones (`CHANGELOG.md`, release notes, ADRs, the
 archive) are never rewritten to match new code. A current-state document still contradicting the diff
 is a review finding, not a follow-up. The full rule lives in
-[`references/project-knowledge.md`](references/project-knowledge.md).
+[`references/documentation-sync.md`](references/documentation-sync.md).
 
 **Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the

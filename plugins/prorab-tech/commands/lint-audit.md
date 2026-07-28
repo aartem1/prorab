@@ -1,5 +1,5 @@
 ---
-description: Tooling inventory + a run of all available static analyzers (linters, typecheckers, formatters, dead code, security) → an ordered ratchet plan of safe single-pass batches. Touches no code; result — tasks/audits/LINT-<slug>.md.
+description: Tooling inventory plus a read-only run of every available static analyzer → an ordered ratchet plan of safe single-pass batches. Touches no code.
 argument-hint: empty = the whole project; or a focus — a tool (mypy/eslint/ruff), a subsystem (backend/frontend/path) or a rule class
 ---
 
@@ -15,9 +15,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
-**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the plan you write (`tasks/audits/LINT-*.md`) — these stay in the task's language, since they are project docs a human reads. Tools/rules/paths/names — as in the code and in their own documentation. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, and freshness rules. Re-check tool availability and gate state in the current environment; memory is not executable evidence. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps). Re-check tool availability and gate state in the current environment; memory is not executable evidence. The plan you write (`tasks/audits/LINT-*.md`) is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -32,7 +30,7 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 - **A latent bug ≠ a reason to change behavior.** A strict analyzer often **surfaces a real bug** (a dead branch, an unreachable None path, a swallowed exception). This track **doesn't fix** the bug — that's a behavior change, another track (`/prorab:refine`→`/prorab:build`). Record it as a route finding; on the pass itself — an annotation/suppression at the agreed bar with a TODO, behavior unchanged.
 - **Rely on the repo's real tooling.** What's actually installed/runs (from `CLAUDE.md`, `package.json`, `pyproject.toml`/`setup.cfg`, `Makefile`, `.pre-commit-config.yaml`, CI configs), measure with that. **Broken tooling is itself a finding** (e.g. `eslint` without a flat-config → `npm run lint` fails → the frontend net is incomplete).
 - **Safety is the primary selection filter.** A batch that can't be run green-in-one-pass, or whose fix isn't behavior-preserving, is demoted in tier or moved to "cautious/manual". A falsely-safe autofix (removed a live export called dynamically) costs more than an unfixed warning.
-- **Keep the main loop's context clean.** Delegate heavy runs/parsing to agents; they return **structured findings** (via `schema`), not dumps of tool output. Apply the `Context hygiene` contract from the project-knowledge reference — and on this command it is the load-bearing rule, because **your entire input is analyzer output**: a first lenient run of a fresh tool over a large repository routinely emits thousands of lines. Every run goes to a file outside the working tree and comes back as a digest: command, exit code, violations per rule/code with their file spread, one example per class. That digest is exactly what the plan's batches are built from, and the per-rule counters are what its snapshot records; a delegated context returns that capsule, never the log.
+- **Keep the main loop's context clean.** Delegate heavy runs/parsing to agents; they return **structured findings** (via `schema`), not dumps of tool output. `Run output discipline` is the load-bearing rule here, because **your entire input is analyzer output**: a first lenient run of a fresh tool over a large repository routinely emits thousands of lines. Every run goes to a file outside the working tree and comes back as a digest, and that digest is exactly what the plan's batches are built from — the per-rule counters are what its snapshot records. A delegated context returns that capsule, never the log.
 
 ---
 
@@ -152,8 +150,6 @@ Each batch — on four axes (low/med/high) + order:
 
 ## LINT-file template
 
-> Write the artifact in the **task's language** (default Russian). The template below is in English for reference — render its headings/prose in the task's language.
-
 ```
 # Static-quality audit: <date / focus>
 
@@ -216,14 +212,6 @@ Each batch — on four axes (low/med/high) + order:
 Adapt sections to the batch; for the other batches the roadmap rows are enough.
 
 ---
-
-## Workflow-pattern cheatsheet (apply deliberately)
-
-- **Grouped runners** — one bounded runner per stack/tool family, each may execute several read-only analyzers and returns `schema` findings; a barrier only on clustering/scoring.
-- **"Onboarding cost" estimate** — run a lenient read-only check only when the tool is already available; an ephemeral download requires explicit permission; otherwise give a clearly labeled manual estimate.
-- **Adversarial batch verification** — verify the first executable batch by default; a runner-up only when it can change the order. One bounded verifier checks behavior-preserving/one-pass/order; "reject or demote on doubt".
-- **Structured output** — `schema` on agents; don't parse raw tool output in the main loop. A return is a capsule of per-rule counters, file spread and one example per class at roughly 1500 tokens — the digest, never the log.
-- **Visibility** — `phase()`/`log()`; show tier, `used/cap`, grouped runner coverage, and any no-progress stop; **don't stay silent about cuts** (a tool not run → say so).
 
 ## What NOT to do
 

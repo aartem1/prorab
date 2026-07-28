@@ -1,5 +1,5 @@
 ---
-description: "Turnkey implementation of a refined idea (IDEA file after /prorab:refine) via a multi-agent ultracode Workflow — code recon, DAG-ordered implementation, adversarial review and verification. No approval gate: the agents check and re-check themselves."
+description: "Turnkey implementation of a refined IDEA via a multi-agent Workflow — recon, DAG-ordered implementation, adversarial review, verification. No approval gate: the agents check each other."
 argument-hint: path to tasks/ideas/IDEA-*.md, an idea slug, or a free description of a refined idea
 ---
 
@@ -13,9 +13,7 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
 
 **Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded fan-out (recon, review, verification) only where the selected tier allows it. Spend the budget **according to the idea's complexity** and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **quality floor (executable evidence, the DoD skeptic, the full test/build run) is non-negotiable at any tier**; quality and consistency with the repo are the constraint; within it, don't split coherent code across agents and don't spend fan-out where it doesn't buy correctness.
 
-**Language.** Execution language is **English**: your own reasoning, all agent prompts, inter-agent messages, and `schema` field values are in English. **User-facing surfaces mirror the task's language** (detect it from how the user phrased the request; default to Russian if unclear): your chat with the user, and the artifact you write (`tasks/IMPL-*.md`, and any proposed edit to the project spec) — these stay in the task's language, since they are project docs a human reads. Code, identifiers, comments, commit messages — always English. **Anti-drift:** domain/UI/report terms that surface to the user stay canonical in the task's language — when you reason about them in English, carry the original term, don't round-trip-translate it.
-
-**Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its source-of-truth, bounded recall/capture, freshness, active-vs-archive lookup, and safe archive rules. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness, active-vs-archive lookup, safe archive), `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps) and `${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md`. `tasks/IMPL-*.md` and any proposed spec edit are project docs a human reads, so they follow the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -26,7 +24,7 @@ This continues the chain **refine → IDEA → implementation**. The idea is alr
 - **The marker `[?:…]` in the IDEA = an unclosed fork = a blocker.** A short question to the user with options, don't paper over it with a sensible default.
 - **Agents verify, they don't multiply findings.** Batch related findings into one verification task. Use one independent verifier by default; add another lens only for a real conflict or a high-blast risk and only within the tier cap. Default "refuted if in doubt" before fixing or asserting.
 - **Repo conventions beat generic best practices.** Before writing — find out how similar things are already done here (architecture layers, contracts, migrations, tests, build tooling) and mirror the local style. Read the repository guidance and the spec it references; don't assume a particular stack or directory layout.
-- **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps. The `Context hygiene` contract in the project-knowledge reference sets the three limits this rests on: a run's output is reduced to a digest before anyone reads it, a delegated context hands back a capsule of claims and pointers, and above tier S the main loop stops doing the reading itself. Its `Deterministic steps` list is the other half — a fact a command can enumerate is never re-derived by a model.
+- **Keep the main loop's context clean.** Delegate heavy reading/analysis to agents; they return **structured maps** (via `schema`), not file dumps. The `Context hygiene` and `Deterministic steps` contracts govern this: a run is reduced to a digest, a delegated context hands back a capsule, above tier S the main loop stops reading itself, and an enumerable fact comes from a command.
 - **Respect the work order.** If the IDEA has a pre-stage/prerequisite (e.g. an infrastructure fix that also affects other features) — it goes first; implement a large cross-cutting pre-stage in a separate branch and report it in the final report.
 - **Honest report.** Call failing tests failing, with the output. Call a skipped step skipped. Don't declare "done" until you've verified.
 - **Don't commit or push without an explicit request.** If on the default branch (`main`/`master`) — first create a working branch (that's allowed without asking; commit/push/PR only on an explicit request).
@@ -120,7 +118,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
    - **Forbidden ways to "green up"** (any one in a new/changed test = a "tests"-dimension finding in Phase 4, not a closed DoD): (1) `assert True`, the tautology `assert f(x) == f(x)`, a test with no assert, an assert against a value taken from the code itself; (2) `sys.exit(0)`, an unconditional `print("PASS")`, bypassing the runner; (3) skip/xfail/a commented-out/deleted failing case, `try/except` without re-raise; (4) `if input == <test-case>` + a hardcoded answer for the test input; (5) mock/patch of the tested unit itself or substituting its return — you may substitute (mock) only external boundaries by name (network, DB, time, FS).
    - **Check the result by exit code AND the count of collected/passed tests** (`passed` with ~0 collected = a finding), not by an `OK`/`passed` string. Run it under the `Run output discipline` contract — output to a file outside the working tree, a ~40-line digest back — and paste that digest, never a raw log, into the IMPL doc. Shortening what failed is fine; hiding that it failed is a false report.
 4. **Minimal, consistent edits.** Don't widen scope, don't refactor unrelated things along the way. Take names/structure/patterns from neighboring analogs.
-5. **Documentation is part of the task, not a follow-up.** Apply the `Documentation sync` contract from the project-knowledge reference: as each task lands, correct the current-state documents it makes factually wrong — README, `docs/`, the project spec, API/configuration references, runbooks, `CLAUDE.md` and other agent guidance, usage/help text, docstrings and comments — in place, minimally, in that document's own language and style. Never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**` so they match new code; add a new entry only where the project's convention calls for one. Record every documentation edit in the IMPL beside the code change that caused it; a correction larger than the change itself, or one needing a product decision, is recorded as a named follow-up instead of made.
+5. **Documentation is part of the task, not a follow-up.** Apply the `Documentation sync` contract as each task lands: correct in place the current-state documents it makes factually wrong, never rewrite `CHANGELOG.md`, release notes, ADRs, migration notes or `tasks/archive/**` to match new code. Record every documentation edit in the IMPL beside the code change that caused it; a correction larger than the change itself, or one needing a product decision, becomes a named follow-up instead.
 
 ## Phase 4 — Adversarial review + verification (Workflow) — the main quality control instead of approval
 
@@ -146,16 +144,6 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 5. **Commit/PR only on request.** If on `main`/`master` — create a branch. Commit messages and the PR body — per the project's rules.
 
 ---
-
-## Workflow-pattern cheatsheet (apply deliberately)
-
-- **`pipeline()` by default.** A barrier (`parallel()` between stages) — only when the next stage needs ALL results of the previous one (dedup/merge/early exit).
-- **Structured output.** Give agents `schema` so they return validated objects, not text to parse, and so they don't clutter your context. A return is a capsule of claims and pointers (`path:line`, symbol, command + exit code) at roughly 1500 tokens — never file contents, a full diff or raw run output. Don't forward an oversized return verbatim into the next prompt; extract the claim and drop the bulk.
-- **Adversarial verification.** Verify finding clusters, not each item with fresh agents. Add a second/third lens only on conflict or confirmed high risk and within the cumulative cap; kill a finding if the available evidence refutes it.
-- **Risk-based evidence.** Prefer executable/static proof, use one independent verifier by default, and spend mutations only within the selected verification profile's cap.
-- **Worktree isolation** — required for verification mutations and concurrent agent edits; otherwise avoid its setup/disk cost.
-- **Visibility.** `phase()`/`log()` — show progress, chosen tier, `used/cap`, any escalation signal, and the no-progress stop.
-- **Don't stay silent about cuts.** If you bounded coverage (top-N, no retry, sample) — `log()` it.
 
 ## What NOT to do
 
