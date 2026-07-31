@@ -112,6 +112,7 @@ When you consider the idea mature (no 🟥, no key 🟧 left), give the **final 
 - Local conventions to mirror (file:line → the pattern): …
 - Not studied (deliberate gaps build must cover itself): …
 - Verification commands OBSERVED (unverified hint — build must confirm before running): …
+- Web surfaces OBSERVED (only if the idea touches a browser surface; same unverified-hint status): documented start command and base URL · routes/screens a consumer reaches · the user-facing handles (button/label/heading text) the requirement implies · the project's own e2e harness and its invocation, or "none". No selectors, no component names — a later blind check may carry these into its charter, and only what a user can see is allowed across.
 
 ### Order of stages (what comes first, prerequisites/pre-stages)
 - …
@@ -131,7 +132,7 @@ Each item is numbered and phrased as a checkable input→expected pair (given X 
 2. …
 ```
 
-**Filling the `Code map`.** It carries forward only what this dialogue already read — never study more to complete it. Stamp provenance in one call: `git rev-parse HEAD` for the commit and `git hash-object -- <paths…>` for the per-file content hashes (blob hash of the current content, so modified and untracked files are covered too). Not a git repository, or a command unavailable → drop the `Provenance` line and the `sha1` column, and say so on the line; build then re-derives the map itself. Never guess a hash. On the `Verification commands OBSERVED` line put only commands you actually saw defined in repository guidance, CI, a task runner, or package scripts — mark them as observed-not-run; if you saw none, write "none observed". The `Code map` is a handoff artifact: write it only into the saved IDEA file, don't recite it in chat.
+**Filling the `Code map`.** It carries forward only what this dialogue already read — never study more to complete it. Stamp provenance in one call: `git rev-parse HEAD` for the commit and `git hash-object -- <paths…>` for the per-file content hashes (blob hash of the current content, so modified and untracked files are covered too). Not a git repository, or a command unavailable → drop the `Provenance` line and the `sha1` column, and say so on the line; build then re-derives the map itself. Never guess a hash. On the `Verification commands OBSERVED` line put only commands you actually saw defined in repository guidance, CI, a task runner, or package scripts — mark them as observed-not-run; if you saw none, write "none observed". The `Web surfaces OBSERVED` line follows the same rule and only appears when the idea touches a browser surface: it is the code-aware half of web verification, recorded once here because you are already reading the code and the later blind check must not. The `Code map` is a handoff artifact: write it only into the saved IDEA file, don't recite it in chat.
 
 After this, **ask the user**: are they ready to move to the spec/plan, or want to churn the idea more. Don't declare readiness yourself.
 

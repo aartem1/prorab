@@ -119,7 +119,7 @@ nobody used the framework for.
 | **`/prorab:refine`** | Works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md` with a `Code map` handoff of what it read. |
 | **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Records which of its tests were proven able to fail, so `verify` doesn't re-prove them. Result — code + `tasks/IMPL-<slug>.md`. |
 | **`/prorab:quick`** | The cheap lane: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. Result — code + one compact `tasks/quick/QUICK-<slug>.md` record. |
-| **`/prorab:verify`** | Black-box check that the implemented functionality works **for its users**, plus proof that a test would catch it breaking. Resolves the scope by command (uncommitted / branch vs base / commit range / task artifact) and asks only when that is genuinely undetermined. The context that drives the system gets a charter of surfaces and expected results and **never** the implementation, the diff or a path; expected values come from the requirement, and a `works` resting on the system's own output is downgraded. Writes no product code — defects are routed with their reproduction, and the only code it writes is the missing tests, each proven by a mutation. Reuses the proof `build`/`quick` already recorded instead of re-proving it. Result — a graded verdict per behavior + `tasks/verify/VERIFY-<slug>.md`. |
+| **`/prorab:verify`** | Black-box check that the implemented functionality works **for its users**, plus proof that a test would catch it breaking. Resolves the scope by command (uncommitted / branch vs base / commit range / task artifact) and asks only when that is genuinely undetermined. The context that drives the system gets a charter of surfaces and expected results and **never** the implementation, the diff or a path; expected values come from the requirement, and a `works` resting on the system's own output is downgraded. Writes no product code — defects are routed with their reproduction, and the only code it writes is the missing tests, each proven by a mutation. Reuses the proof `build`/`quick` already recorded instead of re-proving it. A web UI is driven **headless by default** — the prober authors one consumer session and judges a structured result instead of clicking through screenshots — with pixels reserved for the pointwise perceptual cases and an interactive visual session only on a named, logged trigger. Result — a graded verdict per behavior + `tasks/verify/VERIFY-<slug>.md`. |
 | **`/prorab:announce`** | A concise, precise announcement of the results (what was done/new/changed, methods, how it's computed), dense enough to forward in a messenger. Reads IMPL/diff/IDEA and fact-checks. Writes no code, makes no commit. |
 | **`/prorab:ask`** | Answers questions about the project or its history. Finds the area via project memory and task artifacts, then verifies material claims against current code, docs or Git history — and cites the sources. |
 
@@ -332,13 +332,15 @@ the intended shape of the cheap lane, not an exception to the rule.
 Compaction never buys silence: the exit code and the failure counts are always reported in full.
 Shortening *what* failed is allowed; concealing *that* something failed is a false report.
 
-The same principle applies to the commands' own text. The shared rules live in three contracts, and a
+The same principle applies to the commands' own text. The shared rules live in four contracts, and a
 command loads only the ones it can act on: `project-knowledge.md` (language, source-of-truth order,
 memory, delegated-return capsules, archive) is read by all ten; `execution.md` (run output and
-main-loop discipline, deterministic steps) only by the seven that run checks or analyzers; and
-`documentation-sync.md` only by the four that change product code. `ask`, `announce` and `refine` load
-neither of the last two, which is where the biggest part of their prompt used to go, and `verify`
-loads only the first two — it writes tests, never behavior.
+main-loop discipline, deterministic steps) only by the seven that run checks or analyzers;
+`documentation-sync.md` only by the four that change product code; and `web-probing.md` (the headless
+instrument ladder, the locator rule, the runner) only by `build`, `quick` and `verify`, and only when
+the scope in front of them actually has a browser surface. `ask`, `announce` and `refine` load neither
+of the middle two, which is where the biggest part of their prompt used to go, and `verify` skips
+documentation sync — it writes tests, never behavior.
 
 What the budget never buys back: the safety floor is non-negotiable at every tier — the
 characterization net or baseline, the contract diff, the drift search, a DoD skeptic, and a
@@ -480,7 +482,7 @@ prorab/
 │   ├── prorab/                    # product track
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── commands/              # refine.md build.md quick.md verify.md announce.md ask.md
-│   │   ├── references/            # project-knowledge.md execution.md documentation-sync.md
+│   │   ├── references/            # project-knowledge.md execution.md documentation-sync.md web-probing.md
 │   │   └── README.md
 │   └── prorab-tech/               # tech-quality track
 │       ├── .claude-plugin/plugin.json

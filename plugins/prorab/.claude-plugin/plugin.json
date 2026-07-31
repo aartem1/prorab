@@ -1,6 +1,6 @@
 {
   "name": "prorab",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Agentic development framework: refine, build, quick, verify, announce and ask, with recon handoff, verified project memory and completed-task archives",
   "author": {
     "name": "Artem Altukhov",

@@ -11,7 +11,7 @@
       "name": "prorab",
       "description": "Product track: refine, build, quick, verify, announce and ask, with recon handoff, verified project memory and completed-task archives",
       "source": "./plugins/prorab",
-      "version": "0.14.0",
+      "version": "0.15.0",
       "category": "development"
     },
     {

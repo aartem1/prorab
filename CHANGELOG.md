@@ -6,6 +6,60 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.15.0 · prorab-tech 0.12.0
+
+**A web UI is driven headless by default — the model authors the session instead of watching it.**
+`/prorab:verify` shipped telling the prober to use "a browser-automation tool available in the
+session", which in practice meant an interactive visual session: look at a screenshot, decide, click,
+look again. There the **model is the driver**, so every step is a round-trip carrying an image and one
+consumer flow costs tens of them. That was the slow half of verification, and the fix is to change
+who drives: the model now authors a consumer session once, runs it with a single command, and judges a
+structured result.
+
+- **New `references/web-probing.md`**, loaded **only** when a command's scope actually has a browser
+  surface, so a change without one never pays for it. It carries a four-level ladder — **L0** no
+  browser at all when HTTP/CLI/data can answer, **L1 the default** headless run asserting on roles,
+  labels, visible text, URL, response status and **measured layout** (clipping as
+  `scrollWidth > clientWidth`, overlap as intersecting boxes), **L2** one element-clipped screenshot
+  where the requirement is genuinely perceptual, **L3** an interactive visual session only on a named
+  trigger that gets logged. Every verdict records its level, and an unlogged L3 is how the contract
+  would silently decay back into the slow default.
+- **Faster, and deliberately stronger — that is why it can be the default.** A screenshot after
+  clicking *Save* shows a toast; a script reloads the page and re-reads the resource, which is what
+  actually proves data was stored. So a headless run **must** capture persistence by independent
+  re-read, the write request's own status, console errors and unhandled rejections, failed requests,
+  and the documented refusal for a negative case with the failure *injected* by route interception —
+  a line of code here, impractical by hand.
+- **Locators are user-facing only** — role and accessible name, label, visible text, or a
+  `data-testid` the project itself publishes; never a class hash, internal id, XPath or a selector
+  lifted from source. Authoring a script is the one moment a blind prober is tempted to open the
+  implementation "just for a selector", so the rule protects blindness and tests-like-a-user with the
+  same sentence, and the script's locators join the blindness declaration. A handle that cannot be
+  found by its user-facing name is a labelling finding, never a reason to read the code.
+- **Each stage pays once.** The commands run in sequence, so the method lives in one contract while
+  each stage owns a different slice and records what the next would re-derive — the handoff pattern
+  already used by `refine → build` and `build/quick → verify`. `refine` records
+  `Web surfaces OBSERVED` in its `Code map` (the code-aware half, captured where code is already being
+  read, and it loads no contract because it drives no browser); `build` and `quick` record the runner,
+  its exact invocation and the base URL that worked; `verify` reads that recipe instead of rediscovering how to
+  reach the app and logs `web recon reused: <n> fresh, <m> stale`. Blindness survives because the
+  main loop passes only a base URL and user-facing handles into the charter — no path, symbol or
+  selector crosses over.
+- **The install promise is narrowed, not dropped.** `Install nothing` becomes **install nothing into
+  the project**: manifests and lockfiles untouched, the runner in a run directory outside the working
+  tree, and anything that must be fetched is **asked about first**, once, with the answer recorded so
+  a later stage does not ask again. The cheapest non-project path needs no download at all —
+  `channel: 'chrome'` drives an installed Chrome — and cached engines are explicitly *not* proof no
+  download is needed, since a fresh runner pins a specific engine build. A provisioned runner
+  produces **evidence, never project coverage**: it is not a test level and its script is never
+  smuggled into the repository as the missing regression test.
+- The shipped skeleton was **executed before being documented** — 5 items in 1.6 s on an installed
+  Chrome with no engine download, catching a real clipping defect numerically and a console error the
+  UI never showed. Writing it surfaced three rules now in the contract: wait for state instead of
+  reading straight after a click, name every created entity uniquely or a re-run collides with
+  itself, and prefer a state-independent oracle ("the count is unchanged") over one that assumes a
+  clean database.
+
 ## prorab 0.14.0 · prorab-tech 0.12.0
 
 **A check that the shipped thing works for the user — run by a context that has not seen the code.**

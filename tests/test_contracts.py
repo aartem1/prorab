@@ -21,6 +21,14 @@ DOC_SYNC = (
     PRODUCT / "references" / "documentation-sync.md",
     TECH / "references" / "documentation-sync.md",
 )
+# Product-track only, and loaded only when the scope has a browser surface.
+WEB_PROBING = PRODUCT / "references" / "web-probing.md"
+# Commands that actually drive a browser, and so load the method.
+WEB_PROBERS = (
+    PRODUCT / "commands" / "build.md",
+    PRODUCT / "commands" / "quick.md",
+    PRODUCT / "commands" / "verify.md",
+)
 
 # Commands that run the project's checks or analyzers, and so load execution.md.
 RUNNERS = (
@@ -325,7 +333,15 @@ class VerifyLaneTests(unittest.TestCase):
         self.assertIn("Never one prober per assertion", self.verify)
         self.assertIn("never against production", self.verify)
         self.assertIn("You do not type credentials", self.verify)
-        self.assertIn("Install nothing", self.verify)
+        # The promise is no longer a blanket "install nothing" — a headless runner may be
+        # provisioned outside the working tree. What must survive is the part that protects the
+        # user: the project is untouched, and nothing is fetched without asking first. A bare
+        # `assertIn("Install nothing")` would still pass on the new wording, so it asserts the
+        # qualifier and the ask instead.
+        self.assertIn("Install nothing **into the project**", self.verify)
+        self.assertIn("manifests and lockfiles stay untouched", self.verify)
+        self.assertIn("**asked about before it is fetched**", self.verify)
+        self.assertIn("produces evidence, never project coverage", self.verify)
 
     def test_it_reuses_recorded_proof_instead_of_re_proving(self) -> None:
         """build/quick already prove their tests can fail; verify re-hashes and skips those."""
@@ -356,6 +372,114 @@ class VerifyLaneTests(unittest.TestCase):
         self.assertIn("type: verify", self.verify)
         self.assertIn("first free deterministic suffix", self.verify)
         self.assertIn("Archive nothing yourself", self.verify)
+
+
+class WebProbingTests(unittest.TestCase):
+    """A web UI is driven headless by default: the model authors the session instead of watching it."""
+
+    def setUp(self) -> None:
+        self.contract = read(WEB_PROBING)
+        self.verify = read(PRODUCT / "commands" / "verify.md")
+
+    def test_the_contract_lives_in_the_product_track_only(self) -> None:
+        """The tech track's oracle is old-vs-new behavior, so it needs a differential, not this ladder."""
+        self.assertTrue(WEB_PROBING.is_file())
+        self.assertFalse((TECH / "references" / "web-probing.md").exists())
+        for command in sorted(TECH.glob("commands/*.md")):
+            self.assertNotIn("web-probing.md", read(command), command)
+
+    def test_only_the_commands_with_a_browser_surface_load_it(self) -> None:
+        reference = "${CLAUDE_PLUGIN_ROOT}/references/web-probing.md"
+        for command in WEB_PROBERS:
+            text = read(command)
+            self.assertIn(reference, text, command)
+            # conditional, so a change with no browser surface never pays for the file
+            self.assertIn("**only if**", text, command)
+        # refine only *records* the surface map it saw while reading code — it drives no browser,
+        # so it must not pay for the runner and ladder sections it would never use.
+        refine = read(PRODUCT / "commands" / "refine.md")
+        self.assertNotIn(reference, refine)
+        self.assertIn("Web surfaces OBSERVED", refine)
+        for command in ("announce.md", "ask.md"):
+            self.assertNotIn(reference, read(PRODUCT / "commands" / command), command)
+
+    def test_the_ladder_defaults_to_headless_and_makes_pixels_the_exception(self) -> None:
+        self.assertIn("The default instrument for a web UI is a **headless run**", self.contract)
+        for level in ("**L0 —", "**L1 —", "**L2 —", "**L3 —"):
+            self.assertIn(level, self.contract, level)
+        self.assertIn("The default for a web UI.", self.contract)
+        # layout has a numeric oracle far more often than people assume
+        self.assertIn("measured rather than\n  eyeballed", self.contract)
+        self.assertIn("scrollWidth > clientWidth", self.contract)
+        # a visual session is an escalation that has to name and log its trigger
+        self.assertIn("Escalation only, on a **named** trigger", self.contract)
+        self.assertIn("unlogged L3", self.contract)
+        self.assertIn("level", self.verify)
+
+    def test_headless_is_the_stronger_check_not_just_the_faster_one(self) -> None:
+        """The reason it can be the default: a script proves things a screenshot cannot."""
+        self.assertIn("persistence proven by an independent re-read", self.contract)
+        self.assertIn("success toast is not evidence", self.contract)
+        self.assertIn("the **write request's own status**", self.contract)
+        self.assertIn("failure *injected*", self.contract)
+        self.assertIn("console errors and unhandled rejections", self.contract)
+
+    def test_locators_stay_user_facing_so_blindness_survives_authoring(self) -> None:
+        """Writing a script is the moment a blind prober is tempted to open the source."""
+        self.assertIn("## Locators are user-facing only", self.contract)
+        self.assertIn("Never** a class hash, an internal id, an XPath", self.contract)
+        self.assertIn("never a reason to read the code", self.contract)
+        # and the declaration is what makes it checkable
+        self.assertIn("the locators it used", self.verify)
+
+    def test_a_probe_is_deterministic_and_re_runnable(self) -> None:
+        self.assertIn("Wait for state, never read after an action", self.contract)
+        self.assertIn("No fixed sleeps", self.contract)
+        self.assertIn("Name every entity the run creates uniquely", self.contract)
+        self.assertIn("Retry a failed item once inside the same run", self.contract)
+
+    def test_provisioning_asks_first_and_never_touches_the_project(self) -> None:
+        self.assertIn("ask first, always", self.contract)
+        self.assertIn("Ask once per project, then record the answer", self.contract)
+        self.assertIn("Nothing is installed into the project.", self.contract)
+        # cached engines are not proof that no download is needed — a fresh runner pins a build
+        self.assertIn("cached engines are\n   *not* proof", self.contract)
+        # a runner is evidence, never a smuggled-in test level
+        self.assertIn("produces evidence, never project coverage", self.contract)
+        self.assertIn("never count its script as the missing\nregression test", self.contract)
+        # refusal is an honest unverifiable, not a quiet escalation to the visual path
+        self.assertIn("never an escalation to a visual session merely to avoid the question",
+                      self.contract)
+
+    def test_the_run_is_bounded_like_every_other_run(self) -> None:
+        self.assertIn("Run output discipline", self.contract)
+        self.assertIn('"${TMPDIR:-/tmp}/prorab-web-<slug>/"', self.contract)
+        self.assertIn("that *is* the digest", self.contract)
+
+    def test_the_skeleton_is_present_and_is_the_zero_download_path(self) -> None:
+        """Shipped only after being executed: it launches an installed Chrome, no engine fetch."""
+        self.assertIn("```js", self.contract)
+        self.assertIn("channel: 'chrome'", self.contract)
+        self.assertIn("result.json", self.contract)
+        self.assertIn("process.exit(", self.contract)
+
+    def test_each_stage_pays_once(self) -> None:
+        """Commands run in sequence, so the method is shared and the work is split, not repeated."""
+        self.assertIn("## Stage handoff — each stage pays once", self.contract)
+        for stage in ("`refine`", "`build`", "`quick`", "`verify`"):
+            self.assertIn(stage, self.contract, stage)
+        # refine owns the code-aware half precisely because verify must not have it
+        self.assertIn("Web surfaces OBSERVED", read(PRODUCT / "commands" / "refine.md"))
+        self.assertIn("`Web probing` handoff", read(PRODUCT / "commands" / "build.md"))
+        self.assertIn("Web probing", read(PRODUCT / "commands" / "quick.md"))
+        # verify reads the recorded recipe instead of re-deriving it, and logs the reuse
+        self.assertIn("web recon reused:", self.verify)
+        self.assertIn("web recon reused:", self.contract)
+        # freshness is hashed, and reuse never launders a verdict
+        self.assertIn("git hash-object", self.contract)
+        self.assertIn("never upgrades a behavior's own\nverdict", self.contract)
+        # the handoff must not leak an implementation hint into the blind charter
+        self.assertIn("no path, symbol or selector crosses over", self.contract)
 
 
 class DocumentationSyncTests(unittest.TestCase):

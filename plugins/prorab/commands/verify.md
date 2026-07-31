@@ -11,7 +11,7 @@ You establish whether **implemented functionality actually works for the people 
 
 **Mandate.** You change **no product code and fix nothing**. You produce two things: a per-behavior verdict backed by evidence a sceptic could re-run, and — for what you verified — project tests that actually fail when that behavior breaks. **The only code you write is test code.** A confirmed defect is reported and routed to the command that owns fixes, with its reproduction recorded so that command starts red.
 
-**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall, delegated-return capsules, active-vs-archive lookup) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (run output discipline, main-loop discipline, deterministic steps). You do **not** load the documentation-sync contract: you change no behavior, so nothing you do falsifies a document — and a document that contradicts what you observed is a **finding you report**, never a document you quietly rewrite. `tasks/verify/VERIFY-<slug>.md` is a project document a human reads, so it follows the task's language.
+**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall, delegated-return capsules, active-vs-archive lookup) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (run output discipline, main-loop discipline, deterministic steps). Read `${CLAUDE_PLUGIN_ROOT}/references/web-probing.md` **only if** Phase 1 finds a browser surface in scope — a screen, a route, a form, a client-side interaction; it carries the instrument ladder, the locator rule and the runner, and a change with no such surface never pays for it. You do **not** load the documentation-sync contract: you change no behavior, so nothing you do falsifies a document — and a document that contradicts what you observed is a **finding you report**, never a document you quietly rewrite. `tasks/verify/VERIFY-<slug>.md` is a project document a human reads, so it follows the task's language.
 
 ---
 
@@ -39,7 +39,7 @@ You establish whether **implemented functionality actually works for the people 
 
 ## Phase 0.5 — Budget triage (solo, before delegating)
 
-**Signals:** how many distinct user-visible surfaces; instrument cost (a documented CLI call versus a browser session versus an independent recomputation over real data); oracle strength (a stated DoD versus nothing but the code); environment reachability; blast radius (is an external contract observable here).
+**Signals:** how many distinct user-visible surfaces; instrument cost (a documented CLI call versus a headless run versus an independent recomputation over real data — the expensive instrument is an *interactive visual* session, not a browser as such, so a UI-only change driven headless can sit at S); oracle strength (a stated DoD versus nothing but the code); environment reachability; blast radius (is an external contract observable here).
 
 | | **S** | **M** | **L** |
 |---|---|---|---|
@@ -66,22 +66,23 @@ You establish whether **implemented functionality actually works for the people 
    - `action` — what the consumer does;
    - `expected` — the result **and the requirement it comes from**, phrased as a rule a person could check;
    - at least one **negative** (empty/invalid → the documented refusal) and one **boundary** (0 / limit / off-by-one) case for every non-trivial behavior;
-   - `instruments` allowed, and the safety limits below.
+   - `instruments` allowed, and the safety limits below;
+   - for a browser surface, the `level` from the `Web probing` ladder plus the base URL and the user-facing handles — taken from the linked IMPL/QUICK's recorded recipe where one exists, so the prober does not re-derive how to reach the app.
 
    The charter carries **no file path, symbol, diff, or implementation hint**. If an item can only be phrased in implementation terms, it is not a user-visible behavior: drop it and say so in the report.
 
 2. **Fix the oracle before probing.** Take expected values from the DoD of the linked IDEA/IMPL/QUICK, the spec, product/API documentation, the user's own words, or an independent recomputation from source data that does not reuse the feature's code path. Where no literal value is derivable (ranking, aggregates, parsing, non-determinism), use a **metamorphic invariant** from the requirement — permuting the input leaves the total unchanged, parse∘serialize returns the original, a repeat is idempotent, more input never lowers the count — never an always-true relation. If the only available source for an expected value is the implementation itself, mark the item `oracle: none`, ask the user for the expected result in the same `AskUserQuestion` round as any scope question, and leave it `unverifiable` if it stays unanswered. **Never promote the implementation's behavior into the expectation.**
 
-3. **Discover the instruments; assume none.** Derive from repository guidance, CI, task runners, package scripts and documented runbooks:
+3. **Discover the instruments; assume none — but reuse a recorded recipe before deriving one.** If the scope has a linked IMPL or QUICK with a `Web probing` block (or an IDEA with `Web surfaces OBSERVED`), re-hash what it cites with `git hash-object` and take the fresh entries as given: the runner and its invocation, the base URL, the seeding path, the recorded provisioning answer. Log `web recon reused: <n> fresh, <m> stale`. A stale entry, or none at all, means this phase derives it. The same two bounds as every other reuse in the framework: a matching hash proves the file is unchanged, not that the recipe still works — so a runner that fails on first use is re-derived, not retried blindly — and a reused recipe never upgrades a behavior's own verdict. Otherwise derive from repository guidance, CI, task runners, package scripts and documented runbooks:
    - **HTTP/API** — the project's documented way to start or reach an instance (task runner, compose file, dev script, a staging URL the user names), driven with a plain client; the contract from its own API documentation or schema.
-   - **UI** — the project's existing browser driver if it has one, otherwise a browser-automation tool available in the session, against a local or dev URL. Evidence is the compared value, with a screenshot as support.
+   - **UI** — the project's existing browser driver if it has one, otherwise a **headless run** against a local or dev URL, per the `Web probing` contract's ladder: L0 when the behavior is reachable without a browser at all, **L1 (the default)** driving the real page and asserting on roles, labels, visible text, URL, response status and measured layout, L2 for one clipped screenshot where the requirement is genuinely perceptual, L3 (an interactive visual session) only on a named trigger that is logged. Evidence is the compared value; a screenshot is support, never the evidence.
    - **CLI/TUI** — run it as a user would, with documented flags; judge stdout/stderr and the exit code.
    - **Data and recomputation** — recompute the number independently through the project's own read-only query path or an analytics tool it already uses, then compare with what the feature reports.
    - **Files and exports** — open the artifact as its consumer does: parse the CSV, validate the JSON against the documented schema, open the produced document.
    - **Config/text products** — apply it the way its consumer applies it: a dry-run/plan/validate/render mode, a schema check — never a hand-read.
    - **Observability** — existing logs, metrics and traces are supporting evidence, never the primary oracle.
 
-   Install nothing, invent no command, and do not silently add tooling. No reachable instrument for an item → it is `unverifiable` with the missing prerequisite named.
+   Install nothing **into the project** — its manifests and lockfiles stay untouched, any runner lives in the run directory outside the working tree, and a runner that has to be fetched is **asked about before it is fetched**, once, with the answer recorded so a later stage does not ask again (`Web probing` → `The runner`). Invent no command and add no tooling silently. A provisioned runner produces evidence, never project coverage. No reachable instrument for an item → it is `unverifiable` with the missing prerequisite named.
 
 4. **Safety limits, non-negotiable.** Read-only probes by default. A mutating probe only against a local/dev/test environment, on a clearly marked scoped test entity, removed afterwards or reported as left behind — **never against production**, never real money, never a message to a real person, never another user's data. You do not type credentials, tokens, card or document numbers anywhere: if a probe needs authentication, ask the user to authenticate and hand back a session they choose to provide, and treat missing access as `unverifiable`. Bypass no protection and disable no check to make a probe pass. If the only reachable environment is production, ask before anything but observation.
 
@@ -91,9 +92,9 @@ Launch the probers with the charter and nothing else. Each one gets `max_turns` 
 
 **The prober's brief states:** you are checking a system you have not built; do **not** open project source code, tests, or the diff — read only consumer-facing material (user/API documentation, UI text) and the output of the instruments you drive. For every item: state the expected result from the charter first, then act, then report what you actually observed. Compare the observation with the charter's expectation, never with a value you found in the system.
 
-**Its `schema` return per item** (a capsule, ~1500 tokens for the whole return): the exact invocation or step sequence a reader could repeat; the minimal observed evidence (status code, the value, the visible text, the parsed field) plus the path of the evidence file; `verdict` ∈ `works` | `broken` (the expected result is not produced at all) | `differs` (it works, but not as the expectation states) | `unverifiable` (the surface, the data, the access or the oracle could not be obtained); `grade` ∈ `observed` (drove the real surface against the charter's oracle) | `proxy` (drove it through the project's own harness) | `unverified`; and for a defect, the shortest reproduction plus expected-versus-actual.
+**Its `schema` return per item** (a capsule, ~1500 tokens for the whole return): the exact invocation or step sequence a reader could repeat; the minimal observed evidence (status code, the value, the visible text, the parsed field) plus the path of the evidence file; `verdict` ∈ `works` | `broken` (the expected result is not produced at all) | `differs` (it works, but not as the expectation states) | `unverifiable` (the surface, the data, the access or the oracle could not be obtained); `grade` ∈ `observed` (drove the real surface against the charter's oracle) | `proxy` (drove it through the project's own harness) | `unverified`; and for a defect, the shortest reproduction plus expected-versus-actual. For a browser surface, also the `level` reached, the probe script's path, and any console error or failed request the run recorded — those are anomalies to report even when the item passed.
 
-**Blindness declaration, mandatory:** every file it read and every command it ran. This is what makes blindness checkable rather than promised.
+**Blindness declaration, mandatory:** every file it read, every command it ran, and — for a scripted probe — the locators it used. This is what makes blindness checkable rather than promised. Authoring a script is the moment a prober is tempted to open the source "just for a selector", which is why the locator rule (user-facing handles only) is part of the declaration and not just advice.
 
 ## Phase 3 — Verdicts (solo)
 
@@ -123,7 +124,7 @@ Runs only for behaviors you actually verified — this is coverage of what was c
 
 ## Phase 5 — Report and record
 
-1. **Report, compactly**, in this order: the scope as adopted (one line); a verdict table — behavior → verdict → grade → evidence pointer; the defects with their reproductions and where each is routed; a coverage table — behavior → `covered`/`weak`/`absent` → the test that closes it → how it was proven; tests added or updated; check results as they are, including any digest you reused instead of re-running; what coverage evidence was reused rather than re-proved (`coverage evidence reused: <n> fresh, <m> stale or absent`); what was `unverifiable` and what is missing to close it; the tier, profile and `used/cap`. No wall of output: pointers, not payloads.
+1. **Report, compactly**, in this order: the scope as adopted (one line); a verdict table — behavior → verdict → grade → level → evidence pointer; the defects with their reproductions and where each is routed; a coverage table — behavior → `covered`/`weak`/`absent` → the test that closes it → how it was proven; tests added or updated; check results as they are, including any digest you reused instead of re-running; what coverage evidence was reused rather than re-proved (`coverage evidence reused: <n> fresh, <m> stale or absent`); for a browser surface, the runner used and `web recon reused: <n> fresh, <m> stale` plus any L3 escalation with its trigger; what was `unverifiable` and what is missing to close it; the tier, profile and `used/cap`. No wall of output: pointers, not payloads.
 2. **Write one record**, after the verdicts and the coverage work so it states the real outcome: `tasks/verify/VERIFY-<slug>.md` (template below), creating `tasks/verify/` if absent. Derive `<slug>` from the verified functionality; on a collision use the first free deterministic suffix (`-2`, `-3`, …) and never overwrite. When the scope's task bundle is already archived, write the record into that archive directory instead and link it there — as `announce` does — rather than re-creating active artifacts. Archive nothing yourself.
 3. **Capture at most one memory entry**, and only if it clears the durable bar — a verified way to reach and check this surface, or a recurring gotcha in the environment. Usually capture nothing.
 4. **Commit/push only on request.** Tests you wrote stay in the working tree; if you are on `main`/`master` and the user asks to commit, create a branch first.
@@ -135,7 +136,8 @@ Runs only for behaviors you actually verified — this is coverage of what was c
 - Don't let the probing context see the implementation, the diff, the file paths or the symbol names — and don't accept its verdict if its declaration shows it did.
 - Don't take an expected value from the code, the current output, or a snapshot of either; don't call "no error" a pass.
 - Don't fix product code, don't widen the change, don't rewrite a document because observed behavior disagrees with it — report it.
-- Don't probe production with anything but observation, don't create or destroy real data, don't enter credentials or secrets anywhere, don't install tooling, don't disable a check to make a probe pass.
+- Don't probe production with anything but observation, don't create or destroy real data, don't enter credentials or secrets anywhere, don't install into the project or fetch a runner without asking, don't disable a check to make a probe pass.
+- Don't reach for an interactive visual session because it is familiar: it is the slowest instrument and the weakest evidence, it needs a named trigger, and the trigger goes in the report. Don't read source for a selector, don't treat a screenshot as the compared value, and don't call a success toast proof that anything was saved.
 - Don't invent a user scenario for a change that has none, and don't report `works` for something you could not reach — `unverifiable` with the missing prerequisite is the honest answer.
 - Don't count a test as coverage without proving it can fail; don't leave the suite red; don't build a coverage project around the behaviors you happened to verify.
 - Don't run a `Workflow` at tier S, don't spawn a prober per assertion, and don't exceed the ceiling to close one more item.
@@ -164,9 +166,14 @@ links:
 **How it was checked:** the instruments, the environment, and the blindness of the probing context — one or two sentences.
 
 ## Verdicts
-| behavior (as a user sees it) | expected, and where it comes from | verdict | grade | evidence |
-|---|---|---|---|---|
-| <surface + action> | <expected value → requirement source> | works / broken / differs / unverifiable | observed / proxy | <invocation + evidence path> |
+| behavior (as a user sees it) | expected, and where it comes from | verdict | grade | level | evidence |
+|---|---|---|---|---|---|
+| <surface + action> | <expected value → requirement source> | works / broken / differs / unverifiable | observed / proxy | L0 / L1 / L2 / L3, or — | <invocation + evidence path> |
+
+<!-- when a browser surface was probed -->
+**Web probing:** runner `<project harness | provisioned, exact invocation>`; base URL `<url>`; engine
+`<chrome | bundled>`; escalations to L3: `<none, or the item plus its trigger>`; anomalies:
+`<console errors / failed requests, or none>`.
 
 ## Defects
 - <what is broken> — reproduction: `<exact invocation/steps>`; expected `<x>`, observed `<y>`; routed to `<command>`.

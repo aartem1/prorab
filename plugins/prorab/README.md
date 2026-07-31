@@ -29,7 +29,10 @@ Six agentic-development commands for Claude Code:
   behavior is checked for a test that provably fails when it breaks, and the missing ones are
   written — proven by mutation, since red-first cannot apply to code that already works. Proofs
   `build`/`quick` already recorded (right-reason red, sabotage mutation) are re-hashed and reused
-  rather than repeated, so the budget goes to what nobody checked yet.
+  rather than repeated, so the budget goes to what nobody checked yet. A browser surface is driven
+  **headless by default**: one authored session judged from a structured result, layout checked by
+  measurement, a clipped screenshot only where the requirement is perceptual, and an interactive
+  visual session only on a named trigger that lands in the report.
   Result — the tests it added + one compact `tasks/verify/VERIFY-<slug>.md`.
 - **`/prorab:announce`** (`commands/announce.md`) — a concise, precise announcement of the
   results (after `build` or a manual implementation): what was done/new/changed, methods and
@@ -51,7 +54,11 @@ contracts are loaded only by the commands that need them:
 deterministic steps) by `build`, `quick` and `verify`, and
 [`references/documentation-sync.md`](references/documentation-sync.md) by the first two only. `refine`,
 `announce` and `ask` load neither, so they no longer pay for contracts they cannot use; `verify` runs
-checks but changes no behavior, so it loads execution and not documentation sync. Memory is a
+checks but changes no behavior, so it loads execution and not documentation sync. A fourth,
+[`references/web-probing.md`](references/web-probing.md), is loaded by `build`, `quick` and `verify`
+**only when the scope has a browser surface**: it makes a headless run the default instrument for a
+web UI, keeps pixels to the pointwise cases that are genuinely perceptual, and splits the work across
+the stages so each pays once. Memory is a
 lazy,
 small Markdown structure under `tasks/memory/`; exact paths/symbols/terms are recalled first, and
 material claims are re-checked because current code remains the source of truth. Successful
