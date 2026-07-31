@@ -1,6 +1,6 @@
 # The prorab plugin
 
-Five agentic-development commands for Claude Code:
+Six agentic-development commands for Claude Code:
 
 - **`/prorab:refine`** (`commands/refine.md`) — work a raw idea up to spec-readiness.
   Dialogue, questions, code study, hunting for contradictions. Writes no code.
@@ -17,6 +17,20 @@ Five agentic-development commands for Claude Code:
   hands the task over to `refine`+`build` or the tech track as soon as its eligibility gate fires.
   Result — code + one compact `tasks/quick/QUICK-<slug>.md` record (change, DoD table, checks,
   documentation corrected, verifier verdict), so small changes still leave a trace.
+- **`/prorab:verify`** (`commands/verify.md`) — black-box check that shipped functionality really
+  works for the people who use it, plus proof that a test would catch it breaking. The scope
+  (uncommitted / branch vs base / commit range / task artifact) is resolved with `git` commands and
+  only asked about when genuinely undetermined. The probing context is delegated at every tier — it
+  receives a charter of surfaces, preconditions and expected results and never the implementation,
+  the diff or a path, and returns a blindness declaration of everything it read and ran. Expected
+  values come from the requirement (or a metamorphic invariant, or an independent recomputation),
+  never from the system's own output. Verdicts are graded `works`/`broken`/`differs`/`unverifiable`
+  × `observed`/`proxy`; defects are routed with a reproduction, not fixed. Then each verified
+  behavior is checked for a test that provably fails when it breaks, and the missing ones are
+  written — proven by mutation, since red-first cannot apply to code that already works. Proofs
+  `build`/`quick` already recorded (right-reason red, sabotage mutation) are re-hashed and reused
+  rather than repeated, so the budget goes to what nobody checked yet.
+  Result — the tests it added + one compact `tasks/verify/VERIFY-<slug>.md`.
 - **`/prorab:announce`** (`commands/announce.md`) — a concise, precise announcement of the
   results (after `build` or a manual implementation): what was done/new/changed, methods and
   how it's computed. Dense, scannable, ready to forward in a messenger. Writes no code, makes no commit.
@@ -24,18 +38,20 @@ Five agentic-development commands for Claude Code:
   project. It uses memory and active/archive artifacts for discovery, verifies material claims
   against current code/docs or Git history, and identifies historical-only/uncertain facts.
 
-Pipeline: `refine → IDEA → build → memory capture + archive → announce`. `ask` is available at any
-time, and `quick` is a separate short lane beside the pipeline for changes too small to deserve it.
+Pipeline: `refine → IDEA → build → memory capture + archive → announce`, with `verify` available
+after any implementation step. `ask` is available at any time, and `quick` is a separate short lane
+beside the pipeline for changes too small to deserve it.
 Commands are global; artifacts, memory, and archive are local to the working project.
 
-**Project memory and archive.** All five commands read the bundled
+**Project memory and archive.** All six commands read the bundled
 [`references/project-knowledge.md`](references/project-knowledge.md) contract — language,
 source-of-truth order, memory, delegated-return capsules and the archive lifecycle. Two sibling
 contracts are loaded only by the commands that need them:
 [`references/execution.md`](references/execution.md) (run output discipline, main-loop discipline,
-deterministic steps) by `build` and `quick`, and
-[`references/documentation-sync.md`](references/documentation-sync.md) by the same two. `refine`,
-`announce` and `ask` load neither, so they no longer pay for contracts they cannot use. Memory is a
+deterministic steps) by `build`, `quick` and `verify`, and
+[`references/documentation-sync.md`](references/documentation-sync.md) by the first two only. `refine`,
+`announce` and `ask` load neither, so they no longer pay for contracts they cannot use; `verify` runs
+checks but changes no behavior, so it loads execution and not documentation sync. Memory is a
 lazy,
 small Markdown structure under `tasks/memory/`; exact paths/symbols/terms are recalled first, and
 material claims are re-checked because current code remains the source of truth. Successful
@@ -49,9 +65,13 @@ remain supported, and no archive entry is selected as active work by default.
 `--thorough`), mandatory `maxTurns`, review-cycle caps 1/2/3, and an immediate stop after a round
 with no new confirmed findings. `refine` allows at most two Explore contexts; `announce` allows one
 delegated context and one fact-check pass; `ask` allows one delegated context; `quick` is fixed at two
-contexts with no Workflow. Recon carried in the IDEA's `Code map` and still hash-fresh costs `build`
-zero recon contexts, and the saving is banked rather than respent. The quality floor
-remains mandatory.
+contexts with no Workflow. `verify` uses the same 2/6/12 tiers but always spends at least one of them
+on the blind prober, because blindness cannot be self-imposed by a context that has read the diff;
+its probers fan out on instrument boundaries, never per behavior. Recon carried in the IDEA's `Code map` and still hash-fresh costs `build`
+zero recon contexts, and the saving is banked rather than respent. The same idea covers test evidence:
+`build` and `quick` record which of their tests were proven able to fail (`red-first`/`mutation` plus the
+test file's hash), and `verify` reuses a fresh proof instead of running the mutation again. The quality
+floor remains mandatory.
 
 **Bounded occupancy, too.** A tier caps how many contexts open; the shared `Context hygiene` contract
 caps how full each one gets. Run output is captured outside the working tree and read back as a
@@ -71,7 +91,9 @@ documents (README, `docs/`, the spec, `CLAUDE.md`, usage text, docstrings and co
 in place as part of the change, while historical ones (`CHANGELOG.md`, release notes, ADRs, the
 archive) are never rewritten to match new code. A current-state document still contradicting the diff
 is a review finding, not a follow-up. The full rule lives in
-[`references/documentation-sync.md`](references/documentation-sync.md).
+[`references/documentation-sync.md`](references/documentation-sync.md). `verify` is outside this duty
+on purpose: it changes no behavior, so a document contradicting what it observed is a finding it
+reports with both readings named — the document may be the stale one.
 
 **Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the

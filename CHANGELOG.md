@@ -6,6 +6,100 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.14.0 · prorab-tech 0.12.0
+
+**A check that the shipped thing works for the user — run by a context that has not seen the code.**
+Everything the framework verified so far was verified from the inside: `build` proves its code matches
+a DoD with tests its own author wrote, `refactor` proves old behavior survived, `lint-fix` proves a
+gate holds. All three look at the implementation while designing the check, and a check designed with
+the code in view inherits the code's assumptions and then confirms them. The README even conceded the
+gap out loud — "reviewing changes, run/smoke, commit/PR follows project practice" — which meant the
+one question a user actually asks, *does it work*, was the one step with no discipline attached.
+
+- **New `/prorab:verify`:** black-box verification of implemented functionality against the
+  requirement, plus proof that the project's tests would catch it breaking. It writes **no product
+  code** — the only code it writes is test code, and a confirmed defect is routed to `quick`,
+  `refine`+`build` or `refactor` with its reproduction recorded so the fixing command starts red.
+- **Blindness is structural, not a promise.** The main loop is code-aware by necessity (it reads the
+  diff to find the surfaces), so the probing context is delegated at **every** tier, S included — a
+  context that has already read the implementation cannot un-read it. The prober receives a charter of
+  surfaces, preconditions and expected results carrying no path, symbol, diff or implementation hint,
+  and must return a **blindness declaration** of every file it read and command it ran. An
+  implementation file in that declaration drops the affected items to `not independently verified`;
+  they are re-probed or reported at that grade, never laundered into `works`.
+- **The oracle is the requirement, never the system's own output.** Expected values come from the
+  DoD/spec/product documentation/the user's words, or from a recomputation that does not reuse the
+  feature's code path; where no literal value is derivable, from a metamorphic invariant (permutation,
+  round-trip, idempotence, monotonicity) as `refine` already defines for a DoD. When the only
+  available source is the implementation itself, the item is `oracle: none` — the user is asked, and
+  it stays `unverifiable` rather than becoming a pass.
+- **Scope is derived by command, then asked about.** `git status --porcelain`, the branch against its
+  merge base, `git diff --name-only`/`--stat` and the latest active IMPL/QUICK produce concrete
+  candidates; genuinely undetermined scope (uncommitted work and branch commits describing different
+  features, HEAD on the default branch with no feature boundary, an empty change set, several equally
+  matching artifacts) goes to one `AskUserQuestion` round with named candidates, not a vague "what
+  should I check?".
+- **Honest verdicts with grades.** Per behavior: `works` / `broken` / `differs` / `unverifiable`, each
+  with `observed` (the real surface driven against the charter's oracle) or `proxy` (the project's own
+  harness) — "no error", a screenshot with no compared value, or a pass resting on the system's own
+  output is **downgraded**, not accepted. A defect is confirmed to reproduce once before it is
+  reported, so a flake is not announced as a bug. `differs` names both readings — stale code or stale
+  requirement — and leaves the product decision to the user.
+- **Coverage means a test that can fail.** For each verified behavior: grep the test tree for the
+  surface's own names, grade the candidate `covered`/`weak`/`absent`, and prove it profile-bounded by
+  injecting one plausible regression in a temporary isolated worktree. Not red → `weak`, however
+  convincing the test reads. **Red-first does not apply to a test over already-working behavior, and
+  its substitute is mandatory:** the mutation is what proves the new test is worth anything, and an
+  unprovable test is not counted as coverage. Expected values come from the charter — a test written
+  by observing today's output is a golden snapshot, not a check.
+- **Coverage evidence is never paid for twice.** The test-quality rules `verify` needs already exist in
+  the product track, and so does most of the evidence: `build`'s right-reason red and its sabotage
+  probe, and `quick`'s red-first, are *already* proofs that a given test can fail. Re-proving them from
+  `verify` would be the same work billed twice. So both producing commands now record the proof they
+  already have — `build`'s Scope/DoD re-grounding table and `quick`'s DoD table gain a `proof` column:
+  `red-first` | `mutation` | `none` (with the reason), plus the test file's `git hash-object` hash. It
+  costs one column. `verify` re-hashes those entries and marks a fresh one `covered (reused)`, citing
+  the artifact and spending nothing; a changed hash, a `none`, a missing column or a behavior the DoD
+  never stated is what it actually works on. The saving is banked rather than respent, and the same two
+  bounds `build` puts on a reused `Code map` apply: a matching hash proves the file is unchanged, not
+  that the test asserts *this* charter item, and a reused proof never upgrades a behavior's own
+  verdict, which comes from the blind probe alone.
+- **The same rule for runs:** the targeted tests for anything `verify` wrote always run, but an
+  identical full-suite run on an identical tree (same `HEAD`, same `git status --porcelain`, no test
+  changed) is **cited** from the upstream digest instead of paid for again — and the report says that is
+  what happened.
+- **Deliberately not extended to the tech track.** `refactor` and `lint-fix` prove a different thing
+  (old behavior survived, a gate holds), and a change with no user-visible surface is routed *back* to
+  them by `verify`'s own scope reduction — so a handoff there would be two more heavy-file edits and a
+  version bump for near-zero reuse. `prorab-tech` is unchanged at `0.12.0`.
+- **Instruments are discovered, never assumed:** HTTP/API, UI through the project's own driver or an
+  available browser tool, CLI, independent data recomputation, exports opened as a consumer opens
+  them, config/text products applied in dry-run/validate mode, observability as support only. Nothing
+  is installed and no command is invented; an unreachable item is `unverifiable` with the missing
+  prerequisite named.
+- **Safety limits fixed in the command:** read-only by default, mutating probes only against a
+  local/dev/test environment on a marked scoped entity, **never against production**, never real money
+  or a message to a real person; no credentials, tokens or document numbers typed anywhere — a probe
+  needing authentication asks the user; no protection bypassed and no check disabled to make a probe
+  pass.
+- **Bounded like the rest of the framework:** the same 2/6/12 tiers with the absolute 16 ceiling, the
+  same `--fast`/`--thorough`/`--tier=`/`--verification=` overrides, `max_turns` 6/8/12, one prober per
+  *instrument boundary* rather than per assertion, and evidence files (response bodies, logs,
+  screenshots, query results) written outside the working tree and cited by path so they neither fill
+  a context nor get committed.
+- **One compact record, nothing archived:** `tasks/verify/VERIFY-<slug>.md` with the adopted scope,
+  the verdict table, defects and their routing, the coverage table, check digests and what stayed
+  unverified — written into an already-archived task's directory when the scope has one, as `announce`
+  does. `verify` archives nothing and creates no IDEA/IMPL.
+- **Contracts loaded: `project-knowledge` and `execution`, deliberately not `documentation-sync`.** It
+  changes no behavior, so it falsifies no document; a document contradicting observed behavior is a
+  **finding it reports**, not a document it rewrites. The contract test now locks that third category
+  — a command that runs checks and writes tests but no product code.
+- **Partly covers proposal 15** (`/prorab:check`): the outside-in half — behavior against the
+  requirement, plus test coverage of what was verified — now exists. The artifact-side half (Scope
+  IN/OUT reconciliation, per-DoD-item bookkeeping, unclosed `[?:…]`) still waits on the formal
+  artifact schema.
+
 ## prorab 0.13.0 · prorab-tech 0.12.0
 
 **A command loads only the contracts it can act on, and stops re-teaching what it already has.** A

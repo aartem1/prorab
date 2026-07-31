@@ -42,7 +42,7 @@ Escalation is mandatory, not a preference, and it applies mid-run too — the mo
 6. **Run the checks.** Use the project's own supported commands, derived from repository guidance, CI, task runners, or package scripts — never invented, never a silently installed tool. Always run the targeted tests. Also run the project's lint/typecheck and its test suite when a supported command exists and the run is proportionate; if you skip one, name it as skipped in the report. Judge the result by exit code **and** the collected/passed counts, not by an `OK` in the output. What goes into the `Checks` section of the artifact is the digest line, not a pasted log. If a required check has no discoverable command, report the gap.
 7. **Sync the documentation** per the `Documentation sync` contract: grep for the symbols, paths, flags and literal values you touched, correct only what your change made factually wrong, and never edit `CHANGELOG.md`, release notes, ADRs or anything under `tasks/archive/**` to match new code. A correction bigger than the code change, or one needing a product decision, is named in the report instead of made. If nothing is affected, say so explicitly — that is a finding, not silence.
 8. **One independent verifier** (fresh context, `max_turns: 6`, `schema` for a structured verdict). Its input: the DoD you stated, the diff, and the list of documentation edits you declared. It answers yes/no on: expected values derived from the requirement rather than from the implementation; the real unit-under-test executes and neither it nor its direct return is mocked (mocking external boundaries — network, DB, time, FS — is fine); negative/boundary present or a specific reason why not; no green-up workarounds in new or changed tests (`assert True`, a tautology, no assert, `skip`/`xfail`, a commented-out or deleted case, `try/except` without re-raise, a hardcoded answer for the test input); nothing changed outside what you stated, documentation edits included; and no documentation left contradicting the diff. Default **refuted if in doubt** — do not act on a shaky finding. Fix confirmed findings, then **at most one** more targeted re-run. If a second round still confirms real findings, the task was not small: escalate to `/prorab:build` rather than grinding.
-9. **Write the artifact** `tasks/quick/QUICK-<slug>.md` (template below), after the verifier, so it records the real final status. Derive `<slug>` from the change, kebab-case; if the file exists, use the first free deterministic suffix (`-2`, `-3`, …) and never overwrite. Create `tasks/quick/` if absent. Record what happened, including a check you skipped or a finding you left open — an artifact that flatters the run is worse than none.
+9. **Write the artifact** `tasks/quick/QUICK-<slug>.md` (template below), after the verifier, so it records the real final status. Derive `<slug>` from the change, kebab-case; if the file exists, use the first free deterministic suffix (`-2`, `-3`, …) and never overwrite. Create `tasks/quick/` if absent. Record what happened, including a check you skipped or a finding you left open — an artifact that flatters the run is worse than none. The DoD table's `proof` column is the **coverage-evidence handoff**: step 4's right-reason red already proves that test can fail, so record it with the test file's `git hash-object` hash and a later `/prorab:verify` re-hashes it instead of proving the same test again. `none` with a reason where an item has no such proof.
 10. **Report, honestly and short.** Files changed; a DoD table (item → what closes it); check results as they are, failures with their output; documentation corrected or deliberately left stale; anything skipped; the artifact path; and whether escalation is advised for follow-up. Then, only if it clears the bar, the single memory entry.
 
 ---
@@ -79,9 +79,9 @@ paths:
 **Why:** one or two sentences — the request, and the reason it was needed.
 
 ## DoD
-| given → expected | closed by |
-|---|---|
-| <input → expected value from the requirement> | <test name / check> |
+| given → expected | closed by | proof |
+|---|---|---|
+| <input → expected value from the requirement> | <test name / check> | red-first · `<test file sha1>` |
 
 ## Changes
 - `<path>` — what changed and why.

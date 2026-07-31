@@ -61,6 +61,15 @@ adversarial review → verification. No approval gate in the middle — the agen
 Result: working code plus `tasks/IMPL-csv-export.md`.
 
 ```
+/prorab:verify
+```
+
+Checks the shipped result the way its users meet it — from outside the code, by a context that never
+reads the implementation, against expected values taken from the requirement. Then it makes sure a
+project test actually fails when that behavior breaks. Result: a verdict per behavior with evidence,
+plus `tasks/verify/VERIFY-csv-export.md`.
+
+```
 /prorab:announce
 ```
 
@@ -76,6 +85,7 @@ For a two-file change where all that ceremony costs more than the work itself, s
 | Think an idea through before anyone writes code | `/prorab:refine` |
 | Implement a refined idea, end to end | `/prorab:build` |
 | Make a small everyday change (1–2 files) | `/prorab:quick` |
+| Check that what shipped actually works for its users | `/prorab:verify` |
 | Tell the team what shipped | `/prorab:announce` |
 | Ask a question about this project or its history | `/prorab:ask` |
 | Find the tech debt worth paying down first | `/prorab-tech:audit` |
@@ -95,16 +105,21 @@ points at `quick` when a settled idea turns out to be tiny.
 
 ```
 raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──▶ code + IMPL ──/prorab:announce──▶ message
-                             (carries a hashed Code map)
+                             (carries a hashed Code map)          │
+                                                                  └──/prorab:verify──▶ VERIFY + tests
 
 small change ──/prorab:quick──▶ code + QUICK-<slug>.md   (escalates to refine+build if it isn't small)
 ```
 
+`/prorab:verify` is optional and works on any scope — after `build`, after `quick`, or on a branch
+nobody used the framework for.
+
 | Command | What it does |
 |---|---|
 | **`/prorab:refine`** | Works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md` with a `Code map` handoff of what it read. |
-| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Result — code + `tasks/IMPL-<slug>.md`. |
+| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Records which of its tests were proven able to fail, so `verify` doesn't re-prove them. Result — code + `tasks/IMPL-<slug>.md`. |
 | **`/prorab:quick`** | The cheap lane: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. Result — code + one compact `tasks/quick/QUICK-<slug>.md` record. |
+| **`/prorab:verify`** | Black-box check that the implemented functionality works **for its users**, plus proof that a test would catch it breaking. Resolves the scope by command (uncommitted / branch vs base / commit range / task artifact) and asks only when that is genuinely undetermined. The context that drives the system gets a charter of surfaces and expected results and **never** the implementation, the diff or a path; expected values come from the requirement, and a `works` resting on the system's own output is downgraded. Writes no product code — defects are routed with their reproduction, and the only code it writes is the missing tests, each proven by a mutation. Reuses the proof `build`/`quick` already recorded instead of re-proving it. Result — a graded verdict per behavior + `tasks/verify/VERIFY-<slug>.md`. |
 | **`/prorab:announce`** | A concise, precise announcement of the results (what was done/new/changed, methods, how it's computed), dense enough to forward in a messenger. Reads IMPL/diff/IDEA and fact-checks. Writes no code, makes no commit. |
 | **`/prorab:ask`** | Answers questions about the project or its history. Finds the area via project memory and task artifacts, then verifies material claims against current code, docs or Git history — and cites the sources. |
 
@@ -198,6 +213,7 @@ tasks/
 ├── ideas/IDEA-<slug>.md                     # refine
 ├── IMPL-<slug>.md                           # build
 ├── quick/QUICK-<slug>.md                    # quick
+├── verify/VERIFY-<slug>.md                  # verify
 ├── audits/AUDIT-<slug>.md                   # audit
 ├── audits/LINT-<slug>.md                    # lint-audit
 ├── IMPL-refactor-<slug>.md                  # refactor
@@ -211,6 +227,7 @@ exists so the written history of the project doesn't skip small changes; if it c
 about a screen, the change wasn't small. `/prorab:announce` produces its text in chat, and saves
 `ANNOUNCE-<slug>.md` into the archive directory only when the task is already archived.
 `/prorab:ask` changes no project code; at most it corrects or stales a disproved memory entry.
+`/prorab:verify` leaves one record and the tests it wrote, and archives nothing.
 
 <details>
 <summary><b>Full artifact contract</b> — who reads and writes what, and when things get archived</summary>
@@ -226,6 +243,12 @@ about a screen, the change wasn't small. `/prorab:announce` produces its text in
   It creates no IDEA/IMPL, archives nothing, and adds at most one memory entry. A run that escalates
   after already editing files still leaves the record, marked `escalated`; one that escalates before
   touching anything leaves nothing.
+- `/prorab:verify` writes one compact `tasks/verify/VERIFY-<slug>.md`: the scope it adopted, a verdict
+  and evidence grade per user-visible behavior, the defects with their reproductions and where each was
+  routed, the coverage table with how each test was proven able to fail, the check digests, and what
+  stayed unverified. Same deterministic `-2`, `-3` suffix on a collision, never an overwrite. When the
+  scope's bundle is already archived it writes the record into that archive directory instead, the way
+  `announce` does. It archives nothing and creates no IDEA/IMPL.
 - `/prorab-tech:audit` writes a ranked backlog plus a candidate spec to `tasks/audits/AUDIT-<slug>.md`;
   touches no code.
 - `/prorab-tech:refactor` reads that spec and writes `tasks/IMPL-refactor-<slug>.md`. A completed
@@ -276,10 +299,14 @@ correction that needs a product decision — is reported with the follow-up name
 the diff. And "nothing was affected" has to be earned by actually searching the docs for the
 symbols, paths and values the change touched.
 
+`/prorab:verify` sits deliberately outside this duty. It changes no behavior, so it falsifies no
+document — and when observed behavior contradicts a document, either one of them can be the wrong one.
+That is a finding it reports with both readings named, not a document it rewrites.
+
 ## Cost is bounded, quality is not negotiable
 
-The heavy commands (`build`, `audit`, `refactor`, `lint-audit`, `lint-fix`) run a **budget triage**
-step before fanning out any agents: they estimate complexity from cheap signals — size, blast
+The heavy commands (`build`, `verify`, `audit`, `refactor`, `lint-audit`, `lint-fix`) run a **budget
+triage** step before fanning out any agents: they estimate complexity from cheap signals — size, blast
 radius, novelty, reversibility, uncertainty — and pick a tier.
 
 | Tier | Total contexts | Notes |
@@ -307,10 +334,11 @@ Shortening *what* failed is allowed; concealing *that* something failed is a fal
 
 The same principle applies to the commands' own text. The shared rules live in three contracts, and a
 command loads only the ones it can act on: `project-knowledge.md` (language, source-of-truth order,
-memory, delegated-return capsules, archive) is read by all nine; `execution.md` (run output and
-main-loop discipline, deterministic steps) only by the six that run checks or analyzers; and
-`documentation-sync.md` only by the four that change code. `ask`, `announce` and `refine` load
-neither of the last two, which is where the biggest part of their prompt used to go.
+memory, delegated-return capsules, archive) is read by all ten; `execution.md` (run output and
+main-loop discipline, deterministic steps) only by the seven that run checks or analyzers; and
+`documentation-sync.md` only by the four that change product code. `ask`, `announce` and `refine` load
+neither of the last two, which is where the biggest part of their prompt used to go, and `verify`
+loads only the first two — it writes tests, never behavior.
 
 What the budget never buys back: the safety floor is non-negotiable at every tier — the
 characterization net or baseline, the contract diff, the drift search, a DoD skeptic, and a
@@ -345,7 +373,11 @@ evidence that nothing was affected.
 
 **Per-command caps.** `refine` gets at most two Explore contexts; `announce` one delegated context
 plus a fact-check pass; `ask` one delegated context; `quick` is fixed at two contexts with no
-Workflow. `audit` groups its catalog into three directions (structure; reliability/security;
+Workflow. `verify` uses the same 2/6/12 tiers, but spends them differently: the blind probing context
+is delegated at *every* tier, S included, because a context that has read the diff cannot un-read it —
+so at S the main loop does the code-aware half (scope, surfaces, coverage) and the one delegated
+context does all the probing, and probers fan out on instrument boundaries (browser / API / data)
+rather than per behavior. `audit` groups its catalog into three directions (structure; reliability/security;
 performance/maintainability) and verifies candidate #1 by default — runners-up only on a near tie or
 if #1 fails. `refactor`/`lint-fix` inherit the tier from the upstream AUDIT/LINT artifact rather than
 re-deriving it, except that any staleness in `refactor`'s hashed provenance forces a re-derive.
@@ -385,6 +417,16 @@ its net status rests on, and the call-site files; `refactor` re-hashes them **be
 tier**, since it otherwise inherits `safety`/`coverage_nearby`/`blast_radius` from an audit that may
 describe code which no longer exists. A stale target makes the candidate obsolete until the smell is
 re-confirmed, a stale test voids the coverage claim, a stale call-site voids the blast radius.
+
+The product track applies it a third time, to test evidence rather than reading. `build` and `quick`
+already prove that the tests they write can fail — a right-reason red before the code existed, or a
+sabotage mutation — so each records that proof in its DoD table (`red-first` | `mutation` | `none`, plus
+the test file's hash). `/prorab:verify` re-hashes those entries and marks the fresh ones
+`covered (reused)`, spending its budget on what nobody checked yet: the behaviors driven from outside,
+and the ones no DoD ever stated. Same two bounds as the `Code map` — a matching hash proves the file is
+unchanged, not that the test asserts the behavior in question, and a reused proof never upgrades a
+behavior's own verdict. An identical full-suite run on an identical tree is cited from the upstream
+digest rather than paid for twice.
 
 For the static pair a hashed map would be the wrong instrument — violation counts go stale the moment
 a batch lands, and re-running an analyzer is deterministic and nearly free. So `lint-audit` hands over
@@ -437,7 +479,7 @@ prorab/
 ├── plugins/
 │   ├── prorab/                    # product track
 │   │   ├── .claude-plugin/plugin.json
-│   │   ├── commands/              # refine.md build.md quick.md announce.md ask.md
+│   │   ├── commands/              # refine.md build.md quick.md verify.md announce.md ask.md
 │   │   ├── references/            # project-knowledge.md execution.md documentation-sync.md
 │   │   └── README.md
 │   └── prorab-tech/               # tech-quality track

@@ -26,18 +26,22 @@ DOC_SYNC = (
 RUNNERS = (
     PRODUCT / "commands" / "build.md",
     PRODUCT / "commands" / "quick.md",
+    PRODUCT / "commands" / "verify.md",
     TECH / "commands" / "refactor.md",
     TECH / "commands" / "lint-fix.md",
     TECH / "commands" / "audit.md",
     TECH / "commands" / "lint-audit.md",
 )
-# Commands that write code, and so also load documentation-sync.md.
+# Commands that write product code, and so also load documentation-sync.md.
 EXECUTORS = (
     PRODUCT / "commands" / "build.md",
     PRODUCT / "commands" / "quick.md",
     TECH / "commands" / "refactor.md",
     TECH / "commands" / "lint-fix.md",
 )
+# Runs checks and writes tests, but no product code: it falsifies no document, so a document
+# contradicting what it observed is a finding it reports, not one it rewrites.
+TEST_WRITERS = (PRODUCT / "commands" / "verify.md",)
 # Commands that neither run checks nor change code: they load neither extra contract.
 READ_ONLY = (
     PRODUCT / "commands" / "refine.md",
@@ -70,7 +74,7 @@ class ManifestAndCommandTests(unittest.TestCase):
 
     def test_command_frontmatter_and_reference_links(self) -> None:
         commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
-        self.assertEqual(9, len(commands))
+        self.assertEqual(10, len(commands))
         for command in commands:
             text = read(command)
             match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
@@ -95,6 +99,11 @@ class ManifestAndCommandTests(unittest.TestCase):
         # audit/lint-audit run analyzers but change no code
         for command in (TECH / "commands" / "audit.md", TECH / "commands" / "lint-audit.md"):
             self.assertNotIn(doc_sync, read(command), command)
+        # verify runs checks and writes tests, but changes no behavior: no doc-sync duty either
+        for command in TEST_WRITERS:
+            text = read(command)
+            self.assertIn(execution, text, command)
+            self.assertNotIn(doc_sync, text, command)
         for command in READ_ONLY:
             text = read(command)
             self.assertNotIn(execution, text, command)
@@ -128,6 +137,10 @@ class LifecycleScenarioTests(unittest.TestCase):
 
     def test_active_lookup_does_not_default_to_archive(self) -> None:
         self.assertIn("do not select `tasks/archive/**` by default", self.build)
+        self.assertIn(
+            "Do not select `tasks/archive/**` by default",
+            read(PRODUCT / "commands" / "verify.md"),
+        )
         self.assertIn("never auto-pick from `tasks/archive/**`", self.refactor)
         self.assertIn("never auto-pick from `tasks/archive/**`", self.lint_fix)
 
@@ -255,6 +268,96 @@ class QuickLaneTests(unittest.TestCase):
         self.assertIn("refuted if in doubt", self.quick)
 
 
+class VerifyLaneTests(unittest.TestCase):
+    """Outside-in acceptance: the prober is blind, the oracle is the requirement, coverage can fail."""
+
+    def setUp(self) -> None:
+        self.verify = read(PRODUCT / "commands" / "verify.md")
+
+    def test_the_probing_context_never_sees_the_implementation(self) -> None:
+        self.assertIn("Blind by construction", self.verify)
+        # blindness cannot be self-imposed, so probing is delegated even at the cheapest tier
+        self.assertIn("delegated at **every** tier, S included", self.verify)
+        self.assertIn("no file path, symbol, diff, or implementation hint", self.verify)
+        # and it is checkable, not promised
+        self.assertIn("Blindness declaration, mandatory", self.verify)
+        self.assertIn("not independently verified", self.verify)
+
+    def test_the_oracle_comes_from_the_requirement(self) -> None:
+        self.assertIn("The oracle is the requirement, never the system's own output", self.verify)
+        self.assertIn("metamorphic invariant", self.verify)
+        self.assertIn("`oracle: none`", self.verify)
+        self.assertIn("Never promote the implementation's behavior into the expectation", self.verify)
+
+    def test_scope_is_derived_by_command_then_asked_about(self) -> None:
+        for step in ("git status --porcelain", "git diff --name-only", "AskUserQuestion"):
+            self.assertIn(step, self.verify, step)
+        self.assertIn("Ask the user when the scope is genuinely undetermined", self.verify)
+        # a change with no user-visible surface is reported, not given an invented scenario
+        self.assertIn("If nothing user-visible remains, stop and say so", self.verify)
+
+    def test_it_verifies_and_does_not_fix(self) -> None:
+        self.assertIn("**The only code you write is test code.**", self.verify)
+        self.assertIn("Findings are routed, not fixed", self.verify)
+        for target in ("/prorab:quick", "/prorab:build", "/prorab-tech:refactor"):
+            self.assertIn(target, self.verify, target)
+
+    def test_verdicts_are_graded_and_weak_passes_are_downgraded(self) -> None:
+        self.assertIn("`verdict` ∈ `works`", self.verify)
+        for verdict in ("`broken`", "`differs`", "`unverifiable`"):
+            self.assertIn(verdict, self.verify, verdict)
+        self.assertIn("`grade` ∈ `observed`", self.verify)
+        self.assertIn("Downgrade weak passes, don't accept them", self.verify)
+        self.assertIn("Confirm a defect once before reporting it", self.verify)
+
+    def test_coverage_must_be_provable_by_mutation(self) -> None:
+        self.assertIn("would a test catch this breaking?", self.verify)
+        self.assertIn("Red-first does not apply here", self.verify)
+        self.assertIn("A test that cannot be proven by mutation is", self.verify)
+        self.assertIn("isolated worktree", self.verify)
+        self.assertIn("Never leave the suite red", self.verify)
+        # a coverage test written from today's output is a snapshot, not a check
+        self.assertIn("golden snapshot", self.verify)
+
+    def test_probing_is_bounded_and_safe(self) -> None:
+        self.assertIn("S = at most 2 contexts total", self.verify)
+        self.assertIn("absolute cap of **16**", self.verify)
+        self.assertIn("Never one prober per assertion", self.verify)
+        self.assertIn("never against production", self.verify)
+        self.assertIn("You do not type credentials", self.verify)
+        self.assertIn("Install nothing", self.verify)
+
+    def test_it_reuses_recorded_proof_instead_of_re_proving(self) -> None:
+        """build/quick already prove their tests can fail; verify re-hashes and skips those."""
+        self.assertIn("Evidence is never paid for twice", self.verify)
+        self.assertIn("Reuse the recorded proofs before proving anything", self.verify)
+        self.assertIn("git hash-object", self.verify)
+        self.assertIn("coverage evidence reused:", self.verify)
+        self.assertIn("covered (reused)", self.verify)
+        # the saving is banked, and a reused proof never upgrades the behavior's own verdict
+        self.assertIn("banked, not respent", self.verify)
+        self.assertIn("never upgrades a behavior's own verdict", self.verify)
+        # an identical run on an identical tree is cited, not repeated
+        self.assertIn("not the ones already run on this exact tree", self.verify)
+
+    def test_the_producing_commands_record_that_proof(self) -> None:
+        build = read(PRODUCT / "commands" / "build.md")
+        quick = read(PRODUCT / "commands" / "quick.md")
+        for command, text in (("build.md", build), ("quick.md", quick)):
+            self.assertIn("coverage-evidence handoff", text, command)
+            self.assertIn("git hash-object", text, command)
+        # build proves a test by either route; quick's route is the red-first it already runs
+        self.assertIn("`red-first` (Phase 3's right-reason red)", build)
+        self.assertIn("| proof |", quick)
+        self.assertIn("red-first · `<test file sha1>`", quick)
+
+    def test_it_leaves_one_record_and_archives_nothing(self) -> None:
+        self.assertIn("tasks/verify/VERIFY-<slug>.md", self.verify)
+        self.assertIn("type: verify", self.verify)
+        self.assertIn("first free deterministic suffix", self.verify)
+        self.assertIn("Archive nothing yourself", self.verify)
+
+
 class DocumentationSyncTests(unittest.TestCase):
     """A code-changing command owns the docs its change falsifies, and only those."""
 
@@ -284,7 +387,8 @@ class DocumentationSyncTests(unittest.TestCase):
             self.assertIn("CHANGELOG.md", text, command)
 
     def test_read_only_commands_do_not_touch_documentation(self) -> None:
-        for command in ("refine.md", "announce.md", "ask.md"):
+        # verify writes tests but no behavior, so it reports a contradicting document instead
+        for command in ("refine.md", "announce.md", "ask.md", "verify.md"):
             text = read(PRODUCT / "commands" / command)
             self.assertNotIn("`Documentation sync` contract", text, command)
         for command in ("audit.md", "lint-audit.md"):
@@ -377,7 +481,7 @@ class ContextHygieneTests(unittest.TestCase):
             self.assertIn("that one wins", text, reference)
 
     def test_every_command_names_an_occupancy_limit(self) -> None:
-        self.assertEqual(9, len(self.ALL_COMMANDS))
+        self.assertEqual(10, len(self.ALL_COMMANDS))
         for command in self.ALL_COMMANDS:
             text = read(command)
             self.assertTrue(
