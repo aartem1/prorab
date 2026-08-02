@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>How it works — Prorab</title>
+<meta name="description" content="Prorab's mechanics: complexity-tiered context budgets, per-context occupancy limits, hashed handoffs between commands, project memory, documentation sync and the artifact lifecycle.">
+<meta property="og:title" content="Prorab — how it works">
+<meta property="og:description" content="Two independent limits, a handoff that stops recon being paid for twice, and a small version-controlled memory.">
+<meta name="theme-color" content="#09090a">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span>prorab</a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="commands.html">Commands</a>
+      <a href="how-it-works.html" aria-current="page">How it works</a>
+      <a href="https://github.com/aartem1/prorab">GitHub&nbsp;↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero wrap" style="padding-top:3.5rem">
+    <p class="eyebrow">Mechanics</p>
+    <h1>
+      <span data-words>Cost is bounded.</span>
+      <span class="grad">Quality is not negotiable.</span>
+    </h1>
+    <p class="lede">
+      Two independent limits, a hashed handoff that stops recon being paid for twice, and a small
+      version-controlled memory that is never allowed to outrank the code.
+    </p>
+
+    <ul class="toc" style="margin-top:2rem">
+      <li><a href="#tiers">budget tiers</a></li>
+      <li><a href="#occupancy">context occupancy</a></li>
+      <li><a href="#handoffs">hashed handoffs</a></li>
+      <li><a href="#memory">project memory</a></li>
+      <li><a href="#docs">documentation sync</a></li>
+      <li><a href="#artifacts">artifact lifecycle</a></li>
+      <li><a href="#compare">how it compares</a></li>
+    </ul>
+  </section>
+
+  <section class="wrap" id="tiers" data-reveal>
+    <p class="eyebrow">01</p>
+    <h2>Budget tiers</h2>
+    <p class="dim" style="max-width:64ch">
+      The heavy commands — <code>build</code>, <code>verify</code>, <code>audit</code>,
+      <code>refactor</code>, <code>lint-audit</code>, <code>lint-fix</code> — run a
+      <strong>budget triage</strong> step before fanning out any agents. They estimate complexity
+      from cheap signals (size, blast radius, novelty, reversibility, uncertainty) and pick a tier.
+    </p>
+
+    <div class="tablewrap" style="margin-bottom:1.3rem">
+      <table>
+        <thead><tr><th>Tier</th><th>Total contexts</th><th>Shape</th></tr></thead>
+        <tbody>
+          <tr><td><strong>S</strong></td><td>2</td><td>No Workflow at all — the main loop is the executor and reads and runs directly.</td></tr>
+          <tr><td><strong>M</strong></td><td>6</td><td>The usual shape for a real feature.</td></tr>
+          <tr><td><strong>L</strong></td><td>12</td><td>Expandable to an absolute ceiling of 16, only for confirmed critical risk or explicit <code>--thorough</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="dim">
+      The count is <strong>cumulative for the whole command</strong> and includes the main context
+      plus every delegated or Workflow context, retries included. You can pin the choice:
+    </p>
+<pre><code><span class="c">/prorab:build</span> --tier=S
+<span class="c">/prorab:build</span> --fast          <span class="d"># cheapest defensible tier</span>
+<span class="c">/prorab:build</span> --thorough      <span class="d"># up to the ceiling</span>
+<span class="c">/prorab:verify</span> --verification=economy|balanced|thorough</code></pre>
+
+    <p class="dim">
+      <strong>Enforcement is mechanical, not a promise.</strong> Every delegated context carries a
+      turn limit (6/8/12 for S/M/L), review→fix cycles are capped at 1/2/3, and a completed round
+      that produces no new confirmed, non-duplicate finding stops fan-out immediately. Generated
+      Workflow scripts track their remaining allowance with a counter and a
+      <code>boundedAgent()</code> wrapper; unbounded fan-out is forbidden.
+    </p>
+
+    <div class="note">
+      <strong>What the budget never buys back.</strong> The safety floor is non-negotiable at every
+      tier: the characterization net or baseline, the contract diff, the drift search, a DoD skeptic,
+      and a sabotage-proven gate whenever one is created or changed. Mutation intensity is controlled
+      separately from the tier — <code>economy</code>, <code>balanced</code> (default) or
+      <code>thorough</code> — and mutations run only in temporary isolated worktrees, never in your
+      working tree.
+    </div>
+  </section>
+
+  <section class="wrap" id="occupancy" data-reveal>
+    <p class="eyebrow">02</p>
+    <h2>A tier bounds how many contexts open, not how full each one gets.</h2>
+    <p class="dim" style="max-width:64ch;margin-bottom:1.5rem">
+      Those are different things, and a context stuffed with material nobody reads judges worse than
+      one given the range that matters. So a second, orthogonal set of limits applies at every tier.
+    </p>
+
+    <div class="grid two">
+      <div class="card">
+        <span class="num">run output</span>
+        <h3>Never enters a context raw</h3>
+        <p class="dim">
+          Output from a test suite or an analyzer is captured to a file <em>outside</em> the working
+          tree and comes back as a ~40-line digest: the command, its exit code, its own counters, one
+          identifying line per failure. Ten failures of one class become one example plus a count; a
+          specific failure is grepped out of the file on disk when it needs detail. A run is judged
+          by exit code <strong>and</strong> counters, never by an <code>OK</code> string.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">delegated returns</span>
+        <h3>Capsules, not material</h3>
+        <p class="dim">
+          A delegated context hands back one schema capsule of roughly 1500 tokens — claims plus
+          <code>path:line</code>, symbol or command pointers, never file contents, a full diff or raw
+          output. An oversized return is not forwarded verbatim into the next prompt.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">main loop</span>
+        <h3>Holds the plan, not the code</h3>
+        <p class="dim">
+          Above tier S the orchestrator holds the artifact, the plan, the status table, the capsules
+          and the <code>used/cap</code> ledger — with two bounded exceptions the source-of-truth order
+          requires: a named, narrow range of current source when a capsule claim drives a contract
+          decision, and the digest of a run it ordered.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">deterministic steps</span>
+        <h3>Enumerable facts come from a command</h3>
+        <p class="dim">
+          <code>git hash-object</code> for content identity, <code>git status --porcelain</code> for
+          the change set, <code>git diff --stat</code> for the diff class, a <code>grep</code> per
+          touched symbol for documentation reach — where an empty result <em>is</em> the evidence
+          that nothing was affected.
+        </p>
+      </div>
+    </div>
+
+    <p class="dim" style="margin-top:1.3rem">
+      <strong>Compaction never buys silence.</strong> The exit code and the failure counts are always
+      reported in full. Shortening <em>what</em> failed is allowed; concealing <em>that</em> something
+      failed is a false report — and a suite that collected ~0 tests is itself a finding, not a pass.
+    </p>
+    <p class="dim">
+      The same principle governs the commands' own text. The shared rules live in four contracts and
+      a command loads only the ones it can act on: <code>project-knowledge.md</code> is read by all
+      ten, <code>execution.md</code> only by the seven that run checks, <code>documentation-sync.md</code>
+      only by the four that change product code, and <code>web-probing.md</code> only by
+      <code>build</code>, <code>quick</code> and <code>verify</code> — and only when the scope in
+      front of them actually has a browser surface.
+    </p>
+  </section>
+
+  <section class="wrap" id="handoffs" data-reveal>
+    <p class="eyebrow">03</p>
+    <h2>Recon is never paid for twice.</h2>
+    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
+      Commands run in sequence, so each stage records what the next would otherwise rediscover — and
+      stamps it with content hashes, so the next stage can tell fresh knowledge from a confident
+      description of code that has moved on.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Handoff</th><th>What is carried</th><th>What staleness costs</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>refine → build</code></td>
+            <td>The <em>Code map</em>: files opened with <code>git hash-object</code> hashes, reuse and change points, contracts at risk, conventions, declared gaps.</td>
+            <td>All fresh → recon costs zero contexts. Partly fresh → recon scoped to the stale entries. No map → normal recon. Never a blocker.</td>
+          </tr>
+          <tr>
+            <td><code>audit → refactor</code></td>
+            <td>Commit plus hashes of the target files, the tests the coverage claim rests on, and the call-site files.</td>
+            <td>Re-hashed <em>before</em> a tier is chosen. Stale target → candidate obsolete; stale test → coverage claim void; stale call site → blast radius void.</td>
+          </tr>
+          <tr>
+            <td><code>build/quick → verify</code></td>
+            <td>Which tests were proven able to fail and how — <code>red-first</code> or <code>mutation</code> — plus the test file's hash.</td>
+            <td>Fresh entries become <code>covered (reused)</code>; the budget goes to what nobody checked yet. A reused proof never upgrades a behavior's own verdict.</td>
+          </tr>
+          <tr>
+            <td><code>lint-audit → lint-fix</code></td>
+            <td>The exact analyzer invocations and the gate entrypoint — deliberately <em>not</em> violation counts.</td>
+            <td>Counts go stale the moment a batch lands and re-running an analyzer is nearly free, so gate state is read from the last completed batch artifact.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small" style="margin-top:1rem">
+      A matching hash proves only that a file is unchanged — not that a map claim is right, or that a
+      test asserts the behavior in question. So a claim that drives an external-contract edit is
+      still verified against current source, and saved contexts are banked, not respent.
+    </p>
+  </section>
+
+  <section class="wrap" id="memory" data-reveal>
+    <p class="eyebrow">04</p>
+    <h2>Project memory that can't outrank the code.</h2>
+    <p class="dim" style="max-width:64ch">
+      Prorab builds a small, version-controlled memory during normal work. No <code>init</code>, no
+      <code>remember</code> command, no background process, no external model, no vector database —
+      the structure is created lazily under <code>tasks/memory/</code>.
+    </p>
+<pre><code>tasks/memory/
+├── INDEX.md
+├── components/
+├── decisions/
+├── gotchas/
+└── verification/</code></pre>
+    <p class="dim">Memory is deliberately <strong>last</strong> in the source-of-truth order:</p>
+<pre><code>current worktree → repository instructions/docs → tests/CI/executable evidence
+  → task artifacts → <span class="d">memory</span></code></pre>
+    <p class="dim">
+      A material memory claim must be checked against current source before it can affect behavior,
+      architecture, contracts, scope, DoD, implementation or verification. A conflict marks the entry
+      updated, <code>superseded</code> or <code>stale</code> — it never overrides the code. Missing
+      memory never breaks a command.
+    </p>
+    <p class="small">
+      Captured: durable decisions, boundaries, contracts and consumers, recurring gotchas, rejected
+      alternatives, re-verified commands. Not captured: transcripts, reasoning, temporary status,
+      ordinary code facts, unmarked assumptions, or copies of task artifacts.
+    </p>
+  </section>
+
+  <section class="wrap" id="docs" data-reveal>
+    <p class="eyebrow">05</p>
+    <h2>Documentation doesn't drift away from the code.</h2>
+    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
+      Every command that changes code owns the documentation that change falsifies. A stale document
+      left behind is an incomplete change, not a follow-up — reviewers treat a contradiction between
+      the diff and a current-state document as a finding.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Kind</th><th>Examples</th><th>What a command does</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Current state</strong><br><span class="small">claims to describe how the project works now</span></td>
+            <td><code>README</code>, <code>docs/</code>, the spec, API and configuration references, runbooks, <code>CLAUDE.md</code>, docstrings, <code>--help</code> text</td>
+            <td>Corrects exactly what the change made factually wrong — a renamed symbol or path, a changed default, flag, signature, limit or format. In place, minimally, in the document's own language.</td>
+          </tr>
+          <tr>
+            <td><strong>Historical</strong><br><span class="small">records what happened</span></td>
+            <td><code>CHANGELOG.md</code>, release notes, ADRs, migration notes, <code>tasks/archive/**</code></td>
+            <td>Never rewritten to match new code. A new entry is added where the project's convention calls for one; a past entry stays as it was written.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="dim" style="margin-top:1rem">
+      Anything wider — a style rewrite, a pre-existing gap, a restructure, a correction needing a
+      product decision — is reported with the follow-up named, not absorbed into the diff. And
+      "nothing was affected" has to be earned by actually searching the docs for the symbols, paths
+      and values the change touched.
+    </p>
+    <p class="small">
+      <code>/prorab:verify</code> sits deliberately outside this duty: it changes no behavior, so it
+      falsifies no document — and when observed behavior contradicts a document, either one of them
+      can be the wrong one. That is a finding it reports with both readings named.
+    </p>
+  </section>
+
+  <section class="wrap" id="artifacts" data-reveal>
+    <p class="eyebrow">06</p>
+    <h2>Artifact lifecycle</h2>
+    <p class="dim" style="max-width:64ch">
+      Before moving anything, a command verifies explicit artifact identity and links, refuses paths
+      outside <code>tasks/</code>, never overwrites an existing directory (deterministic
+      <code>-2</code>, <code>-3</code> suffixes), updates links, re-opens destinations and reports
+      every moved file. A blocker, a partial completion or a failed mandatory verification leaves
+      artifacts active.
+    </p>
+<pre><code>tasks/archive/
+└── YYYY/
+    ├── &lt;task-slug&gt;/
+    ├── refactor-&lt;task-slug&gt;/
+    └── lint-&lt;plan-slug&gt;/</code></pre>
+    <p class="dim">
+      Archived work is never picked up as active by default. <code>/prorab:quick</code> and
+      <code>/prorab:verify</code> archive nothing at all — they each leave exactly one record. And no
+      command commits or pushes unless you explicitly ask.
+    </p>
+  </section>
+
+  <section class="wrap" id="compare" data-reveal>
+    <p class="eyebrow">07</p>
+    <h2>How it compares</h2>
+    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
+      Prorab sits between a hand-written Claude Code setup and a full product-development framework.
+      Its narrower bet: an existing codebase needs two things at once — a repeatable path from an
+      unclear task to verified code, and a separate, behavior-preserving path for paying down debt.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Capability</th><th>Prorab</th><th>Superpowers</th><th>Spec Kit</th><th>BMAD</th><th>Native</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Refine an unclear feature before coding</td><td>Built in</td><td>Built in</td><td>Built in</td><td>Built in</td><td>Configurable</td></tr>
+          <tr><td>Red-first TDD in the implementation path</td><td>Required</td><td>Required</td><td>Configurable</td><td>Configurable</td><td>Configurable</td></tr>
+          <tr><td>Independent implementation review</td><td>Required</td><td>Built in</td><td>Configurable</td><td>Built in</td><td>Configurable</td></tr>
+          <tr><td>Persistent, linked task artifacts</td><td>Built in</td><td>Design + plan</td><td>Built in</td><td>Built in</td><td>Configurable</td></tr>
+          <tr><td>Dedicated structural-debt workflow</td><td>Built in</td><td>Not in the basic workflow</td><td>Extension</td><td>Not in the default method</td><td>Configurable</td></tr>
+          <tr><td>Dedicated lint/type/gate ratchet</td><td>Built in</td><td>Not in the basic workflow</td><td>Extension</td><td>Module-dependent</td><td>Configurable</td></tr>
+          <tr><td>Hard cumulative agent-context limit</td><td>2/6/12, ceiling 16</td><td>Not documented</td><td>Not documented</td><td>Not documented</td><td>Configurable</td></tr>
+          <tr><td>Coding-agent portability</td><td>Claude Code</td><td>Multiple agents</td><td>Multiple agents</td><td>Multiple agents</td><td>Claude Code</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small" style="margin-top:1rem">
+      A comparison of documented <em>default workflows</em> as of 2026-07-25, not a benchmark of
+      model output. All of these are extensible, so "not in the default workflow" does not mean
+      "impossible to add". Full sources and a per-approach discussion are in the
+      <a href="https://github.com/aartem1/prorab#how-does-prorab-compare">README</a>.
+    </p>
+
+    <div class="herocta" style="animation:none;margin-top:2rem">
+      <a class="btn" href="./#install">Install Prorab →</a>
+      <a class="btn ghost" href="commands.html">All ten commands</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Prorab — an agentic development framework for Claude Code.</span>
+    <span>
+      <a href="https://github.com/aartem1/prorab">GitHub</a> ·
+      <a href="https://github.com/aartem1/prorab/blob/main/CHANGELOG.md">Changelog</a>
+    </span>
+  </div>
+</footer>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>

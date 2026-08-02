@@ -620,5 +620,72 @@ class ContextHygieneTests(unittest.TestCase):
             self.assertIn("digest", read(command), command)
 
 
+class SiteTests(unittest.TestCase):
+    """The docs site is a current-state document: it may not drift from the manifests.
+
+    Only the mechanical part is enforced here — every command listed, versions matching the
+    manifests, the real marketplace name in the install snippet, no dead internal links. Prose
+    accuracy stays a human duty, like every other current-state document.
+    """
+
+    SITE = ROOT / "site"
+    PAGES = ("index.html", "commands.html", "how-it-works.html")
+
+    def setUp(self) -> None:
+        self.pages = {name: read(self.SITE / name) for name in self.PAGES}
+        marketplace = json.loads(read(ROOT / ".claude-plugin" / "marketplace.json"))
+        self.marketplace = marketplace
+        self.versions = {item["name"]: item["version"] for item in marketplace["plugins"]}
+
+    def test_the_site_is_static_and_self_contained(self) -> None:
+        """No build step: Vercel serves the directory as-is, so nothing may need compiling."""
+        for name in self.PAGES + ("styles.css", "site.js", "favicon.svg", "README.md"):
+            self.assertTrue((self.SITE / name).is_file(), name)
+        # a package manifest anywhere in site/ would mean a build step crept in
+        self.assertEqual([], list(self.SITE.glob("**/package.json")))
+        vercel = json.loads(read(ROOT / "vercel.json"))
+        self.assertEqual("site", vercel["outputDirectory"])
+        self.assertIsNone(vercel["buildCommand"])
+
+    def test_the_deploy_config_cannot_shadow_the_plugin_manifests(self) -> None:
+        """Plugin install reads .claude-plugin/ and plugins/ — the site must stay outside both."""
+        for path in sorted(self.SITE.rglob("*")):
+            self.assertNotIn(".claude-plugin", path.parts, path)
+        for entry in self.marketplace["plugins"]:
+            self.assertTrue(entry["source"].startswith("./plugins/"), entry["source"])
+
+    def test_every_command_is_documented_on_the_site(self) -> None:
+        commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
+        reference = self.pages["commands.html"]
+        landing = self.pages["index.html"]
+        for command in commands:
+            namespace = "prorab" if command.parents[1].name == "prorab" else "prorab-tech"
+            invocation = f"/{namespace}:{command.stem}"
+            self.assertIn(invocation, reference, invocation)
+            self.assertIn(f'id="{command.stem}"', reference, invocation)
+            self.assertIn(invocation, landing, invocation)
+
+    def test_advertised_versions_match_the_manifests(self) -> None:
+        landing = self.pages["index.html"]
+        for plugin, version in self.versions.items():
+            self.assertIn(f"{plugin} <b>{version}</b>", landing, plugin)
+
+    def test_the_install_snippet_matches_the_real_marketplace(self) -> None:
+        landing = self.pages["index.html"]
+        self.assertIn(f"marketplace add aartem1/{self.marketplace['name']}", landing)
+        for plugin in self.versions:
+            self.assertIn(f"install {plugin}@{self.marketplace['name']}", landing)
+
+    def test_internal_links_and_assets_resolve(self) -> None:
+        for name, text in self.pages.items():
+            for target in set(re.findall(r'(?:href|src)="([^"#:]+)(?:#[^"]*)?"', text)):
+                if not target:
+                    continue
+                self.assertTrue((self.SITE / target).exists(), f"{name} → {target}")
+            # in-page anchors must exist too
+            for anchor in set(re.findall(r'href="#([^"]+)"', text)):
+                self.assertIn(f'id="{anchor}"', text, f"{name} → #{anchor}")
+
+
 if __name__ == "__main__":
     unittest.main()

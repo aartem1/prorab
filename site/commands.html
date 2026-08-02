@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Commands — Prorab</title>
+<meta name="description" content="All ten Prorab commands: refine, build, quick, verify, announce, ask, audit, refactor, lint-audit, lint-fix — what each takes, what it writes, and what it refuses to do.">
+<meta property="og:title" content="Prorab — ten commands">
+<meta property="og:description" content="Six on the product track, four on the tech-quality track.">
+<meta name="theme-color" content="#09090a">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span>prorab</a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="commands.html" aria-current="page">Commands</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="https://github.com/aartem1/prorab">GitHub&nbsp;↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero wrap" style="padding-top:3.5rem">
+    <p class="eyebrow">Reference</p>
+    <h1><span data-words>Ten commands.</span></h1>
+    <p class="lede">
+      Six on the product track, four on the tech-quality track. Each one states what it takes, what
+      it writes, and — just as important — what it refuses to do.
+    </p>
+
+    <ul class="toc" style="margin-top:2rem">
+      <li><a href="#refine">refine</a></li>
+      <li><a href="#build">build</a></li>
+      <li><a href="#quick">quick</a></li>
+      <li><a href="#verify">verify</a></li>
+      <li><a href="#announce">announce</a></li>
+      <li><a href="#ask">ask</a></li>
+      <li><a href="#audit">audit</a></li>
+      <li><a href="#refactor">refactor</a></li>
+      <li><a href="#lint-audit">lint-audit</a></li>
+      <li><a href="#lint-fix">lint-fix</a></li>
+    </ul>
+  </section>
+
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">Product track · <code>prorab</code></p>
+    <h2>From an unclear idea to a message you can forward.</h2>
+    <p class="dim" style="max-width:62ch;margin-bottom:1.6rem">
+      Four stages plus two you reach for as needed. <code>verify</code> is optional and works on any
+      scope — after <code>build</code>, after <code>quick</code>, or on a branch nobody used the
+      framework for.
+    </p>
+
+    <div class="cmd" id="refine">
+      <h3>/prorab:refine <span class="tag">writes no code</span></h3>
+      <p>
+        Your sparring partner while the idea is still raw. It asks skeptical questions, reads the
+        relevant code, and surfaces contradictions, hidden assumptions and gaps until a spec and an
+        implementation plan can be written meaningfully.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A short idea description — raw, incomplete or contradictory is fine.</dd>
+        <dt>Writes</dt><dd><code>tasks/ideas/IDEA-&lt;slug&gt;.md</code>, including a <em>Code map</em> handoff: every file it opened with a content hash, reuse and change points, contracts at risk, conventions to mirror, and an honest list of what it did <em>not</em> study.</dd>
+        <dt>Budget</dt><dd>At most two Explore contexts.</dd>
+        <dt>Then</dt><dd><code>/clear</code>, then <code>/prorab:build &lt;slug&gt;</code> — a fresh context that pays nothing for the dialogue.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd" id="build">
+      <h3>/prorab:build <span class="tag">turnkey</span></h3>
+      <p>
+        Implements a refined idea end to end through a multi-agent Workflow: recon → plan →
+        DAG-ordered implementation → adversarial review → verification. There is no approval gate in
+        the middle; the agents check each other.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A path to <code>tasks/ideas/IDEA-*.md</code>, an idea slug, or a free description of an already-refined idea.</dd>
+        <dt>Writes</dt><dd>Working code plus <code>tasks/IMPL-&lt;slug&gt;.md</code>. Archives the completed bundle into <code>tasks/archive/&lt;YYYY&gt;/</code> once verification passed — never on a partial result.</dd>
+        <dt>Notable</dt><dd>Reuses the IDEA's <em>Code map</em> where the recorded hashes still match, so recon isn't paid for twice. Derives the verification recipe from repo guidance, CI and task runners rather than assuming a stack. Records which of its tests were proven able to fail, so <code>verify</code> doesn't re-prove them.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd" id="quick">
+      <h3>/prorab:quick <span class="tag">2 contexts, fixed</span></h3>
+      <p>
+        The cheap lane. No IDEA, no IMPL, no archive, no Workflow — on a two-file edit that ceremony
+        costs more than the work. What is <em>not</em> dropped: a Definition of Done stated before
+        the code exists, a test that fails for the right reason first, the project's own checks, and
+        one independent verifier.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A concrete small change — 1–2 files, one layer, no external contract touched.</dd>
+        <dt>Writes</dt><dd>Code plus one compact <code>tasks/quick/QUICK-&lt;slug&gt;.md</code>: what changed and why, the DoD table, the exact checks and their results, and the verifier's verdict.</dd>
+        <dt>Escalates</dt><dd>It re-checks its eligibility gate <em>after</em> reading the code. If the task isn't small it hands over to <code>/prorab:refine</code> or <code>/prorab-tech:refactor</code> rather than finishing on the wrong budget — and still leaves a record marked <code>escalated</code> if it had already edited files.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd" id="verify">
+      <h3>/prorab:verify <span class="tag">black box</span></h3>
+      <p>
+        Establishes whether shipped functionality actually works <em>for the people who use it</em> —
+        someone in a UI, an API client, a CLI user, a reader of an export. The probing context is
+        <strong>blind by construction</strong>: delegated at every tier, given a charter of surfaces
+        and expected results, and never the implementation, the diff or a path.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A slug, an IMPL/QUICK path, a branch or base ref, a commit range, <code>uncommitted</code>, or a free description. Empty derives the scope from git and asks only when it is genuinely undetermined.</dd>
+        <dt>Writes</dt><dd><code>tasks/verify/VERIFY-&lt;slug&gt;.md</code> — a graded verdict and evidence per behavior — plus the missing tests, each proven by a mutation in an isolated worktree. Archives nothing.</dd>
+        <dt>Refuses</dt><dd>To fix anything. The only code it writes is test code; defects are routed with their reproduction to <code>quick</code>, <code>build</code> or <code>refactor</code>.</dd>
+        <dt>Notable</dt><dd>The oracle comes from the requirement, never the system's own output — a <code>works</code> resting on what the system printed is downgraded, not accepted. A web UI is driven <strong>headless by default</strong>: the prober authors one consumer session and judges a structured result, with pixels reserved for genuinely perceptual cases and an interactive visual session only on a named, logged trigger.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd" id="announce">
+      <h3>/prorab:announce <span class="tag">writes no code</span></h3>
+      <p>
+        A short, precise announcement of the result, dense enough to forward in a messenger. The
+        recipient should understand in 20–30 seconds what was done, what's new, what changed and how
+        it's computed, without reading code. It reads the IMPL, the diff and the IDEA, and
+        fact-checks against them.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A feature slug, a path to an IMPL or IDEA, commits, or a free "what we shipped". Empty means the latest work.</dd>
+        <dt>Writes</dt><dd>The text in chat. It saves <code>ANNOUNCE-&lt;slug&gt;.md</code> only when the task is already archived, into that same archive directory.</dd>
+        <dt>Refuses</dt><dd>To commit, and to recreate an active IDEA or IMPL for work that is already done.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd" id="ask">
+      <h3>/prorab:ask <span class="tag">writes no code</span></h3>
+      <p>
+        Answers a question about the project or its history: how a component works, why a decision
+        was made, who consumes a contract, what was already verified. It finds the area via project
+        memory and task artifacts, then verifies every material claim against current code, docs or
+        git history — and cites the sources.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>A question about architecture, behavior, history, consumers, ownership or verification.</dd>
+        <dt>Writes</dt><dd>Nothing, except that a disproved memory entry may be corrected or marked stale.</dd>
+        <dt>Notable</dt><dd>It separates <em>Confirmed now</em> from <em>Historical context</em>, so a fact from an old artifact is never handed to you as current truth.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">Tech-quality track · <code>prorab-tech</code></p>
+    <h2>Two pairs, for two natures of debt.</h2>
+    <p class="dim" style="max-width:62ch;margin-bottom:1.6rem">
+      <strong>Structural</strong> (<code>audit</code> → <code>refactor</code>) and
+      <strong>static</strong> (<code>lint-audit</code> → <code>lint-fix</code>). Both executors share
+      one prime directive: behavior preservation. Their results are announced by the same
+      <a href="#announce">/prorab:announce</a>.
+    </p>
+
+    <div class="cmd v" id="audit">
+      <h3>/prorab-tech:audit <span class="tag">touches no code</span></h3>
+      <p>
+        A multi-agent audit of <em>structure</em>. It sweeps by smell class plus churn×complexity
+        from git, clusters the findings, ranks them by
+        <code>value × safety × size × confidence</code>, and adversarially verifies the top one. The
+        output is the single best candidate for a safe refactoring, plus a ranked backlog of the rest.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>Empty for the whole project, or a focus — a path, a subsystem, or a problem class such as "duplication in services".</dd>
+        <dt>Writes</dt><dd><code>tasks/audits/AUDIT-&lt;slug&gt;.md</code>, stamped with hashed provenance: the commit plus hashes of the target files, the tests its coverage claim rests on, and the call-site files.</dd>
+        <dt>Then</dt><dd><code>/clear</code>, then <code>/prorab-tech:refactor</code>.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd v" id="refactor">
+      <h3>/prorab-tech:refactor <span class="tag">turnkey</span></h3>
+      <p>
+        A turnkey safe fix via a multi-agent Workflow. <strong>Prime directive — behavior
+        preservation:</strong> characterization tests over the old code, small steps, an adversarial
+        drift search, a differential old-vs-new run, and a measured quality improvement.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>Empty auto-picks candidate #1 from the latest AUDIT; or an id/slug, a file path, or a free problem description.</dd>
+        <dt>Writes</dt><dd>Code plus <code>tasks/IMPL-refactor-&lt;slug&gt;.md</code>.</dd>
+        <dt>Notable</dt><dd>It re-hashes the AUDIT's provenance <em>before</em> choosing a tier, because it otherwise inherits safety and blast-radius numbers from an audit that may describe code which no longer exists. A stale target makes the candidate obsolete until the smell is re-confirmed; a stale test voids the coverage claim.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd v" id="lint-audit">
+      <h3>/prorab-tech:lint-audit <span class="tag">touches no code</span></h3>
+      <p>
+        An audit of <em>statics</em>. It inventories the tooling — present, broken or absent — runs
+        the analyzers the project already has, read-only, and labels absent-tool estimates as manual
+        guesses rather than measurements.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>Empty for the whole project, or a focus — a tool, a subsystem, or a rule class.</dd>
+        <dt>Writes</dt><dd><code>tasks/audits/LINT-&lt;slug&gt;.md</code>: an ordered ladder of safe passes — <strong>A</strong> autofix → <strong>B</strong> onboard tools → <strong>C</strong> first gate → <strong>D</strong> strictness ratchet — plus the exact invocations and the gate entrypoint.</dd>
+        <dt>Notable</dt><dd>Violation counts in it are explicitly a snapshot, not a handoff: they go stale the moment a batch lands, and re-running an analyzer is deterministic and nearly free.</dd>
+      </dl>
+    </div>
+
+    <div class="cmd v" id="lint-fix">
+      <h3>/prorab-tech:lint-fix <span class="tag">one batch per run</span></h3>
+      <p>
+        Runs exactly <strong>one</strong> pass from that ladder, turnkey. Behavior preservation plus
+        a truthful gate lifecycle: batches before C are preparatory and are not called locked, C
+        creates and sabotage-proves the first gate, and later batches tighten or expand it and prove
+        the changed coverage.
+      </p>
+      <dl>
+        <dt>Takes</dt><dd>Empty auto-picks the first undone batch whose prerequisites are met; or a batch id/slug, a path to the LINT file, or a free description.</dd>
+        <dt>Writes</dt><dd>Code, gate-state evidence, and <code>tasks/IMPL-lint-&lt;plan-slug&gt;-batch-&lt;id&gt;.md</code>. The LINT and its batch artifacts are archived together once the ladder is complete or explicitly closed — never a partial ladder.</dd>
+        <dt>Notable</dt><dd>A latent bug found on the way is routed to the product track, not silently fixed inside a pass that claims to change no behavior.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="wrap" data-reveal>
+    <hr class="rule">
+    <div style="padding-top:3rem">
+      <h2>Language</h2>
+      <p class="dim" style="max-width:64ch">
+        Command bodies and everything internal run in <strong>English</strong> — reasoning,
+        inter-agent prompts, schema outputs. It is denser in tokens and steadier in quality.
+        Everything a human reads is in the task's language, detected from how you phrased the
+        request: the chat, the <code>refine</code> dialogue, the announcement, and the artifacts,
+        which stay project documents in that language. Code, names, comments and commit messages are
+        always English; user-visible domain and UI terms are carried as-is, never round-tripped
+        through a double translation.
+      </p>
+      <div class="herocta" style="animation:none">
+        <a class="btn" href="how-it-works.html">How the budget and handoffs work →</a>
+        <a class="btn ghost" href="https://github.com/aartem1/prorab/tree/main/plugins">Read the command sources</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Prorab — an agentic development framework for Claude Code.</span>
+    <span>
+      <a href="https://github.com/aartem1/prorab">GitHub</a> ·
+      <a href="https://github.com/aartem1/prorab/blob/main/CHANGELOG.md">Changelog</a>
+    </span>
+  </div>
+</footer>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Prorab — from a raw thought to verified, shipped code</title>
+<meta name="description" content="A Claude Code marketplace with two plugins: a product track that takes a task from a raw idea to verified code, and a tech-quality track that pays down debt without changing behavior. Every command has a quality floor and a counted context budget.">
+<meta property="og:title" content="Prorab — agentic development framework for Claude Code">
+<meta property="og:description" content="A quality floor the agent can't skip, and a context budget it can't exceed.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#09090a">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span>prorab</a>
+    <nav>
+      <a href="./" aria-current="page">Overview</a>
+      <a href="commands.html">Commands</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="https://github.com/aartem1/prorab">GitHub&nbsp;↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ================= hero ================= -->
+  <section class="hero wrap">
+    <p class="eyebrow">Claude Code marketplace · two plugins · ten commands</p>
+    <h1>
+      <span data-words>From a raw thought</span>
+      <span class="grad">to verified, shipped code.</span>
+    </h1>
+    <p class="lede">
+      Prorab gives a coding agent the two things it never brings on its own: a quality floor it
+      cannot skip, and a context budget it cannot exceed.
+    </p>
+
+    <div class="herocta">
+      <a class="btn" href="#install">Install →</a>
+      <a class="btn ghost" href="commands.html">Browse the commands</a>
+    </div>
+
+    <div class="badges">
+      <span class="badge">prorab <b>0.15.0</b></span>
+      <span class="badge">prorab-tech <b>0.12.0</b></span>
+      <span class="badge">no runtime, no API keys, no daemon</span>
+      <span class="badge">artifacts stay in your repo</span>
+    </div>
+
+    <div class="term" data-term>
+      <div class="bar">
+        <i></i><i></i><i></i>
+        <span>claude code — one feature, start to finish</span>
+        <button type="button" data-replay
+                style="margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--faint);background:none;border:1px solid var(--line);border-radius:6px;padding:.15rem .5rem;cursor:pointer">
+          replay
+        </button>
+      </div>
+      <div class="body"><span class="l note">…</span></div>
+    </div>
+  </section>
+
+  <!-- ================= the two failures ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">Why it exists</p>
+    <h2>Agent work breaks in two places.</h2>
+    <p class="lede" style="margin-bottom:1.8rem">
+      The idea goes in half-formed and you get a confident implementation of the wrong thing — or the
+      agent burns an enormous number of tokens re-reading the same files with no upper bound. Prorab
+      is a fix for both, and refuses to trade one for the other.
+    </p>
+
+    <div class="grid two">
+      <div class="card">
+        <span class="num">01 / floor</span>
+        <h3>A quality floor you can't skip</h3>
+        <p class="dim">
+          A Definition of Done written before any edit. A test that failed for the right reason
+          first. An independent reviewer that never wrote the code. Documentation the change
+          falsified, corrected in the same pass — a stale doc is an incomplete change, not a
+          follow-up.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">02 / ceiling</span>
+        <h3>A budget it can't exceed</h3>
+        <p class="dim">
+          Every heavy command triages complexity first and picks a tier. The count is cumulative for
+          the whole command, retries included, and enforced in the generated Workflow script — not
+          promised in prose.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= budget dial ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">The ceiling, moved</p>
+    <h2>Pick a tier. Watch the contexts.</h2>
+    <p class="dim" style="max-width:60ch;margin-bottom:1.6rem">
+      Complexity is estimated from cheap signals — size, blast radius, novelty, reversibility,
+      uncertainty — and the tier follows. You can pin it with <code>--fast</code>,
+      <code>--thorough</code> or <code>--tier=S|M|L</code>; the 16-context ceiling stays absolute.
+    </p>
+
+    <div class="budget" data-budget>
+      <div class="head">
+        <div class="tabs">
+          <button type="button" data-tier="S" aria-pressed="false">tier S</button>
+          <button type="button" data-tier="M" aria-pressed="true">tier M</button>
+          <button type="button" data-tier="L" aria-pressed="false">tier L</button>
+        </div>
+        <span class="readout"><b>6</b> / 16 contexts</span>
+      </div>
+      <div class="dots"></div>
+      <div class="legend">
+        <span><em style="background:var(--amber)"></em> spent by this command</span>
+        <span><em style="border:1px dashed rgba(255,157,77,.34)"></em> reachable only on confirmed critical risk</span>
+      </div>
+      <p class="why"></p>
+    </div>
+
+    <div class="note" style="margin-top:1rem">
+      <strong>A tier bounds how many contexts open, not how full each one gets.</strong> So a second,
+      orthogonal limit applies at every tier: raw suite output never enters a context — it goes to a
+      file outside the working tree and comes back as a ~40-line digest — and a delegated context
+      returns a capsule of claims and <code>path:line</code> pointers, never the material itself.
+      Compaction may shorten <em>what</em> failed, never conceal <em>that</em> something failed.
+    </div>
+  </section>
+
+  <!-- ================= pipeline ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">The path</p>
+    <h2>Two tracks, one discipline.</h2>
+    <p class="dim" style="max-width:62ch;margin-bottom:0.4rem">
+      The product track proves that <em>new</em> behavior matches a requirement. The tech track proves
+      that <em>old</em> behavior did not change. Different proofs, so different executors — and one
+      shared floor. Pick a stage.
+    </p>
+
+    <div class="pipe" data-pipe>
+      <div class="tabs">
+        <button type="button" data-track="product" aria-pressed="true">product</button>
+        <button type="button" class="v" data-track="tech" aria-pressed="false">tech quality</button>
+      </div>
+
+      <div class="track" data-track="product">
+        <button class="node" type="button"
+          data-cmd="/prorab:refine"
+          data-what="Your sparring partner while the idea is still raw. Skeptical questions, real code study, contradictions and hidden assumptions surfaced — until a spec can be written meaningfully. It writes no code at all."
+          data-writes="tasks/ideas/IDEA-&lt;slug&gt;.md — with a hashed Code map of everything it read">
+          <small>01</small>refine
+        </button>
+        <button class="node" type="button"
+          data-cmd="/prorab:build"
+          data-what="Turnkey implementation through a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. No approval gate in the middle; the agents check each other. Recon is skipped for every file whose hash still matches."
+          data-writes="working code + tasks/IMPL-&lt;slug&gt;.md">
+          <small>02</small>build
+        </button>
+        <button class="node" type="button"
+          data-cmd="/prorab:verify"
+          data-what="A black-box check by a context that never reads the implementation — no path, no diff, no symbol. Expected values come from the requirement, never from what the system printed. Then it proves a test actually fails when the behavior breaks."
+          data-writes="tasks/verify/VERIFY-&lt;slug&gt;.md + the missing tests">
+          <small>03</small>verify
+        </button>
+        <button class="node" type="button"
+          data-cmd="/prorab:announce"
+          data-what="The result as a short, fact-checked message: what shipped, what changed, how it's computed. Readable in 20–30 seconds by someone who will never open the diff."
+          data-writes="text in chat (a file only when the task is already archived)">
+          <small>04</small>announce
+        </button>
+        <button class="node" type="button"
+          data-cmd="/prorab:quick"
+          data-what="The cheap lane, for the daily two-file change: no IDEA, no IMPL, no archive, no Workflow, fixed at two contexts. The floor survives — DoD, a red-first test, the project's own checks, one independent verifier. If the task turns out not to be small, it hands over instead of finishing on the wrong budget."
+          data-writes="code + one compact tasks/quick/QUICK-&lt;slug&gt;.md">
+          <small>alt</small>quick
+        </button>
+      </div>
+
+      <div class="track" data-track="tech" hidden>
+        <button class="node v" type="button"
+          data-cmd="/prorab-tech:audit"
+          data-what="A multi-agent sweep for structural debt by smell class plus churn×complexity from git. Clusters, ranks by value × safety × size × confidence, adversarially verifies the top one. Touches no code."
+          data-writes="tasks/audits/AUDIT-&lt;slug&gt;.md — a ranked backlog + one spec'd candidate, hash-stamped">
+          <small>01</small>audit
+        </button>
+        <button class="node v" type="button"
+          data-cmd="/prorab-tech:refactor"
+          data-what="Prime directive: behavior preservation. A characterization net over the old code, small steps, an adversarial drift search, a differential old-vs-new run, and a measured quality improvement. It re-hashes the audit before choosing a tier — inheriting safety numbers from code that has moved on is the failure mode it refuses."
+          data-writes="code + tasks/IMPL-refactor-&lt;slug&gt;.md">
+          <small>02</small>refactor
+        </button>
+        <button class="node v" type="button"
+          data-cmd="/prorab-tech:lint-audit"
+          data-what="What the static analyzers can say, and which tooling is configured, broken or absent. Runs everything available read-only, then builds an ordered ladder: A autofix → B onboard tools → C first gate → D strictness ratchet."
+          data-writes="tasks/audits/LINT-&lt;slug&gt;.md — the ladder, exact invocations, gate entrypoint">
+          <small>03</small>lint-audit
+        </button>
+        <button class="node v" type="button"
+          data-cmd="/prorab-tech:lint-fix"
+          data-what="Exactly one rung of that ladder, turnkey, with an honest gate lifecycle: batches before C are preparatory and are never called locked, C creates and sabotage-proves the first gate, later batches tighten it and prove the changed coverage. A latent bug found on the way is routed out, not silently fixed."
+          data-writes="code + gate evidence + tasks/IMPL-lint-&lt;plan&gt;-batch-&lt;id&gt;.md">
+          <small>04</small>lint-fix
+        </button>
+      </div>
+
+      <div class="detail"></div>
+    </div>
+  </section>
+
+  <!-- ================= install ================= -->
+  <section class="wrap" id="install" data-reveal>
+    <p class="eyebrow">Install</p>
+    <h2>Three lines, inside Claude Code.</h2>
+    <p class="dim" style="max-width:60ch">
+      Both plugins live in the same marketplace but install separately — take one track or both.
+    </p>
+<pre><code><span class="c">/plugin</span> marketplace add aartem1/prorab
+<span class="c">/plugin</span> install prorab@prorab
+<span class="c">/plugin</span> install prorab-tech@prorab</code></pre>
+    <p class="small">
+      Update later with <code>/plugin marketplace update prorab</code>. Developing the framework
+      itself? Point the marketplace at a local clone: <code>/plugin marketplace add /path/to/prorab</code>.
+    </p>
+
+    <h3 style="margin-top:2.2rem">Then run your first task</h3>
+<pre><code><span class="c">/prorab:refine</span>  add a CSV export to the reports page
+<span class="d">→ questions, code study, contradictions — and IDEA-csv-export.md. No code.</span>
+
+<span class="c">/clear</span>
+<span class="c">/prorab:build</span>
+<span class="d">→ recon reused from the hashed Code map, then implemented and reviewed.</span>
+
+<span class="c">/prorab:verify</span>
+<span class="d">→ probed from outside by a context that never read the diff.</span></code></pre>
+  </section>
+
+  <!-- ================= command index ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">Reference</p>
+    <h2>Which command do I need?</h2>
+    <p class="dim" style="max-width:60ch;margin-bottom:1.4rem">
+      <code>refine → build</code> for anything touching an external contract, spanning layers, or
+      readable more than one way. <code>quick</code> for the daily two-file change. You don't have to
+      guess right — each one re-checks and hands over.
+    </p>
+
+    <div class="grid three">
+      <a class="cmdlink" href="commands.html#refine"><b>/prorab:refine</b><span>Think an idea through before anyone writes code</span></a>
+      <a class="cmdlink" href="commands.html#build"><b>/prorab:build</b><span>Implement a refined idea, end to end</span></a>
+      <a class="cmdlink" href="commands.html#quick"><b>/prorab:quick</b><span>Make a small everyday change (1–2 files)</span></a>
+      <a class="cmdlink" href="commands.html#verify"><b>/prorab:verify</b><span>Check it actually works for its users</span></a>
+      <a class="cmdlink" href="commands.html#announce"><b>/prorab:announce</b><span>Tell the team what shipped</span></a>
+      <a class="cmdlink" href="commands.html#ask"><b>/prorab:ask</b><span>Ask about this project or its history</span></a>
+      <a class="cmdlink tech" href="commands.html#audit"><b>/prorab-tech:audit</b><span>Find the debt worth paying down first</span></a>
+      <a class="cmdlink tech" href="commands.html#refactor"><b>/prorab-tech:refactor</b><span>Pay it down without changing behavior</span></a>
+      <a class="cmdlink tech" href="commands.html#lint-audit"><b>/prorab-tech:lint-audit</b><span>Get linters and types under control</span></a>
+      <a class="cmdlink tech" href="commands.html#lint-fix"><b>/prorab-tech:lint-fix</b><span>Land one safe static-quality pass</span></a>
+    </div>
+  </section>
+
+  <!-- ================= artifacts ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">What lands in your project</p>
+    <h2>The commands are global. The evidence is yours.</h2>
+    <p class="dim" style="max-width:62ch">
+      Commands install once and update from git. Everything they write is local to the working
+      project and worth committing — these files are the record of what was decided and why.
+    </p>
+<pre><code>tasks/
+├── ideas/IDEA-&lt;slug&gt;.md                     <span class="d"># refine</span>
+├── IMPL-&lt;slug&gt;.md                           <span class="d"># build</span>
+├── quick/QUICK-&lt;slug&gt;.md                    <span class="d"># quick</span>
+├── verify/VERIFY-&lt;slug&gt;.md                  <span class="d"># verify</span>
+├── audits/AUDIT-&lt;slug&gt;.md                   <span class="d"># audit</span>
+├── audits/LINT-&lt;slug&gt;.md                    <span class="d"># lint-audit</span>
+├── IMPL-refactor-&lt;slug&gt;.md                  <span class="d"># refactor</span>
+├── IMPL-lint-&lt;plan-slug&gt;-batch-&lt;id&gt;.md      <span class="d"># lint-fix</span>
+├── memory/                                  <span class="d"># small, verified project memory</span>
+└── archive/&lt;YYYY&gt;/&lt;task-slug&gt;/              <span class="d"># completed, verified bundles</span></code></pre>
+
+    <div class="stats" style="margin-top:1.4rem">
+      <div class="stat"><b>16</b><span>absolute context ceiling, flags included</span></div>
+      <div class="stat"><b>~1500</b><span>tokens a delegated context may hand back</span></div>
+      <div class="stat"><b>~40</b><span>lines of digest per suite or analyzer run</span></div>
+      <div class="stat"><b>0</b><span>commits or pushes you didn't ask for</span></div>
+    </div>
+  </section>
+
+  <!-- ================= closing ================= -->
+  <section class="wrap" data-reveal>
+    <hr class="rule">
+    <div style="padding-top:3rem">
+      <h2 style="max-width:20ch">Give the agent a floor and a ceiling.</h2>
+      <p class="lede">Then let it work.</p>
+      <div class="herocta" style="animation:none">
+        <a class="btn" href="#install">Install Prorab →</a>
+        <a class="btn ghost" href="how-it-works.html">How the budget and handoffs work</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Prorab — an agentic development framework for Claude Code.</span>
+    <span>
+      <a href="https://github.com/aartem1/prorab">GitHub</a> ·
+      <a href="https://github.com/aartem1/prorab/blob/main/CHANGELOG.md">Changelog</a>
+    </span>
+  </div>
+</footer>
+
+</div>
+<script src="site.js"></script>
+</body>
+</html>
