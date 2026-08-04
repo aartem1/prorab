@@ -15,12 +15,11 @@ export const howItWorks = {
 
   hero: {
     eyebrow: 'Mechanics',
-    titleA: 'The rules that decide',
-    titleB: 'what may be called done.',
+    titleA: 'What Prorab checks',
+    titleB: 'before it calls work done.',
     lede:
-      'Everything below exists to keep one property true: the expected value in every check can be ' +
-      'traced back to a stated requirement, and never to the code that is being checked. The rest ' +
-      'is making that affordable.',
+      'Every expected value must trace back to a stated requirement, never to the code under test. ' +
+      'This page explains that rule, the supporting checks, and the limits that control cost.',
   },
 
   toc: {
@@ -38,11 +37,10 @@ export const howItWorks = {
 
   dod: {
     rail: 'the DoD',
-    heading: 'What “explicit” has to mean to be worth anything',
+    heading: 'A useful Definition of Done is specific and testable',
     lede:
-      'A Definition of Done that reads “the export works” is not a requirement — it is the same ' +
-      'ambiguity in a more confident font. The form is fixed, and it is fixed because each part of ' +
-      'it closes a specific way of being wrong.',
+      '“The export works” is still ambiguous. Each item needs a fixed, testable shape because ' +
+      'every part prevents a different class of mistake.',
     table: {
       head: ['Rule', 'The failure it closes'],
       rows: [
@@ -81,19 +79,16 @@ export const howItWorks = {
       ],
     } as Table,
     metamorphic:
-      'Metamorphic invariants are the part people skip, so: <em>permuting the input does not ' +
-      'change the total</em>; <em>parse ∘ serialize returns the original</em>; <em>running it ' +
-      'twice is idempotent</em>; <em>more input never lowers the count</em>. Each is checkable ' +
-      'without knowing the answer, which is exactly the situation a ranking or an aggregate puts ' +
-      'you in.',
+      'Examples of metamorphic invariants: reordering input does not change the total; parsing ' +
+      'serialized data returns the original; a second run has no additional effect; adding input ' +
+      'cannot lower the count. These are useful when no exact expected value is available.',
   },
 
   evidence: {
     rail: 'evidence',
-    heading: 'A test that cannot fail is not evidence.',
+    heading: 'A test counts only after it has proved it can fail.',
     lede:
-      'Every test the framework counts has been shown to go red. There are exactly two ways to ' +
-      'show it, and which one was used is recorded per test, with the test file’s hash.',
+      'Prorab records one of two forms of evidence for each test, along with the test file hash.',
     routes: [
       {
         num: 'route 1 · red-first',
@@ -158,10 +153,8 @@ export const howItWorks = {
       ],
     } as Table,
     caveat:
-      '<strong>A caveat the framework states about itself.</strong> These are lenses for a ' +
-      'skeptic, proven by a command’s output — not checkboxes the author awards themselves. Pushed ' +
-      'too hard, “the reviewer must find something” breeds false findings and over-engineering, so ' +
-      'the skeptic’s focus is DoD coverage and defused fake checks, explicitly <em>not</em> style.',
+      '<strong>This review is deliberately narrow.</strong> It checks DoD coverage and weak or ' +
+      'misleading tests, not style. A reviewer is not required to invent a finding.',
 
     judgedHeading: 'How a run is judged',
     judged:
@@ -176,14 +169,11 @@ export const howItWorks = {
 
   blind: {
     rail: 'blind check',
-    heading: 'Blindness has to be structural, not promised.',
+    heading: 'Independent verification must be separate by design.',
     lede:
-      'Everything in section 02 is performed by contexts that can see the implementation. That is ' +
-      'necessary and not sufficient: a check designed while looking at the code inherits the ' +
-      'code’s assumptions and then confirms them. So <code>/prorab:verify</code> splits the roles ' +
-      'physically. The probing context is <strong>delegated at every tier, S included</strong> — ' +
-      'not because probing is expensive, but because a context that has already read the diff ' +
-      'cannot un-read it.',
+      'Code-aware review is necessary, but it can inherit the implementation’s assumptions. ' +
+      '<code>/prorab:verify</code> therefore delegates user-facing checks to a fresh context at ' +
+      'every tier, including S.',
     cards: [
       {
         num: 'the charter',
@@ -214,15 +204,11 @@ export const howItWorks = {
       '<code>unverifiable</code>, naming the missing environment, access, data or oracle, is a ' +
       'legitimate result — a fabricated “works” is not.',
 
-    ladderHeading: 'The instrument ladder for a browser surface',
+    ladderHeading: 'How browser checks are chosen',
     ladderLede:
-      'The default for a web UI is a headless run, and the reason is not only speed. In a visual ' +
-      'session the model is the driver: look at a screenshot, decide, click, look again — every ' +
-      'step a round trip carrying an image. In a headless run it <strong>authors</strong> the ' +
-      'session once, executes it with one command, and judges a structured result. That is also ' +
-      'the stronger check: a screenshot after pressing <em>Save</em> shows a toast, while a script ' +
-      'reloads the page and re-reads the resource, which is what actually proves the data was ' +
-      'stored.',
+      'A headless run is the default because it is repeatable and can inspect structured results. ' +
+      'For example, it can reload a page and read the saved resource instead of treating a success ' +
+      'toast as proof that data was stored.',
     ladder: {
       head: ['Level', 'When', 'What it asserts on'],
       rows: [
@@ -275,13 +261,11 @@ export const howItWorks = {
 
   preserve: {
     rail: 'preservation',
-    heading: 'The tech track proves the opposite thing.',
+    heading: 'Technical-quality work uses a different proof.',
     lede:
-      '<code>build</code> proves that <em>new</em> behavior matches a requirement. ' +
-      '<code>refactor</code> and <code>lint-fix</code> prove that <em>old</em> behavior did not ' +
-      'change. That is not the same proof with a different subject — it needs a different ' +
-      'instrument entirely, which is why they are separate executors rather than a flag on ' +
-      '<code>build</code>.',
+      '<code>build</code> checks new behavior against a requirement. <code>refactor</code> and ' +
+      '<code>lint-fix</code> check that existing behavior is unchanged, so they use a separate ' +
+      'workflow and different evidence.',
     cards: [
       {
         num: 'the oracle',
@@ -318,12 +302,10 @@ export const howItWorks = {
 
   cost: {
     rail: 'cost',
-    heading: 'Two independent limits: how many contexts, and how full each one gets.',
+    heading: 'Two limits control cost: context count and context size.',
     lede:
-      'The heavy commands — <code>build</code>, <code>verify</code>, <code>audit</code>, ' +
-      '<code>refactor</code>, <code>lint-audit</code>, <code>lint-fix</code> — run a ' +
-      '<strong>budget triage</strong> before fanning out any agents, estimating complexity from ' +
-      'cheap signals: size, blast radius, novelty, reversibility, uncertainty.',
+      'Before delegating, the heavy commands estimate size, affected area, novelty, reversibility, ' +
+      'and uncertainty, then select a context tier.',
     tiers: {
       head: ['Tier', 'Total contexts', 'Shape'],
       rows: [
@@ -357,9 +339,8 @@ export const howItWorks = {
 
     occupancyHeading: 'The second axis: occupancy',
     occupancyLede:
-      'A tier bounds how many contexts open, not how full each one gets — and those are different ' +
-      'things. A context stuffed with material nobody reads judges worse than one given the range ' +
-      'that matters, so three limits apply at every tier.',
+      'A tier limits how many contexts open. Separate rules keep each context focused and prevent ' +
+      'raw output or entire files from being copied between agents.',
     occupancy: [
       {
         num: 'run output',
@@ -430,11 +411,10 @@ export const howItWorks = {
 
   handoffs: {
     rail: 'handoffs',
-    heading: 'Nothing is paid for twice.',
+    heading: 'Verified work is reused when it is still current.',
     lede:
-      'The commands run in sequence, and each stage already knows something the next would ' +
-      'otherwise rediscover. So each records it — stamped with content hashes, so the next stage ' +
-      'can tell fresh knowledge from a confident description of code that has moved on.',
+      'Each stage records reusable findings with content hashes. The next command can reuse ' +
+      'unchanged information and re-check only what has moved.',
     table: {
       head: ['Handoff', 'What is carried', 'What staleness costs'],
       rows: [
@@ -486,12 +466,11 @@ export const howItWorks = {
 
   docs: {
     rail: 'docs sync',
-    heading: 'Documentation doesn’t drift away from the code.',
+    heading: 'Code changes include the documentation they invalidate.',
     lede:
-      'Every command that changes code owns the documentation that change falsifies. A stale ' +
-      'document left behind is an <em>incomplete change</em>, not a follow-up — it is part of the ' +
-      'command’s own completion condition, and reviewers treat a contradiction between the diff ' +
-      'and a current-state document as a finding.',
+      'A code-changing command must update current documentation that the change makes factually ' +
+      'wrong. A contradiction between the diff and current documentation is treated as an ' +
+      'incomplete change.',
     table: {
       head: ['Kind', 'Examples', 'What a command does'],
       rows: [
@@ -530,12 +509,11 @@ export const howItWorks = {
 
   memory: {
     rail: 'memory',
-    heading: 'Project memory that can’t outrank the code.',
+    heading: 'Project memory helps discovery but never overrides the code.',
     lede:
-      'Prorab accumulates a small, version-controlled memory during normal work. No ' +
-      '<code>init</code>, no <code>remember</code> command, no background process, no external ' +
-      'model, no vector database — the structure is created lazily under ' +
-      '<code>tasks/memory/</code>, and every command still works when it is absent.',
+      'Prorab keeps a small version-controlled memory under <code>tasks/memory/</code>. It is ' +
+      'created only when needed and requires no setup, background process, external model, or ' +
+      'vector database.',
     tree: `tasks/memory/
 ├── INDEX.md          <span class="d"># one line per entry: link, type, status, topic, key paths</span>
 ├── components/       <span class="d"># component, contract, pattern</span>
@@ -588,12 +566,11 @@ export const howItWorks = {
 
   compare: {
     rail: 'compare',
-    heading: 'How it compares',
+    heading: 'How Prorab compares',
     lede:
-      'Prorab sits between a hand-written Claude Code setup and a full product-development ' +
-      'framework. Its narrower bet: an existing codebase needs two things at once — a repeatable ' +
-      'path from an unclear task to verified code, and a separate, behavior-preserving path for ' +
-      'paying down debt.',
+      'Prorab sits between a custom Claude Code setup and a full product-development framework. It ' +
+      'focuses on two jobs: taking an unclear task to verified code and improving existing code ' +
+      'without changing behavior.',
     table: {
       head: ['Capability', 'Prorab', 'Superpowers', 'Spec Kit', 'BMAD', 'Native'],
       rows: [

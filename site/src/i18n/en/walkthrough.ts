@@ -15,18 +15,15 @@ export const walkthrough = {
 
   hero: {
     eyebrow: 'Walkthrough',
-    titleA: 'Eight words in.',
-    titleB: 'A verified change out.',
+    titleA: 'From a short request',
+    titleB: 'to a verified change.',
     lede:
-      'One ordinary feature request, taken all the way through — with what each command ' +
-      'establishes, what it writes down, and what it refuses to accept along the way.',
+      'Follow one ordinary feature request through clarification, implementation, verification, ' +
+      'and announcement.',
     note:
-      '<strong>Read the panels below as reconstructions, not captured output.</strong> The feature ' +
-      'is a made-up example — a CSV export on a reports screen — chosen because everyone has ' +
-      'shipped one and everyone has shipped it slightly wrong; the file names and numbers are ' +
-      'illustrative, and the blocks are condensed to the part worth showing. What is <em>not</em> ' +
-      'invented is the structure: the sections of each artifact, the rules the commands apply, and ' +
-      'what each of them declines to do.',
+      '<strong>The panels are shortened reconstructions, not captured output.</strong> The CSV ' +
+      'feature, file names, and numbers are illustrative. The artifact structure and command rules ' +
+      'match the real plugins.',
   },
 
   toc: {
@@ -45,23 +42,21 @@ export const walkthrough = {
     lab: 'the request',
     heading: '“Add a CSV export to the reports page.”',
     body:
-      'This is how the work actually arrives — in a message, in a standup, in your own head at ' +
-      '23:40. It is not a bad request. It is a normal one. It also contains ' +
-      '<a href="{overview}#problem">fourteen decisions</a> nobody has taken yet, and an agent that ' +
-      'starts coding will take all fourteen without telling you.',
+      'This is a normal request, and it still contains ' +
+      '<a href="{overview}#problem">fourteen unresolved decisions</a>. An agent that starts coding ' +
+      'must choose an answer for each one.',
     kicker: 'So the first command writes no code at all.',
   },
 
   refine: {
     rail: 'refine',
     lab: 'make the requirement explicit',
-    heading: '<code>/prorab:refine</code> — the argument before the code',
+    heading: '<code>/prorab:refine</code> — clarify before coding',
     invocation: '<span class="c">/prorab:refine</span>  add a CSV export to the reports page',
     intro:
-      'It reads the repository’s own guidance and the relevant code first — models, endpoints, the ' +
-      'report query, the existing screens — and only then opens its mouth. The first message is ' +
-      'never a question. It is a <strong>paraphrase</strong>, so you can see immediately whether ' +
-      'it understood you, followed by an unclarity map.',
+      'It first reads the repository guidance and relevant code: models, endpoints, the report ' +
+      'query, and existing screens. Then it paraphrases the request so you can correct its reading ' +
+      'before answering questions, followed by an ambiguity map.',
 
     legend: [
       {
@@ -88,7 +83,7 @@ export const walkthrough = {
       },
     ] as LegendRow[],
 
-    mapName: 'the unclarity map, first round',
+    mapName: 'ambiguity map, first round',
     map: `<span class="r">🟥</span> "everything the user sees" (your words) vs the page's own default filter —
    the screen already hides archived rows. Which of the two is "what the user sees"?
 <span class="c">🟧</span> empty result: a header-only file, a zero-byte file, or a refusal with a message?
@@ -99,9 +94,8 @@ export const walkthrough = {
 <span class="v">🟦</span> exports/base.py:12 has a streaming-response helper with the project's own conventions`,
 
     asks:
-      'Then it asks — <strong>one to four questions at a time</strong>, not fifteen at once, with ' +
-      'options that are specific and mutually exclusive rather than “yes / no / maybe”. Each ' +
-      'answer updates the map, and a new answer that changes the scope is said out loud.',
+      'It asks <strong>one to four focused questions at a time</strong>, with concrete, mutually ' +
+      'exclusive options. Each answer updates the map; scope changes are called out explicitly.',
 
     roundName: 'a question round',
     round: `Which rows does the file contain?
@@ -116,10 +110,9 @@ And when the result is empty?
 `,
 
     stops:
-      'Skepticism here has a job, and it is allowed to stop when the job is done: it serves scope ' +
-      'and the DoD, not itself. If two rounds in a row move nothing, or you start answering “as ' +
-      'before”, it proposes settling and writing the rest down as explicit open items. And it ' +
-      'never declares the idea ready — that call is yours.',
+      'The dialogue ends when the scope and DoD are clear enough to implement. If two rounds add ' +
+      'nothing, the command proposes recording the remaining open items. You decide when the idea ' +
+      'is ready.',
 
     forks:
       'An unresolved fork is not quietly defaulted. It is written into the artifact as ' +
@@ -173,12 +166,11 @@ And when the result is empty?
 
   clear: {
     rail: '/clear',
-    lab: 'a deliberate discontinuity',
-    heading: '<code>/clear</code> — and why it isn’t just tidiness',
+    lab: 'a fresh context',
+    heading: '<code>/clear</code> — start implementation separately',
     why:
-      'The context that argued its way to the DoD is the worst possible judge of whether the code ' +
-      'satisfies it: it knows what it meant. So the implementation starts in a fresh session, and ' +
-      'the only thing that crosses the boundary is the written artifact.',
+      'The context that wrote the DoD already knows the intended answer. Implementation therefore ' +
+      'starts in a fresh session, using the written artifact as the handoff.',
     cost:
       'This would normally mean paying for the code recon twice. It doesn’t, because the <em>Code ' +
       'map</em> above carries a <code>git hash-object</code> hash per file. <code>build</code> ' +
@@ -198,9 +190,9 @@ And when the result is empty?
     lab: 'explicit requirement → matching code',
     heading: '<code>/prorab:build</code> — turnkey, with the agents checking each other',
     consent:
-      'Invoking it is consent to carry the task to the end. There is no approval gate in the ' +
-      'middle and it will not ask “shall I continue”. It stops only on a real blocker — and that ' +
-      '<code>[?:&nbsp;…]</code> from the IDEA is one:',
+      'The command continues through normal implementation steps without asking for routine ' +
+      'approval. It stops for a real blocker, including an unresolved <code>[?:&nbsp;…]</code> in ' +
+      'the IDEA:',
 
     blockerName: 'the one interruption',
     blocker: `Blocker — the IDEA leaves an open fork that decides a DoD item:
@@ -211,13 +203,11 @@ And when the result is empty?
   ③ cap at 50 000 but make it configurable`,
 
     autonomy:
-      'Everything else runs without you. It derives the project’s own verification recipe before ' +
-      'planning — the exact supported commands for targeted tests, the suite, lint, typecheck and ' +
-      'build, taken from repository guidance, CI and task runners rather than assumed from the ' +
-      'language — then triages complexity, picks a tier, and fans out only as far as that tier ' +
-      'allows: recon → plan → DAG-ordered implementation → adversarial review → verification.',
+      'Before planning, it derives the project’s test, lint, type-check, and build commands from ' +
+      'repository guidance, CI, and task runners. It then selects a context tier and runs the ' +
+      'workflow: inspection → plan → implementation by dependency → review → verification.',
 
-    testHeading: 'The part that matters: how a test earns its place',
+    testHeading: 'How a test proves its value',
     testLede:
       'Each task ends with checks at the level and location the repository already uses. The ' +
       'discipline is what stops a test from faking green:',
@@ -303,9 +293,8 @@ And when the result is empty?
     lab: 'does it work for the person who uses it?',
     heading: '<code>/prorab:verify</code> — from outside the code',
     intro:
-      'Everything so far was checked by contexts that could see the implementation. That is ' +
-      'necessary and not sufficient: a check designed while looking at the code inherits the ' +
-      'code’s assumptions and then confirms them. This command splits the roles structurally.',
+      'Code-aware checks are necessary, but they may inherit the implementation’s assumptions. ' +
+      'This command gives user-facing verification to a separate context.',
 
     halves: [
       {
@@ -412,11 +401,9 @@ And when the result is empty?
     lab: 'tell people, without overclaiming',
     heading: '<code>/prorab:announce</code> — twenty seconds of someone else’s attention',
     intro:
-      'Not a report and not a changelog. The recipient — product, QA, an adjacent team — should ' +
-      'understand what shipped without opening code. “Done” is taken from what actually landed ' +
-      '(the IMPL, the diff, the test status), never from what the IDEA intended, and every ' +
-      'non-trivial claim is fact-checked against those sources before you see it. Unproven claims ' +
-      'are removed or softened, not smoothed over.',
+      'This is a short update for product, QA, or another team. It explains what shipped without ' +
+      'requiring the reader to open the code. Claims are checked against the IMPL, diff, and test ' +
+      'status; uncertain claims are removed or qualified.',
 
     messageName: 'ready to paste into a messenger',
     message: `📤 CSV export on the reports screen
@@ -447,7 +434,7 @@ Where to see it: Reports → the toolbar above the table`,
   lanes: {
     rail: 'other lanes',
     lab: 'not every task is that task',
-    heading: 'The cheap lane, and the debt lanes',
+    heading: 'Small changes and technical-quality work',
     cards: [
       {
         num: '/prorab:quick',
@@ -494,9 +481,8 @@ Where to see it: Reports → the toolbar above the table`,
 ├── verify/VERIFY-csv-export.md <span class="d"># outside-in verdicts, defects, coverage</span>
 └── memory/decisions/           <span class="d"># at most a couple of durable, verified lines</span>`,
     why:
-      'Six months later the interesting question is never “what does this code do” — you can read ' +
-      'that. It is “why does it do <em>that</em>, and what else was considered”. That is what ' +
-      'these files hold, and it is why they are worth committing.',
+      'The code shows what the system does. These records preserve why it works that way, which ' +
+      'alternatives were considered, and how the result was verified.',
     archiving:
       'Archiving only happens after a re-check of scope and every mandatory DoD item. A blocker, ' +
       'a partial implementation or a failed mandatory check leaves everything active, exactly ' +

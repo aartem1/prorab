@@ -27,7 +27,7 @@ export const common = {
   },
 
   footer: {
-    tagline: 'Prorab — an agentic development framework for Claude Code.',
+    tagline: 'Prorab — a structured development workflow for Claude Code.',
     github: 'GitHub',
     changelog: 'Changelog',
   },

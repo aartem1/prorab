@@ -19,7 +19,7 @@ export const common: Common = {
   },
 
   footer: {
-    tagline: 'Prorab — агентный фреймворк разработки для Claude Code.',
+    tagline: 'Prorab — системный процесс разработки для Claude Code.',
     github: 'GitHub',
     changelog: 'Changelog',
   },

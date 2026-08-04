@@ -12,42 +12,37 @@ import type {
 
 export const overview = {
   meta: {
-    title: 'Prorab — make the requirement explicit, then prove the code matches it',
+    title: 'Prorab — turn unclear tasks into verified code',
     description:
-      'A Claude Code marketplace with two plugins. It drives an unstated requirement into the ' +
-      'open — contradictions, gaps, hidden assumptions — turns it into a checkable Definition of ' +
-      'Done, and then keeps every test’s expected value traceable back to that requirement ' +
-      'instead of to the code.',
-    ogTitle: 'Prorab — an agentic development framework for Claude Code',
+      'Two Claude Code plugins for refining requirements, implementing changes, verifying ' +
+      'user-visible behavior, and improving code without changing how it works.',
+    ogTitle: 'Prorab — a structured development workflow for Claude Code',
     ogDescription:
-      'An agent will implement the half of the requirement you never stated, and its tests will ' +
-      'agree with it. Prorab breaks that loop.',
+      'Make the requirement explicit, implement it, and verify the result against the requirement.',
   },
 
   hero: {
     eyebrow: 'Claude Code marketplace · two plugins · ten commands',
-    titleA: 'Make the requirement explicit.',
-    titleB: 'Then prove the code matches it.',
+    titleA: 'Clarify the task.',
+    titleB: 'Then verify the code.',
     lede:
-      'A coding agent turns any requirement into code — including the half of it you never ' +
-      'stated. It fills that half with plausible defaults, writes tests that assert the defaults ' +
-      'it picked, and reports green. Prorab is a set of Claude Code commands built to break that ' +
-      'loop.',
+      'Coding agents fill gaps with plausible assumptions. Their tests can then confirm those ' +
+      'same assumptions instead of your intent. Prorab separates clarification, implementation, ' +
+      'and independent verification.',
     ctaInstall: 'Install →',
     ctaWalkthrough: 'Watch one task go through',
     badges: {
-      runtime: 'no runtime, no API keys, no daemon',
-      artifacts: 'artifacts stay in your repo',
+      runtime: 'no runtime, API keys, or background service',
+      artifacts: 'records stay in your repository',
     },
   },
 
   terminal: {
-    caption: 'schematic · one feature, start to finish',
+    caption: 'example · one feature from idea to verification',
     replay: 'replay',
     note:
-      'A condensed schematic of what the three commands establish — not a captured transcript. A ' +
-      'real session is a conversation: <code>refine</code> spends most of it asking you ' +
-      'questions, and <code>build</code> spends most of it in tool calls you can watch scroll past.',
+      'This is a shortened example, not a session transcript. In practice, <code>refine</code> ' +
+      'asks questions and <code>build</code> reads, edits, and runs project checks.',
     lines: [
       { kind: 'cmd', text: '/prorab:refine  add a CSV export to the reports page' },
       { kind: 'out', text: '   read 6 files · 2 Explore contexts' },
@@ -81,17 +76,17 @@ export const overview = {
       { kind: 'out', text: '   downloaded the file, parsed it: 47 data rows, header = UI labels' },
       { kind: 'ok', text: '   ✓ mutation: shift the filter boundary → the suite goes red' },
       { kind: 'file', text: '   → VERIFY-csv-export.md' },
-      { kind: 'note', text: '   nothing committed. nothing pushed. that is your call.' },
+      { kind: 'note', text: '   no commit or push unless you ask for one' },
     ] as TermLine[],
   },
 
   problem: {
     rail: 'the problem',
     eyebrow: 'Why it exists',
-    heading: 'A ticket is never as small as its sentence.',
+    heading: 'A short ticket can hide a lot of decisions.',
     lede:
-      'Here is a normal, reasonable, entirely unremarkable request. Open each underlined phrase ' +
-      'in turn — and then the group that no phrase in the sentence points at.',
+      'Take a common request. Open each underlined phrase, then the decisions that the sentence ' +
+      'does not mention at all.',
 
     ticketLabel: 'the ticket, exactly as it arrives',
     /* The sentence with a slot per clickable phrase. Word order is a translator's decision, so
@@ -227,55 +222,46 @@ export const overview = {
 
     showAssumed: 'show what an agent fills in silently',
     hideAssumed: 'hide the silent defaults',
-    assumedTitle: 'What gets decided for you, in the time it takes to start typing code',
+    assumedTitle: 'The defaults an agent may choose before it starts coding',
     assumedKicker:
-      'One answer per question, in the same order you just read them. Every one is defensible. ' +
-      'None of them was your decision. And the tests will be written to assert exactly these — by ' +
-      'the same context that chose them, from the same reading, in the same session. Green does ' +
-      'not mean right; it means self-consistent.',
+      'Every answer is plausible, but none came from the requirement. If the same context chooses ' +
+      'the defaults and writes the tests, a green suite proves consistency, not correctness.',
 
     note:
-      '<strong>This is the failure Prorab is built around.</strong> Not that the agent writes bad ' +
-      'code — modern models write decent code. That it silently converts an ambiguous requirement ' +
-      'into a specific one, and then produces its own evidence that it was right.',
+      '<strong>This is the problem Prorab addresses.</strong> The agent silently turns an ' +
+      'ambiguous request into a specific one, then tests the choices it made itself.',
   },
 
   thesis: {
     rail: 'two conversions',
-    eyebrow: 'The position',
-    heading: 'Two conversions, and they must not happen in the same breath.',
+    eyebrow: 'The approach',
+    heading: 'Clarify first. Implement second.',
     lede:
-      'Prorab splits the job at the point where it usually collapses. First the requirement is ' +
-      'made explicit — with a human answering, not a model guessing. Only then is it turned into ' +
-      'code, by a run that is measured against the requirement rather than against itself.',
+      'Prorab separates two jobs that are often mixed together. First, a person resolves the ' +
+      'important gaps. Then a fresh run implements the result and checks it against the written ' +
+      'requirement.',
     cards: [
       {
         num: '01 / implicit → explicit',
-        title: 'Drive out what nobody said',
+        title: 'Find the missing decisions',
         body:
-          '<code>/prorab:refine</code> reads the actual code and then interrogates the idea, ' +
-          'sorting what it finds into contradictions, gaps that decide scope, and assumptions it ' +
-          'had to invent to make the idea look coherent. It writes no code. Anything still open ' +
-          'when the dialogue ends is written down as <code>[?:&nbsp;…]</code> — an explicit fork, ' +
-          'not a default — and <code>build</code> treats that marker as a blocker it has to ask ' +
-          'about.',
+          '<code>/prorab:refine</code> reads the relevant code, identifies contradictions, scope ' +
+          'gaps, and hidden assumptions, then asks you to resolve them. It writes no code. Open ' +
+          'questions remain marked as <code>[?:&nbsp;…]</code>, so <code>build</code> cannot turn ' +
+          'them into silent defaults.',
       },
       {
         num: '02 / explicit → matching code',
-        title: 'Keep the correspondence provable',
+        title: 'Make the result testable',
         body:
-          'The dialogue ends in a numbered <strong>Definition of Done</strong>: checkable ' +
-          '<code>given&nbsp;→&nbsp;expected</code> pairs whose expected values come from the ' +
-          'requirement. Every test is derived from a numbered item, has to fail before it may ' +
-          'pass, and is judged by a skeptic that did not write it. A green suite, on its own, ' +
-          'closes nothing.',
+          'The result is a numbered <strong>Definition of Done</strong> made of checkable ' +
+          '<code>given&nbsp;→&nbsp;expected</code> pairs. Tests point back to those items, fail for ' +
+          'the expected reason before the fix, and are reviewed by a separate context.',
       },
     ] as Card[],
     dodLede:
-      'A DoD item looks like this — and where an exact value cannot be derived independently ' +
-      '(ranking, aggregates, parsing, anything non-deterministic), it is replaced by a ' +
-      '<strong>metamorphic invariant</strong> from the requirement, never by an always-true ' +
-      'relation:',
+      'A DoD item looks like this. When no exact value can be derived independently, use a ' +
+      '<strong>metamorphic invariant</strong> that follows from the requirement:',
     dodExample: `2. given a report with 1 284 matching rows and the "Team" filter set to Platform
    → the file contains 47 data rows plus one header row
 3. given the same report and a filter that matches nothing
@@ -288,14 +274,12 @@ export const overview = {
 
   oracle: {
     rail: 'the oracle rule',
-    eyebrow: 'The rule that runs through all ten commands',
+    eyebrow: 'The rule behind every command',
     heading: 'The expected value never comes from the code.',
     lede:
-      'This is the whole framework compressed into one sentence. Below, one implementation with ' +
-      'an off-by-one on the filter boundary, and two tests that differ in nothing except where ' +
-      'their expected value came from. Move the implementation and watch which test can still ' +
-      'tell you something. <span class="small">(An illustration you can click, not a live test ' +
-      'run.)</span>',
+      'Below are two tests for the same off-by-one error. The only difference is where the ' +
+      'expected value came from. Change the implementation to see which test still gives useful ' +
+      'information. <span class="small">(Interactive illustration, not a live test run.)</span>',
 
     impl46: 'implementation returns 46',
     impl40: 'later regression: 40',
@@ -345,9 +329,8 @@ assert rows == load_fixture(<span class="r">"export.golden.csv"</span>)
 
     chainHeading: 'Chain of custody for a single expected value',
     chainLede:
-      'Each hop has one thing it is not allowed to accept. Break any of them and the run still ' +
-      'goes green — which is exactly why each is stated as a rule the commands enforce rather ' +
-      'than as advice.',
+      'Each step rejects one weak substitute. These are enforced rules because a run can stay ' +
+      'green even when the expected value is wrong.',
     hops: [
       {
         name: 'the requirement',
@@ -373,23 +356,19 @@ assert rows == load_fixture(<span class="r">"export.golden.csv"</span>)
       },
     ] as Hop[],
     note:
-      '<strong>And a test that cannot fail is not coverage.</strong> Every test the framework ' +
-      'counts has been shown to go red: either it was red for the right reason before the code ' +
-      'existed, or a plausible regression was injected into an isolated worktree — invert a ' +
-      'condition, shift a boundary, flip a sign, delete a branch, return a constant — and the ' +
-      'test caught it. If it didn’t, the test is fixed, not the report.',
+      '<strong>A test that cannot fail is not coverage.</strong> A counted test either failed for ' +
+      'the right reason before implementation, or caught a plausible regression injected in an ' +
+      'isolated worktree. If it stays green, the test must be improved.',
   },
 
   outsideIn: {
     rail: 'outside-in',
     eyebrow: 'The last check',
-    heading: 'A reviewer who has read the code can’t un-read it.',
+    heading: 'Independent verification starts outside the code.',
     lede:
-      '<code>/prorab:verify</code> establishes whether the thing works for the people who meet ' +
-      'it from outside — someone in a UI, an API client, a CLI user, a reader of an export. So ' +
-      'the context that drives the system is kept structurally blind: it is delegated at every ' +
-      'tier, including the cheapest, and receives a charter of surfaces and expected results and ' +
-      'nothing else.',
+      '<code>/prorab:verify</code> checks the result through the same interface a user or client ' +
+      'would use. The probing context receives a scenario and expected results, but no ' +
+      'implementation, diff, or source paths.',
 
     handedTitle: 'What the probing context is handed',
     peekShow: 'show what it is never given',
@@ -413,29 +392,23 @@ the diff                    +214 −6 across 5 files
 the symbol names, the paths, the framework, the ORM`,
 
     foot:
-      'Blindness is <strong>checkable, not promised</strong>: every prober returns a declaration ' +
-      'of the files it read, the commands it ran and the locators it used. An implementation ' +
-      'file, a test file or the diff in that list drops the items it touched to <em>not ' +
-      'independently verified</em> — never quietly to <em>works</em>.',
+      'Blindness is <strong>auditable</strong>: the probing context lists the files it read, the ' +
+      'commands it ran, and the locators it used. If it opened the implementation, tests, or ' +
+      'diff, the affected checks are no longer marked independent.',
 
     note:
-      'A browser surface is driven <strong>headless by default</strong>. Not only because it is ' +
-      'cheaper than a model clicking through screenshots, but because it is a stronger check: a ' +
-      'screenshot after pressing <em>Save</em> shows a toast, while a script reloads the page and ' +
-      're-reads the resource — which is what actually proves anything was stored. Forcing a 500, ' +
-      'a timeout or an offline state is one line there and impractical by hand, and console ' +
-      'errors and failed requests come out for free. Pixels are reserved for genuinely ' +
-      'perceptual cases; an interactive visual session is an escalation that has to name and log ' +
-      'its trigger.',
+      'Browser checks run <strong>headlessly by default</strong>. A script can reload the page, ' +
+      're-read saved data, simulate failures, and capture console or network errors. Screenshots ' +
+      'are used only for genuinely visual requirements; an interactive session needs a recorded ' +
+      'reason.',
   },
 
   loop: {
     rail: 'the loop',
     eyebrow: 'How you actually work with it',
-    heading: 'Two sessions, and a deliberate <code>/clear</code> between them.',
+    heading: 'Use a fresh session for implementation.',
     lede:
-      'The commands are not a pipeline you configure — they are things you type. This is the ' +
-      'shape of an ordinary feature.',
+      'The workflow is a short sequence of commands, not a separate service to configure.',
     script: `<span class="d">── session 1 ────────────────────────────────────────────</span>
 <span class="c">/prorab:refine</span>  add a CSV export to the reports page
 <span class="d">   a dialogue: it reads the code, argues, asks 1–4 questions at a time
@@ -452,17 +425,14 @@ the symbol names, the paths, the framework, the ORM`,
 <span class="c">/prorab:announce</span>   <span class="d">→ a short factual message you can forward</span>`,
 
     quick:
-      'For a two-file change where all of that costs more than the work, there is ' +
-      '<code>/prorab:quick</code>: one pass, two contexts, no artifacts beyond a single short ' +
-      'record — and the same floor, a DoD stated before editing, a red-first test, one ' +
-      'independent verifier. It re-checks its own eligibility <em>after</em> reading the code and ' +
-      'hands the task over rather than finishing a large change on a small budget.',
+      'For a small one- or two-file change, <code>/prorab:quick</code> keeps the essential checks ' +
+      'and writes one short record. If the task turns out to be larger, it routes it to the full ' +
+      'workflow.',
 
     tracksHeading: 'Two tracks, one discipline',
     tracksLede:
-      'The product track proves that <em>new</em> behavior matches a requirement. The tech track ' +
-      'proves that <em>old</em> behavior did not change — a different proof obligation, so a ' +
-      'different executor. Pick a stage.',
+      'The product track checks new behavior against a requirement. The tech track checks that ' +
+      'existing behavior stays unchanged. Choose the command that matches the job.',
     tabProduct: 'product',
     tabTech: 'tech quality',
     writes: 'writes →',
@@ -473,9 +443,8 @@ the symbol names, the paths, the framework, the ORM`,
         name: 'refine',
         cmd: '/prorab:refine',
         what:
-          'Your sparring partner while the idea is still raw. Skeptical questions, real code ' +
-          'study, contradictions and hidden assumptions surfaced — until a spec can be written ' +
-          'meaningfully. It writes no code, and it never declares the idea ready: you do.',
+          'Clarifies a rough idea by reading the relevant code, finding contradictions and hidden ' +
+          'assumptions, and asking focused questions. It writes no code; you decide when the idea is ready.',
         writes:
           'tasks/ideas/IDEA-&lt;slug&gt;.md — scope, decisions, DoD, and a hashed Code map of ' +
           'everything it read',
@@ -518,10 +487,9 @@ the symbol names, the paths, the framework, the ORM`,
         name: 'quick',
         cmd: '/prorab:quick',
         what:
-          'The cheap lane for the daily two-file change: no IDEA, no IMPL, no archive, no ' +
-          'Workflow, fixed at two contexts. The floor survives — a DoD before editing, a ' +
-          'red-first test, the project’s own checks, one independent verifier. If the task turns ' +
-          'out not to be small, it hands over instead of finishing on the wrong budget.',
+          'For a routine one- or two-file change: no IDEA, IMPL, archive, or Workflow, and exactly ' +
+          'two contexts. It keeps the DoD, red-first test, project checks, and independent review. ' +
+          'If the task is larger, it routes it to the full workflow.',
         writes: 'code + one compact tasks/quick/QUICK-&lt;slug&gt;.md',
       },
       {
@@ -590,13 +558,11 @@ the symbol names, the paths, the framework, the ORM`,
 
   cost: {
     rail: 'cost',
-    eyebrow: 'The optimization track',
-    heading: 'Discipline you can’t afford is discipline you won’t keep.',
+    eyebrow: 'Cost control',
+    heading: 'The workflow has a fixed context budget.',
     lede:
-      'None of the above is the reason the framework exists — but all of it fails if a careful ' +
-      'run costs an unbounded number of tokens. So every heavy command triages complexity from ' +
-      'cheap signals (size, blast radius, novelty, reversibility, uncertainty) and picks a tier ' +
-      'before it opens a single extra context.',
+      'Before delegating work, each heavy command estimates size, affected area, novelty, ' +
+      'reversibility, and uncertainty, then chooses a context tier.',
 
     tier: 'tier {n}',
     readout: '{n} / 16 contexts',
@@ -627,19 +593,13 @@ the symbol names, the paths, the framework, the ORM`,
       '16-context ceiling stays absolute.',
 
     occupancy:
-      '<strong>A tier bounds how many contexts open, not how full each one gets.</strong> Those ' +
-      'are different things, and a context stuffed with material nobody reads judges worse than ' +
-      'one given the range that matters. So a second, orthogonal limit applies at every tier: raw ' +
-      'suite output never enters a context — it goes to a file outside the working tree and comes ' +
-      'back as a ~40-line digest — and a delegated context returns a capsule of claims and ' +
-      '<code>path:line</code> pointers, never the material itself. Compaction may shorten ' +
-      '<em>what</em> failed; concealing <em>that</em> something failed is a false report.',
+      '<strong>The tier limits context count; separate rules limit context size.</strong> Raw test ' +
+      'output is reduced to a short digest, and delegated work returns concise findings with ' +
+      '<code>path:line</code> references. A summary may shorten a failure, but it may not hide one.',
 
     floor:
-      '<strong>What no tier can buy back.</strong> The safety floor is not part of the budget: ' +
-      'the characterization net or baseline, the contract diff, the drift search, a DoD skeptic ' +
-      'with a fresh context, and a sabotage-proven gate whenever one is created or changed. ' +
-      'Tiering cuts how many lenses look at the code. It never cuts the evidence.',
+      '<strong>The minimum checks do not change with the tier.</strong> The budget controls how ' +
+      'many independent reviews are used, not whether required evidence is collected.',
   },
 
   install: {
@@ -669,8 +629,7 @@ the symbol names, the paths, the framework, the ORM`,
     eyebrow: 'Fit',
     heading: 'When not to use this.',
     lede:
-      'The cases where it is the wrong tool, stated plainly — because a framework that only ' +
-      'describes its own strengths is not describing anything.',
+      'Prorab is deliberately narrow. It is a poor fit in these cases.',
     cards: [
       {
         num: 'portability',
@@ -729,11 +688,11 @@ the symbol names, the paths, the framework, the ORM`,
 
   artifacts: {
     rail: 'artifacts',
-    eyebrow: 'What lands in your project',
+    eyebrow: 'What the commands add to your project',
     heading: 'The commands are global. The evidence is yours.',
     lede:
-      'Commands install once and update from git. Everything they write is local to the working ' +
-      'project and worth committing — and no command commits or pushes unless you ask it to.',
+      'Commands install once. Their task records stay in the project, and no command commits or ' +
+      'pushes unless you ask it to.',
     tree: `tasks/
 ├── ideas/IDEA-&lt;slug&gt;.md                     <span class="d"># refine</span>
 ├── IMPL-&lt;slug&gt;.md                           <span class="d"># build</span>
@@ -779,8 +738,8 @@ the symbol names, the paths, the framework, the ORM`,
   },
 
   closing: {
-    heading: 'Say what you actually want. Then make the code prove it.',
-    lede: 'Everything else here is in service of those two sentences.',
+    heading: 'Clarify the requirement. Build it. Verify the result.',
+    lede: 'Start with the idea in your own words.',
     ctaInstall: 'Install Prorab →',
     ctaWalkthrough: 'See one task go through',
   },

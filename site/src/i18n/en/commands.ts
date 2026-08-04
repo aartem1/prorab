@@ -16,17 +16,16 @@ export const commands = {
       'to reach for a different one.',
     ogTitle: 'Prorab — ten commands',
     ogDescription:
-      'Six on the product track, four on the tech-quality track. Each one states what it refuses ' +
-      'to do.',
+      'Six commands for product work and four for technical quality, with inputs, outputs, limits, ' +
+      'and handoff points.',
   },
 
   hero: {
     eyebrow: 'Reference',
     title: 'Ten commands.',
     lede:
-      'Six on the product track, four on the tech-quality track. Each one states what it takes, ' +
-      'what it writes, and — the part that usually matters more — what it refuses to do and where ' +
-      'it hands the task over instead.',
+      'Six commands handle product work; four handle technical quality. For each command, this ' +
+      'page lists its input, output, limits, and handoff points.',
   },
 
   toc: {
@@ -36,12 +35,11 @@ export const commands = {
 
   lane: {
     eyebrow: 'Before the reference',
-    heading: 'Picking a lane',
+    heading: 'Choose the right workflow',
     lede:
-      'Four questions decide which command you want. You do not have to answer them correctly — ' +
-      '<code>quick</code> re-checks its own eligibility <em>after</em> reading the code and hands ' +
-      'over rather than finishing a large change on a small budget, and <code>refine</code> points ' +
-      'at <code>quick</code> when a settled idea turns out to be tiny.',
+      'Use the table below as a starting point. <code>quick</code> checks the task again after ' +
+      'reading the code and routes larger work to the full workflow. <code>refine</code> can point ' +
+      'a genuinely small task back to <code>quick</code>.',
     table: {
       head: ['The situation', 'Reach for'],
       rows: [
@@ -75,7 +73,7 @@ export const commands = {
 
   product: {
     eyebrow: 'Product track · <code>prorab</code>',
-    heading: 'From an unclear idea to a message you can forward.',
+    heading: 'From an unclear idea to a verified result.',
     lede:
       'Four stages plus two you reach for as needed. <code>verify</code> is optional and works on ' +
       'any scope — after <code>build</code>, after <code>quick</code>, or on a branch nobody used ' +
@@ -84,24 +82,21 @@ export const commands = {
 
   tech: {
     eyebrow: 'Tech-quality track · <code>prorab-tech</code>',
-    heading: 'Two pairs, for two natures of debt.',
+    heading: 'Two workflows for two kinds of technical debt.',
     lede:
-      '<strong>Structural</strong> (<code>audit</code> → <code>refactor</code>) and ' +
-      '<strong>static</strong> (<code>lint-audit</code> → <code>lint-fix</code>). Both executors ' +
-      'carry the same prime directive, and it is the opposite of <code>build</code>’s: prove that ' +
-      '<em>old</em> behavior did not change. Their results are announced by the same ' +
-      '<a href="#announce">/prorab:announce</a>.',
+      '<strong>Structural:</strong> <code>audit</code> → <code>refactor</code>. ' +
+      '<strong>Static:</strong> <code>lint-audit</code> → <code>lint-fix</code>. Both workflows ' +
+      'must prove that existing behavior did not change. Use ' +
+      '<a href="#announce">/prorab:announce</a> to share the result.',
   },
 
   docs: {
     refine: {
       tag: 'writes no code',
       intro:
-        'Your sparring partner while the idea is still raw. It reads the relevant code first, then ' +
-        'interrogates the idea — contradictions, gaps that decide scope, assumptions it had to ' +
-        'invent to make the idea coherent — until a spec and an implementation plan can be written ' +
-        'meaningfully. Questions come one to four at a time with specific, mutually exclusive ' +
-        'options, never as a wall of fifteen.',
+        'Turns a rough idea into a usable specification. It reads the relevant code, identifies ' +
+        'contradictions, scope gaps, and hidden assumptions, then asks one to four focused ' +
+        'questions at a time.',
       rows: [
         {
           term: 'Takes',
@@ -154,10 +149,9 @@ export const commands = {
     build: {
       tag: 'turnkey',
       intro:
-        'Implements a refined idea end to end through a multi-agent Workflow: recon → plan → ' +
-        'DAG-ordered implementation → adversarial review → verification. There is no approval gate ' +
-        'in the middle and it will not ask whether to continue; in place of human approval, quality ' +
-        'rests on independent verification and the project’s own full check run.',
+        'Implements a refined idea end to end: inspect the code, plan, implement in dependency ' +
+        'order, review, and verify. It does not pause for routine approval; quality is checked by ' +
+        'independent review and the project’s own test commands.',
       rows: [
         {
           term: 'Takes',
@@ -206,10 +200,9 @@ export const commands = {
     quick: {
       tag: '2 contexts, fixed',
       intro:
-        'The cheap lane. No IDEA, no IMPL, no archive, no <code>Workflow</code> — on a two-file ' +
-        'edit that ceremony costs more than the work. What is <em>not</em> dropped: a Definition of ' +
-        'Done stated in chat before the code exists, a test that fails for the right reason first, ' +
-        'the project’s own checks, the documentation duty, and one independent verifier.',
+        'For a small change in one or two files. It skips the full IDEA/IMPL workflow but keeps a ' +
+        'Definition of Done, a red-first test, project checks, documentation updates, and one ' +
+        'independent review.',
       rows: [
         {
           term: 'Takes',
@@ -246,11 +239,9 @@ export const commands = {
     verify: {
       tag: 'black box',
       intro:
-        'Establishes whether shipped functionality actually works <em>for the people who use ' +
-        'it</em> — someone in a UI, an API client, a CLI user, a reader of an export, an operator ' +
-        'watching the output. The probing context is <strong>blind by construction</strong>: ' +
-        'delegated at every tier including the cheapest, given a charter of surfaces and expected ' +
-        'results, and never the implementation, the diff or a path.',
+        'Checks shipped behavior through the interface a user or client actually uses. The ' +
+        'probing context receives scenarios and expected results, but no implementation, diff, or ' +
+        'source paths.',
       rows: [
         {
           term: 'Takes',
@@ -303,10 +294,8 @@ export const commands = {
     announce: {
       tag: 'writes no code',
       intro:
-        'A short, precise announcement of the result, dense enough to forward in a messenger. The ' +
-        'recipient should understand in 20–30 seconds what was done, what is new, what changed and ' +
-        'how it is computed, without reading code. It reads the IMPL, the diff and the IDEA — and ' +
-        'takes “done” from what landed, not from what was intended.',
+        'Writes a short message explaining what changed, how it works, and any important limit. ' +
+        'Claims come from the implementation record and diff, not from the original intention.',
       rows: [
         {
           term: 'Takes',
@@ -347,10 +336,9 @@ export const commands = {
     ask: {
       tag: 'read-mostly',
       intro:
-        'Answers a question about the project or its history: how a component works, why an ' +
-        'approach was chosen, where a value is computed, which consumers a contract has, what was ' +
-        'already verified. It finds the area through project memory and task artifacts, then checks ' +
-        'every material claim against current code, docs or git history — and cites the sources.',
+        'Answers questions about the project or its history. It uses task records and project ' +
+        'memory to find the relevant area, then verifies important claims against current code, ' +
+        'documentation, or Git history.',
       rows: [
         {
           term: 'Takes',
@@ -384,11 +372,9 @@ export const commands = {
     audit: {
       tag: 'touches no code',
       intro:
-        'A multi-agent audit of <em>structure</em>. It sweeps three grouped directions — structure, ' +
-        'reliability and security, performance and maintainability — and adds churn×complexity from ' +
-        'git history, on the principle that code which is changed <em>often</em> and is also ' +
-        '<em>complex</em> is where refactoring pays. Findings are clustered, ranked, and the top ' +
-        'one is adversarially verified.',
+        'Audits structural debt across code structure, reliability, security, performance, and ' +
+        'maintainability. Git history adds change frequency to the analysis. Findings are grouped, ' +
+        'ranked, and the top candidate is independently checked.',
       rows: [
         {
           term: 'Takes',
@@ -425,10 +411,9 @@ export const commands = {
     refactor: {
       tag: 'turnkey',
       intro:
-        'A turnkey safe fix via a multi-agent Workflow. <strong>Prime directive — behavior ' +
-        'preservation:</strong> the same outputs on the same inputs, the same side effects, the ' +
-        'same errors, the same contracts. Bugs and quirks are preserved too — this command does not ' +
-        '“fix” them along the way.',
+        'Safely applies one structural improvement while preserving behavior: the same outputs, ' +
+        'side effects, errors, and contracts for the same inputs. Existing bugs and quirks are ' +
+        'preserved rather than mixed into the refactor.',
       rows: [
         {
           term: 'Takes',
@@ -474,10 +459,9 @@ export const commands = {
     'lint-audit': {
       tag: 'touches no code',
       intro:
-        'An audit of <em>statics</em>. It inventories the tooling — present, broken or absent — ' +
-        'runs the analyzers the project already has, read-only, and labels estimates for absent ' +
-        'tools as manual guesses rather than measurements. A tool that is not installed is not ' +
-        'silently installed to produce a number.',
+        'Reviews linters, type checkers, formatters, and other static tools. It runs configured ' +
+        'tools without changing code and clearly labels any estimate made without an installed ' +
+        'tool.',
       rows: [
         {
           term: 'Takes',
@@ -513,10 +497,9 @@ export const commands = {
     'lint-fix': {
       tag: 'one batch per run',
       intro:
-        'Runs exactly <strong>one</strong> rung of that ladder, turnkey, with a truthful gate ' +
-        'lifecycle: batches before C are preparatory and are never described as locked, C creates ' +
-        'the first gate and sabotage-proves it, and later batches tighten or expand that same gate ' +
-        'and prove the changed coverage rather than adding a second ad-hoc one.',
+        'Runs exactly <strong>one</strong> planned batch. Early batches prepare clean tooling, the ' +
+        'first gate makes checks mandatory, and later batches strengthen that same gate and verify ' +
+        'its new coverage.',
       rows: [
         {
           term: 'Takes',
@@ -556,9 +539,8 @@ export const commands = {
     eyebrow: 'Overrides',
     heading: 'Flags',
     lede:
-      'Every heavy command triages its own complexity. When you already know better, you can pin ' +
-      'the choice — the human beats the auto-triage — but no flag removes the safety floor or the ' +
-      '16-context ceiling.',
+      'Heavy commands choose a context tier automatically. You can override that choice, but no ' +
+      'flag removes the required checks or the 16-context ceiling.',
     table: {
       head: ['Flag', 'Effect'],
       rows: [
@@ -592,13 +574,10 @@ export const commands = {
   language: {
     heading: 'Language',
     body:
-      'Command bodies and everything internal run in <strong>English</strong> — the reasoning, the ' +
-      'prompts between agents, the schema outputs. It is denser in tokens and steadier in quality. ' +
-      'Everything a human reads is in the task’s language, detected from how you phrased the ' +
-      'request and Russian by default: the chat, the <code>refine</code> dialogue, the ' +
-      'announcement, and the artifacts, which stay project documents in that language. Code, ' +
-      'identifiers, comments and commit messages are always English; user-visible domain and UI ' +
-      'terms are carried verbatim, never round-tripped through a double translation.',
+      'Internal command instructions and agent-to-agent messages use <strong>English</strong>. ' +
+      'Chat, the <code>refine</code> dialogue, announcements, and task records use the language of ' +
+      'the request, with Russian as the default. Code, identifiers, comments, and commit messages ' +
+      'remain in English. Product and interface terms are copied exactly from the project.',
     ctaHowItWorks: 'How the evidence rules and the budget work →',
     ctaSources: 'Read the command sources',
   },
