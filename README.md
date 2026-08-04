@@ -490,7 +490,7 @@ prorab/
 │       ├── references/            # project-knowledge.md execution.md documentation-sync.md
 │       └── README.md
 ├── site/                          # the documentation site (static, no build step)
-│   ├── index.html commands.html how-it-works.html
+│   ├── index.html walkthrough.html commands.html how-it-works.html
 │   ├── styles.css site.js favicon.svg
 │   └── README.md                  # how to run it locally and deploy it
 ├── vercel.json                    # points a Vercel deployment at site/
@@ -505,12 +505,12 @@ site cannot affect `/plugin install`.
 
 </details>
 
-**The documentation site.** [`site/`](site/README.md) is a three-page static site — no build step, no
+**The documentation site.** [`site/`](site/README.md) is a four-page static site — no build step, no
 dependencies — deployed from the repository root via [`vercel.json`](vercel.json). It restates what
 this README and the command bodies say, so it is a **current-state document**: when a command, flag,
 tier, artifact path or version changes, the site changes in the same pass. `SiteTests` in
 `tests/test_contracts.py` enforces the mechanical part (every command listed, versions matching the
-manifests, no dead links).
+manifests, every page reachable from every nav, no dead links or anchors).
 
 **Adding a command**
 

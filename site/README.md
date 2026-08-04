@@ -1,17 +1,27 @@
 # The documentation site
 
-A static site that explains what Prorab is and how to work with it. Three pages, one stylesheet,
+A static site that explains what Prorab is and how to work with it. Four pages, one stylesheet,
 one script — **no build step, no dependencies, no framework**.
 
 ```
 site/
-├── index.html          # landing: why, the animated terminal, budget dial, interactive pipeline, install
-├── commands.html       # reference for all ten commands
-├── how-it-works.html   # tiers, occupancy limits, hashed handoffs, memory, doc sync, comparison
+├── index.html          # the argument: the ambiguity of one ticket, the oracle rule,
+│                       #   the daily loop, cost, install, when not to use it
+├── walkthrough.html    # one task end to end, with the artifact each step leaves behind
+├── commands.html       # reference for all ten commands — takes / writes / refuses
+├── how-it-works.html   # DoD form, evidence rules, blind probing, behavior preservation,
+│                       #   budget and occupancy, handoffs, doc sync, memory, comparison
 ├── styles.css
 ├── site.js             # progressive enhancement only — every page reads fine with JS off
 └── favicon.svg
 ```
+
+The landing page leads with the failure the framework exists for — an ordinary eight-word ticket
+containing fourteen undecided questions — and then with the rule that runs through all ten commands:
+an expected value comes from the requirement, never from the code. Both are interactive, because
+both are easier to believe when you can click them. `walkthrough.html` is the page to present from:
+it is one worked example in order, and its panels are labelled as reconstructions rather than
+captured output.
 
 ## Running it locally
 
@@ -42,8 +52,17 @@ command, a flag, a tier, an artifact path or a version changes, this site change
 
 `tests/test_contracts.py` has a `SiteTests` class that enforces the mechanical part of that — every
 command is listed, the advertised versions match the manifests, the install snippet matches the real
-marketplace name, and no page references a plugin file that does not exist. Prose accuracy is still
-on you.
+marketplace name, every page can reach every other page from its nav, and no link or in-page anchor
+is dead. Prose accuracy is still on you.
+
+Two layout rules are load-bearing and easy to undo by accident:
+
+- **No `overflow-x: hidden` on `<html>` or `<body>`.** A clipped axis makes that element a scroll
+  container, and Chrome then applies fragment jumps and `scrollIntoView` to it rather than to the
+  page — `commands.html#refine` silently lands at the top. Wide blocks scroll inside their own box
+  instead (`pre`, `.tablewrap`, `.pipe .track`).
+- **Grid items carry `min-width: 0`.** Otherwise one unbreakable token — a test name, a path —
+  widens its track and puts the whole page into a horizontal scroll on a phone.
 
 ```sh
 python3 -m unittest discover -s tests -v

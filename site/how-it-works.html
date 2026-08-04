@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>How it works — Prorab</title>
-<meta name="description" content="Prorab's mechanics: complexity-tiered context budgets, per-context occupancy limits, hashed handoffs between commands, project memory, documentation sync and the artifact lifecycle.">
+<meta name="description" content="Prorab's mechanics: what a Definition of Done has to look like, how a test earns its place, blind outside-in verification, behavior-preserving refactoring, the context budget and occupancy limits, hashed handoffs, documentation sync, project memory and the artifact lifecycle.">
 <meta property="og:title" content="Prorab — how it works">
-<meta property="og:description" content="Two independent limits, a handoff that stops recon being paid for twice, and a small version-controlled memory.">
+<meta property="og:description" content="The rules that decide what may be called done, and the limits that keep them affordable.">
 <meta name="theme-color" content="#09090a">
 <link rel="icon" href="favicon.svg">
 <link rel="stylesheet" href="styles.css">
@@ -22,6 +22,7 @@
     <a class="brand" href="./"><span class="dot"></span>prorab</a>
     <nav>
       <a href="./">Overview</a>
+      <a href="walkthrough.html">Walkthrough</a>
       <a href="commands.html">Commands</a>
       <a href="how-it-works.html" aria-current="page">How it works</a>
       <a href="https://github.com/aartem1/prorab">GitHub&nbsp;↗</a>
@@ -29,84 +30,338 @@
   </div>
 </header>
 
+<nav class="rail" data-rail aria-label="Sections"></nav>
+
 <main id="main">
 
   <section class="hero wrap" style="padding-top:3.5rem">
     <p class="eyebrow">Mechanics</p>
     <h1>
-      <span data-words>Cost is bounded.</span>
-      <span class="grad">Quality is not negotiable.</span>
+      <span data-words>The rules that decide</span>
+      <span class="grad">what may be called done.</span>
     </h1>
     <p class="lede">
-      Two independent limits, a hashed handoff that stops recon being paid for twice, and a small
-      version-controlled memory that is never allowed to outrank the code.
+      Everything below exists to keep one property true: the expected value in every check can be
+      traced back to a stated requirement, and never to the code that is being checked. The rest is
+      making that affordable.
     </p>
 
     <ul class="toc" style="margin-top:2rem">
-      <li><a href="#tiers">budget tiers</a></li>
-      <li><a href="#occupancy">context occupancy</a></li>
-      <li><a href="#handoffs">hashed handoffs</a></li>
-      <li><a href="#memory">project memory</a></li>
+      <li><a href="#dod">definition of done</a></li>
+      <li><a href="#evidence">how a test earns its place</a></li>
+      <li><a href="#blind">blind verification</a></li>
+      <li><a href="#preserve">the inverted proof</a></li>
+      <li><a href="#cost">cost</a></li>
+      <li><a href="#handoffs">handoffs</a></li>
       <li><a href="#docs">documentation sync</a></li>
-      <li><a href="#artifacts">artifact lifecycle</a></li>
+      <li><a href="#memory">project memory</a></li>
+      <li><a href="#artifacts">artifacts</a></li>
       <li><a href="#compare">how it compares</a></li>
     </ul>
   </section>
 
-  <section class="wrap" id="tiers" data-reveal>
+  <!-- ============ 01 DoD ============ -->
+  <section class="wrap" id="dod" data-rail-label="the DoD" data-reveal>
     <p class="eyebrow">01</p>
-    <h2>Budget tiers</h2>
-    <p class="dim" style="max-width:64ch">
-      The heavy commands — <code>build</code>, <code>verify</code>, <code>audit</code>,
-      <code>refactor</code>, <code>lint-audit</code>, <code>lint-fix</code> — run a
-      <strong>budget triage</strong> step before fanning out any agents. They estimate complexity
-      from cheap signals (size, blast radius, novelty, reversibility, uncertainty) and pick a tier.
+    <h2>What “explicit” has to mean to be worth anything</h2>
+    <p class="dim measure">
+      A Definition of Done that reads “the export works” is not a requirement — it is the same
+      ambiguity in a more confident font. The form is fixed, and it is fixed because each part of it
+      closes a specific way of being wrong.
     </p>
 
-    <div class="tablewrap" style="margin-bottom:1.3rem">
+    <div class="tablewrap" style="margin:1.4rem 0">
       <table>
-        <thead><tr><th>Tier</th><th>Total contexts</th><th>Shape</th></tr></thead>
+        <thead><tr><th>Rule</th><th>The failure it closes</th></tr></thead>
         <tbody>
-          <tr><td><strong>S</strong></td><td>2</td><td>No Workflow at all — the main loop is the executor and reads and runs directly.</td></tr>
-          <tr><td><strong>M</strong></td><td>6</td><td>The usual shape for a real feature.</td></tr>
-          <tr><td><strong>L</strong></td><td>12</td><td>Expandable to an absolute ceiling of 16, only for confirmed critical risk or explicit <code>--thorough</code>.</td></tr>
+          <tr>
+            <td>Numbered, one <code>given &lt;input&gt; → &lt;expected&gt;</code> pair per item</td>
+            <td>An intention cannot be run. A pair can, which is what makes “done” checkable rather than declared.</td>
+          </tr>
+          <tr>
+            <td>The expected value comes <strong>from the requirement</strong>, not from how the code returns it</td>
+            <td>The central one. An expectation derived from the implementation always agrees with the implementation.</td>
+          </tr>
+          <tr>
+            <td>At least one <strong>negative</strong> per non-trivial item — empty or invalid input → the documented refusal</td>
+            <td>Happy-path-only suites. Most real defects live in what the code does when the input is wrong.</td>
+          </tr>
+          <tr>
+            <td>At least one <strong>boundary</strong> — 0, the limit, off-by-one</td>
+            <td>The single most common class of silent bug, and the one a golden snapshot hides best.</td>
+          </tr>
+          <tr>
+            <td>Where no literal value is independently derivable — a <strong>metamorphic invariant</strong> from the spec</td>
+            <td>Ranking, aggregates, parsing, non-determinism. Without this rule, these get a snapshot instead. The invariant must be one the spec implies, not an always-true relation.</td>
+          </tr>
+          <tr>
+            <td>An unclosed fork is written as <code>[?:&nbsp;…]</code></td>
+            <td>The silent default. The marker survives into the next command, which treats it as a blocker and asks — rather than picking something reasonable and never mentioning it.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <p class="dim">
-      The count is <strong>cumulative for the whole command</strong> and includes the main context
-      plus every delegated or Workflow context, retries included. You can pin the choice:
+    <p class="dim measure">
+      Metamorphic invariants are the part people skip, so: <em>permuting the input does not change the
+      total</em>; <em>parse ∘ serialize returns the original</em>; <em>running it twice is
+      idempotent</em>; <em>more input never lowers the count</em>. Each is checkable without knowing
+      the answer, which is exactly the situation a ranking or an aggregate puts you in.
     </p>
-<pre><code><span class="c">/prorab:build</span> --tier=S
-<span class="c">/prorab:build</span> --fast          <span class="d"># cheapest defensible tier</span>
-<span class="c">/prorab:build</span> --thorough      <span class="d"># up to the ceiling</span>
-<span class="c">/prorab:verify</span> --verification=economy|balanced|thorough</code></pre>
+  </section>
 
-    <p class="dim">
-      <strong>Enforcement is mechanical, not a promise.</strong> Every delegated context carries a
-      turn limit (6/8/12 for S/M/L), review→fix cycles are capped at 1/2/3, and a completed round
-      that produces no new confirmed, non-duplicate finding stops fan-out immediately. Generated
-      Workflow scripts track their remaining allowance with a counter and a
-      <code>boundedAgent()</code> wrapper; unbounded fan-out is forbidden.
+  <!-- ============ 02 evidence ============ -->
+  <section class="wrap" id="evidence" data-rail-label="evidence" data-reveal>
+    <p class="eyebrow">02</p>
+    <h2>A test that cannot fail is not evidence.</h2>
+    <p class="dim measure" style="margin-bottom:1.5rem">
+      Every test the framework counts has been shown to go red. There are exactly two ways to show
+      it, and which one was used is recorded per test, with the test file’s hash.
     </p>
+
+    <div class="grid two">
+      <div class="card">
+        <span class="num">route 1 · red-first</span>
+        <h3>It failed before the code existed</h3>
+        <p class="dim">
+          The test is written on a DoD item and run <em>before</em> implementing. A valid red is an
+          <code>AssertionError</code> carrying the value from the DoD. An <code>ImportError</code>, a
+          syntax error or a fixture error is <strong>not</strong> a red — it means the test is wrong,
+          and the test is fixed before any implementation is written. The actual run tail goes into
+          the artifact.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">route 2 · mutation</span>
+        <h3>A regression was injected and it caught it</h3>
+        <p class="dim">
+          For a test written after the behavior already works — where red-first is impossible — one
+          plausible regression is injected from a closed set: invert a condition, shift a boundary,
+          flip a sign, delete a significant branch, return a constant. Red → covered. Not red →
+          <code>weak</code>, however convincing the test reads, and the report says so.
+        </p>
+      </div>
+    </div>
+
+    <div class="note warn" style="margin-top:1.2rem">
+      <strong>Mutations never run in your working tree.</strong> A temporary isolated worktree is
+      created, the task-scoped patch is materialized there, the regression is injected, the test is
+      run, and the worktree is removed after confirming your tree is untouched — never
+      <code>git checkout --</code>, <code>git reset</code> or <code>git clean</code> to undo a probe.
+    </div>
+
+    <h3 style="margin-top:2.2rem">The skeptic, and its inverted default</h3>
+    <p class="dim measure">
+      The “tests” dimension of the review is run by a <strong>separate agent with a fresh
+      context</strong> — not the one that wrote the code. Its input is the DoD and the test diff; it
+      opens the implementation only to confirm a finding. Its starting position is the opposite of
+      the usual one: <em>a green suite does not, by itself, close a DoD item.</em> It works a yes/no
+      rubric, and any “no” is a finding.
+    </p>
+
+    <div class="tablewrap" style="margin-bottom:1.2rem">
+      <table>
+        <thead><tr><th>The rubric</th><th>What a “no” looks like</th></tr></thead>
+        <tbody>
+          <tr><td>Sabotage probe</td><td>A plausible regression was injected and no test went red.</td></tr>
+          <tr><td>Independent oracle</td><td>A magic number with no derivation from a requirement, or a snapshot taken from the code itself.</td></tr>
+          <tr><td>Real unit</td><td>The unit under test — or its direct return — is mocked. Mocking external boundaries by name (network, DB, time, filesystem) is fine and expected.</td></tr>
+          <tr><td>Negative + boundary</td><td>Missing, with no specific reason why the behavior has none. “Not applicable” is not a reason.</td></tr>
+          <tr><td>No workarounds</td><td>A grep across new and changed tests hits <code>skip</code>, <code>xfail</code>, a commented-out case, <code>assert True</code>, a tautology, no assertion at all, <code>sys.exit(0)</code>, <code>try/except</code> without re-raise, or a hardcoded answer keyed on the test input.</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <div class="note">
-      <strong>What the budget never buys back.</strong> The safety floor is non-negotiable at every
-      tier: the characterization net or baseline, the contract diff, the drift search, a DoD skeptic,
-      and a sabotage-proven gate whenever one is created or changed. Mutation intensity is controlled
-      separately from the tier — <code>economy</code>, <code>balanced</code> (default) or
-      <code>thorough</code> — and mutations run only in temporary isolated worktrees, never in your
-      working tree.
+      <strong>A caveat the framework states about itself.</strong> These are lenses for a skeptic,
+      proven by a command’s output — not checkboxes the author awards themselves. Pushed too hard,
+      “the reviewer must find something” breeds false findings and over-engineering, so the skeptic’s
+      focus is DoD coverage and defused fake checks, explicitly <em>not</em> style.
+    </div>
+
+    <h3 style="margin-top:2.2rem">How a run is judged</h3>
+    <p class="dim measure">
+      By its <strong>exit code and its own counters</strong> — never by an <code>OK</code> or
+      <code>passed</code> string in the output. A suite reporting <code>passed</code> having collected
+      approximately zero tests is a finding, not a pass. And the verification recipe itself is derived
+      from the project — repository guidance, CI, task runners, package scripts, existing test
+      conventions — rather than assumed from the language. A check with no discoverable command is
+      reported as a gap; it is not invented, and no tooling is silently installed.
+    </p>
+  </section>
+
+  <!-- ============ 03 blind ============ -->
+  <section class="wrap" id="blind" data-rail-label="blind check" data-reveal>
+    <p class="eyebrow">03</p>
+    <h2>Blindness has to be structural, not promised.</h2>
+    <p class="dim measure">
+      Everything in section 02 is performed by contexts that can see the implementation. That is
+      necessary and not sufficient: a check designed while looking at the code inherits the code’s
+      assumptions and then confirms them. So <code>/prorab:verify</code> splits the roles physically.
+      The probing context is <strong>delegated at every tier, S included</strong> — not because
+      probing is expensive, but because a context that has already read the diff cannot un-read it.
+    </p>
+
+    <div class="grid two" style="margin-top:1.4rem">
+      <div class="card">
+        <span class="num">the charter</span>
+        <h3>What crosses over</h3>
+        <p class="dim">
+          Per behavior: the surface a consumer reaches it through, the precondition and how to obtain
+          it via the project’s own seeding path, the action, the expected result <em>and the
+          requirement it comes from</em>, a negative and a boundary case, and the allowed instruments.
+          If an item can only be phrased in implementation terms, it is not a user-visible behavior —
+          it is dropped, and the report says so.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">the declaration</span>
+        <h3>What makes it checkable</h3>
+        <p class="dim">
+          Every prober returns every file it read, every command it ran, and — for a scripted probe —
+          every locator it used. An implementation file, a test file or the diff in that list drops
+          the items it touched to <em>not independently verified</em>. Those items are re-probed
+          within the cap or reported at that grade; they are never laundered into <code>works</code>.
+        </p>
+      </div>
+    </div>
+
+    <p class="dim measure" style="margin-top:1.4rem">
+      Weak passes are downgraded rather than accepted: a <code>works</code> resting on the system’s
+      own output, on “no error”, or on a screenshot with no compared value becomes
+      <code>unverifiable</code> with the reason stated. A defect is reproduced a second time before
+      being announced, so a flake is not reported as a bug. And an honest <code>unverifiable</code>,
+      naming the missing environment, access, data or oracle, is a legitimate result — a fabricated
+      “works” is not.
+    </p>
+
+    <h3 style="margin-top:2.2rem">The instrument ladder for a browser surface</h3>
+    <p class="dim measure" style="margin-bottom:1.2rem">
+      The default for a web UI is a headless run, and the reason is not only speed. In a visual
+      session the model is the driver: look at a screenshot, decide, click, look again — every step a
+      round trip carrying an image. In a headless run it <strong>authors</strong> the session once,
+      executes it with one command, and judges a structured result. That is also the stronger check:
+      a screenshot after pressing <em>Save</em> shows a toast, while a script reloads the page and
+      re-reads the resource, which is what actually proves the data was stored.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Level</th><th>When</th><th>What it asserts on</th></tr></thead>
+        <tbody>
+          <tr><td><strong>L0</strong> — no browser</td><td>The behavior is observable over HTTP, the CLI, or the data it writes.</td><td>A plain client. A browser is needed only when the behavior <em>lives</em> in the browser: client routing, client state, client validation, rendering.</td></tr>
+          <tr><td><strong>L1</strong> — headless run <span class="small">(the default)</span></td><td>Anything that lives in the browser.</td><td>Role and accessible name, label, visible text, URL, response status, storage, console — and layout <em>measured</em>: clipping as <code>scrollWidth &gt; clientWidth</code>, overlap as intersecting boxes, off-screen as a box outside the viewport, plus computed size and colour.</td></tr>
+          <tr><td><strong>L2</strong> — pixels, clipped</td><td>A genuinely perceptual requirement: visual regression, canvas or chart rendering, print, a deliberate aesthetic.</td><td>One element-clipped screenshot taken <em>inside</em> the same L1 run, read only for the item that needs adjudication.</td></tr>
+          <tr><td><strong>L3</strong> — interactive visual session</td><td>Escalation only, on a named trigger: an auth/2FA/captcha step a human must complete, a native dialog, an unreachable environment, or L1 failing twice to find a user-facing handle.</td><td>The trigger is logged with the escalation. An unlogged L3 is how this quietly decays back into the slow default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="dim measure" style="margin-top:1.2rem">
+      Every run captures console errors and unhandled rejections, failed requests with method, path
+      and status, the <strong>write request’s own status</strong> behind a save rather than the
+      message the UI shows afterwards, persistence proven by an independent re-read, and — for a
+      negative case — the documented refusal with the failure <em>injected</em> (a 500, a timeout, an
+      offline state, an empty or invalid submit) rather than waited for.
+    </p>
+
+    <div class="note v" style="margin-top:1rem">
+      <strong>Locators are user-facing only</strong> — role plus accessible name, label, visible text,
+      placeholder, heading, or a <code>data-testid</code> the project’s own conventions publish. Never
+      a class hash, an internal id, an XPath, or a selector lifted from the source. This one rule does
+      two jobs: authoring a script is the single moment a blind prober is tempted to open the
+      implementation “just for a selector”, and it is also simply how a user finds a control. A handle
+      that cannot be found by its user-facing name is therefore a <em>finding</em> — a labelling or
+      accessibility gap — never a reason to read the code.
     </div>
   </section>
 
-  <section class="wrap" id="occupancy" data-reveal>
-    <p class="eyebrow">02</p>
-    <h2>A tier bounds how many contexts open, not how full each one gets.</h2>
-    <p class="dim" style="max-width:64ch;margin-bottom:1.5rem">
-      Those are different things, and a context stuffed with material nobody reads judges worse than
-      one given the range that matters. So a second, orthogonal set of limits applies at every tier.
+  <!-- ============ 04 preservation ============ -->
+  <section class="wrap" id="preserve" data-rail-label="preservation" data-reveal>
+    <p class="eyebrow">04</p>
+    <h2>The tech track proves the opposite thing.</h2>
+    <p class="dim measure">
+      <code>build</code> proves that <em>new</em> behavior matches a requirement.
+      <code>refactor</code> and <code>lint-fix</code> prove that <em>old</em> behavior did not change.
+      That is not the same proof with a different subject — it needs a different instrument
+      entirely, which is why they are separate executors rather than a flag on <code>build</code>.
+    </p>
+
+    <div class="grid two" style="margin-top:1.4rem">
+      <div class="card">
+        <span class="num">the oracle</span>
+        <h3>The old code is the requirement</h3>
+        <p class="dim">
+          There is no DoD to derive an expectation from — the expectation <em>is</em> what the code
+          did yesterday. So a characterization net is written first, pinning the current behavior and
+          green on the OLD code, and structure is only changed under green. No net that can catch a
+          behavior change, and nothing to build one from, is a blocker.
+          <strong>Bugs and quirks are preserved too</strong>: a refactoring that also fixes something
+          is two changes wearing one diff.
+        </p>
+      </div>
+      <div class="card">
+        <span class="num">the default</span>
+        <h3>Changed until proven equivalent</h3>
+        <p class="dim">
+          The drift search assumes divergence and goes looking for it — boundaries, negatives,
+          unusual types, concurrency, errors — and where it is possible, an old-versus-new
+          differential run on common inputs compares outputs and side effects directly. Any diverging
+          input is a critical finding. The sabotage probe here targets the <em>net</em>: if a mutation
+          survives, the net is leaky and the net gets fixed, not the refactoring.
+        </p>
+      </div>
+    </div>
+
+    <p class="dim measure" style="margin-top:1.4rem">
+      The static pair carries the same directive with one addition that matters. A strict analyzer
+      routinely surfaces a <em>real</em> bug — a dead branch, an unreachable path, a swallowed
+      exception. Fixing it would be a behavior change inside a pass that claims to make none, so it
+      is recorded and routed to the product track, and the pass itself annotates or suppresses at the
+      agreed bar. The gate lifecycle is stated with the same honesty: batches before the first gate
+      are <em>preparatory</em> and are never described as locked; the gate batch creates the first
+      enforcement and sabotage-proves it; later batches tighten that same gate and prove the changed
+      coverage.
+    </p>
+  </section>
+
+  <!-- ============ 05 cost ============ -->
+  <section class="wrap" id="cost" data-rail-label="cost" data-reveal>
+    <p class="eyebrow">05</p>
+    <h2>Two independent limits: how many contexts, and how full each one gets.</h2>
+    <p class="dim measure">
+      The heavy commands — <code>build</code>, <code>verify</code>, <code>audit</code>,
+      <code>refactor</code>, <code>lint-audit</code>, <code>lint-fix</code> — run a
+      <strong>budget triage</strong> before fanning out any agents, estimating complexity from cheap
+      signals: size, blast radius, novelty, reversibility, uncertainty.
+    </p>
+
+    <div class="tablewrap" style="margin:1.3rem 0">
+      <table>
+        <thead><tr><th>Tier</th><th>Total contexts</th><th>Shape</th></tr></thead>
+        <tbody>
+          <tr><td><strong>S</strong></td><td>2</td><td>No <code>Workflow</code> at all — the main loop is the executor and reads, edits and runs directly.</td></tr>
+          <tr><td><strong>M</strong></td><td>6</td><td>The usual shape for a real feature: an orchestrator plus up to five delegated contexts.</td></tr>
+          <tr><td><strong>L</strong></td><td>12</td><td>Expandable to an absolute ceiling of 16, only for confirmed critical risk or an explicit <code>--thorough</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="dim measure">
+      The count is <strong>cumulative for the whole command</strong> and includes the main context
+      plus every delegated or Workflow context, retries included. Enforcement is mechanical: every
+      delegated context carries a turn limit (6/8/12 for S/M/L), review→fix cycles are capped at
+      1/2/3, a completed round that produces no new confirmed non-duplicate finding stops fan-out
+      immediately, and a generated Workflow script tracks its remaining allowance with a counter and
+      a <code>boundedAgent()</code> wrapper that throws before exceeding it. Unbounded fan-out is
+      forbidden outright.
+    </p>
+
+    <h3 style="margin-top:2rem">The second axis: occupancy</h3>
+    <p class="dim measure" style="margin-bottom:1.3rem">
+      A tier bounds how many contexts open, not how full each one gets — and those are different
+      things. A context stuffed with material nobody reads judges worse than one given the range that
+      matters, so three limits apply at every tier.
     </p>
 
     <div class="grid two">
@@ -114,11 +369,12 @@
         <span class="num">run output</span>
         <h3>Never enters a context raw</h3>
         <p class="dim">
-          Output from a test suite or an analyzer is captured to a file <em>outside</em> the working
-          tree and comes back as a ~40-line digest: the command, its exit code, its own counters, one
+          Output from a suite or an analyzer goes to a file <em>outside</em> the working tree and
+          comes back as a ~40-line digest: the command, its exit code, its own counters, one
           identifying line per failure. Ten failures of one class become one example plus a count; a
-          specific failure is grepped out of the file on disk when it needs detail. A run is judged
-          by exit code <strong>and</strong> counters, never by an <code>OK</code> string.
+          specific failure is grepped out of the file on disk when it needs detail.
+          <strong>Compaction may never hide a result</strong> — shortening <em>what</em> failed is
+          allowed, concealing <em>that</em> something failed is a false report.
         </p>
       </div>
       <div class="card">
@@ -127,17 +383,20 @@
         <p class="dim">
           A delegated context hands back one schema capsule of roughly 1500 tokens — claims plus
           <code>path:line</code>, symbol or command pointers, never file contents, a full diff or raw
-          output. An oversized return is not forwarded verbatim into the next prompt.
+          output. When material genuinely has to be seen, the capsule <em>names</em> it and the
+          orchestrator opens that one range, so the reading happens once where it is needed. An
+          oversized return is never forwarded verbatim into the next prompt.
         </p>
       </div>
       <div class="card">
         <span class="num">main loop</span>
         <h3>Holds the plan, not the code</h3>
         <p class="dim">
-          Above tier S the orchestrator holds the artifact, the plan, the status table, the capsules
-          and the <code>used/cap</code> ledger — with two bounded exceptions the source-of-truth order
-          requires: a named, narrow range of current source when a capsule claim drives a contract
-          decision, and the digest of a run it ordered.
+          Above tier S the orchestrator holds the artifact, the plan, the DoD table with per-item
+          status, the capsules and the <code>used/cap</code> ledger. Two bounded exceptions stand,
+          because the source-of-truth order outranks tidiness: a named, narrow range of current source
+          when a capsule claim materially drives a contract decision, and the digest of a run it
+          ordered. Needing broad reading up here is a signal the work was under-delegated.
         </p>
       </div>
       <div class="card">
@@ -145,35 +404,70 @@
         <h3>Enumerable facts come from a command</h3>
         <p class="dim">
           <code>git hash-object</code> for content identity, <code>git status --porcelain</code> for
-          the change set, <code>git diff --stat</code> for the diff class, a <code>grep</code> per
-          touched symbol for documentation reach — where an empty result <em>is</em> the evidence
-          that nothing was affected.
+          the change set, <code>git diff --stat</code> for the diff class, and a <code>grep</code> per
+          touched symbol for documentation reach — where an empty result <em>is</em> the evidence that
+          nothing was affected. Cheap, exact, repeatable, and stronger than an impression.
         </p>
       </div>
     </div>
 
-    <p class="dim" style="margin-top:1.3rem">
-      <strong>Compaction never buys silence.</strong> The exit code and the failure counts are always
-      reported in full. Shortening <em>what</em> failed is allowed; concealing <em>that</em> something
-      failed is a false report — and a suite that collected ~0 tests is itself a finding, not a pass.
+    <h3 style="margin-top:2.2rem">The same principle, applied to the commands’ own text</h3>
+    <p class="dim measure" style="margin-bottom:1.2rem">
+      The shared rules live in four contracts, and a command loads only the ones it can act on. A
+      read-only command has no business paying for the executor rules, and a change with no browser
+      surface never pays for the web method.
     </p>
-    <p class="dim">
-      The same principle governs the commands' own text. The shared rules live in four contracts and
-      a command loads only the ones it can act on: <code>project-knowledge.md</code> is read by all
-      ten, <code>execution.md</code> only by the seven that run checks, <code>documentation-sync.md</code>
-      only by the four that change product code, and <code>web-probing.md</code> only by
-      <code>build</code>, <code>quick</code> and <code>verify</code> — and only when the scope in
-      front of them actually has a browser surface.
+
+    <div class="tablewrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>project-knowledge</th>
+            <th>execution</th>
+            <th>documentation-sync</th>
+            <th>web-probing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>refine</td>     <td class="y">✓</td><td class="n">·</td><td class="n">·</td><td class="n">·</td></tr>
+          <tr><td>build</td>      <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="c">if browser</td></tr>
+          <tr><td>quick</td>      <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="c">if browser</td></tr>
+          <tr><td>verify</td>     <td class="y">✓</td><td class="y">✓</td><td class="n">·</td><td class="c">if browser</td></tr>
+          <tr><td>announce</td>   <td class="y">✓</td><td class="n">·</td><td class="n">·</td><td class="n">·</td></tr>
+          <tr><td>ask</td>        <td class="y">✓</td><td class="n">·</td><td class="n">·</td><td class="n">·</td></tr>
+          <tr><td>audit</td>      <td class="y">✓</td><td class="y">✓</td><td class="n">·</td><td class="n">·</td></tr>
+          <tr><td>refactor</td>   <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">·</td></tr>
+          <tr><td>lint-audit</td> <td class="y">✓</td><td class="y">✓</td><td class="n">·</td><td class="n">·</td></tr>
+          <tr><td>lint-fix</td>   <td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">·</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small" style="margin-top:1rem">
+      <code>verify</code> runs checks and writes tests, but changes no behavior — so it falsifies no
+      document and carries no documentation duty. The tech track has no web contract at all: its
+      oracle is old-versus-new behavior, which needs a differential run, not a consumer session.
     </p>
+
+    <div class="note warn" style="margin-top:1.2rem">
+      <strong>What no tier buys back.</strong> The safety floor is outside the budget at every tier:
+      the characterization net or baseline, the contract diff, the drift search, a DoD skeptic with a
+      fresh context, and a sabotage-proven gate whenever one is created or changed. Mutation
+      intensity is a separate dial — <code>economy</code> (none), <code>balanced</code> (one per
+      critical cluster, the default), <code>thorough</code> (one per substantial boundary). Tiering
+      cuts how many lenses look at the code; it never cuts the evidence.
+    </div>
   </section>
 
-  <section class="wrap" id="handoffs" data-reveal>
-    <p class="eyebrow">03</p>
-    <h2>Recon is never paid for twice.</h2>
-    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
-      Commands run in sequence, so each stage records what the next would otherwise rediscover — and
-      stamps it with content hashes, so the next stage can tell fresh knowledge from a confident
-      description of code that has moved on.
+  <!-- ============ 06 handoffs ============ -->
+  <section class="wrap" id="handoffs" data-rail-label="handoffs" data-reveal>
+    <p class="eyebrow">06</p>
+    <h2>Nothing is paid for twice.</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem">
+      The commands run in sequence, and each stage already knows something the next would otherwise
+      rediscover. So each records it — stamped with content hashes, so the next stage can tell fresh
+      knowledge from a confident description of code that has moved on.
     </p>
 
     <div class="tablewrap">
@@ -183,71 +477,49 @@
           <tr>
             <td><code>refine → build</code></td>
             <td>The <em>Code map</em>: files opened with <code>git hash-object</code> hashes, reuse and change points, contracts at risk, conventions, declared gaps.</td>
-            <td>All fresh → recon costs zero contexts. Partly fresh → recon scoped to the stale entries. No map → normal recon. Never a blocker.</td>
+            <td>All fresh → recon costs zero contexts. Partly fresh → recon scoped to the stale entries plus the declared gaps. No map → normal recon. Never a blocker.</td>
           </tr>
           <tr>
             <td><code>audit → refactor</code></td>
             <td>Commit plus hashes of the target files, the tests the coverage claim rests on, and the call-site files.</td>
-            <td>Re-hashed <em>before</em> a tier is chosen. Stale target → candidate obsolete; stale test → coverage claim void; stale call site → blast radius void.</td>
+            <td>Re-hashed <em>before</em> a tier is chosen, since safety and blast radius are inherited from it. Stale target → candidate obsolete; stale test → coverage claim void; stale call site → blast radius void.</td>
           </tr>
           <tr>
             <td><code>build/quick → verify</code></td>
-            <td>Which tests were proven able to fail and how — <code>red-first</code> or <code>mutation</code> — plus the test file's hash.</td>
-            <td>Fresh entries become <code>covered (reused)</code>; the budget goes to what nobody checked yet. A reused proof never upgrades a behavior's own verdict.</td>
+            <td>Which tests were proven able to fail and how — <code>red-first</code> or <code>mutation</code> — plus the test file’s hash.</td>
+            <td>Fresh entries become <code>covered (reused)</code>, and the budget goes to what nobody checked yet. A reused proof never upgrades a behavior’s own verdict.</td>
+          </tr>
+          <tr>
+            <td><code>build/quick → verify</code> <span class="small">(web)</span></td>
+            <td>The runner and its exact invocation, the base URL that worked, the seeding path, the recorded answer to any provisioning question.</td>
+            <td>A stale entry means the recipe is re-derived. A runner that fails on first use is re-derived, not retried blindly.</td>
           </tr>
           <tr>
             <td><code>lint-audit → lint-fix</code></td>
             <td>The exact analyzer invocations and the gate entrypoint — deliberately <em>not</em> violation counts.</td>
-            <td>Counts go stale the moment a batch lands and re-running an analyzer is nearly free, so gate state is read from the last completed batch artifact.</td>
+            <td>Counts go stale the moment a batch lands and re-running an analyzer is nearly free, so gate state is read from the last completed batch artifact instead.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <p class="small" style="margin-top:1rem">
-      A matching hash proves only that a file is unchanged — not that a map claim is right, or that a
-      test asserts the behavior in question. So a claim that drives an external-contract edit is
-      still verified against current source, and saved contexts are banked, not respent.
+      Two bounds hold on every one of these. A matching hash proves a file is unchanged — not that the
+      claim about it is right, and not that a test asserts the behavior in question; so a claim that
+      drives an external-contract edit is still verified against current source. And saved contexts
+      are <strong>banked, not respent</strong>: a cheap recon is not a licence to fan out further.
     </p>
   </section>
 
-  <section class="wrap" id="memory" data-reveal>
-    <p class="eyebrow">04</p>
-    <h2>Project memory that can't outrank the code.</h2>
-    <p class="dim" style="max-width:64ch">
-      Prorab builds a small, version-controlled memory during normal work. No <code>init</code>, no
-      <code>remember</code> command, no background process, no external model, no vector database —
-      the structure is created lazily under <code>tasks/memory/</code>.
-    </p>
-<pre><code>tasks/memory/
-├── INDEX.md
-├── components/
-├── decisions/
-├── gotchas/
-└── verification/</code></pre>
-    <p class="dim">Memory is deliberately <strong>last</strong> in the source-of-truth order:</p>
-<pre><code>current worktree → repository instructions/docs → tests/CI/executable evidence
-  → task artifacts → <span class="d">memory</span></code></pre>
-    <p class="dim">
-      A material memory claim must be checked against current source before it can affect behavior,
-      architecture, contracts, scope, DoD, implementation or verification. A conflict marks the entry
-      updated, <code>superseded</code> or <code>stale</code> — it never overrides the code. Missing
-      memory never breaks a command.
-    </p>
-    <p class="small">
-      Captured: durable decisions, boundaries, contracts and consumers, recurring gotchas, rejected
-      alternatives, re-verified commands. Not captured: transcripts, reasoning, temporary status,
-      ordinary code facts, unmarked assumptions, or copies of task artifacts.
-    </p>
-  </section>
-
-  <section class="wrap" id="docs" data-reveal>
-    <p class="eyebrow">05</p>
-    <h2>Documentation doesn't drift away from the code.</h2>
-    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
+  <!-- ============ 07 docs ============ -->
+  <section class="wrap" id="docs" data-rail-label="docs sync" data-reveal>
+    <p class="eyebrow">07</p>
+    <h2>Documentation doesn’t drift away from the code.</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem">
       Every command that changes code owns the documentation that change falsifies. A stale document
-      left behind is an incomplete change, not a follow-up — reviewers treat a contradiction between
-      the diff and a current-state document as a finding.
+      left behind is an <em>incomplete change</em>, not a follow-up — it is part of the command’s own
+      completion condition, and reviewers treat a contradiction between the diff and a current-state
+      document as a finding.
     </p>
 
     <div class="tablewrap">
@@ -256,57 +528,105 @@
         <tbody>
           <tr>
             <td><strong>Current state</strong><br><span class="small">claims to describe how the project works now</span></td>
-            <td><code>README</code>, <code>docs/</code>, the spec, API and configuration references, runbooks, <code>CLAUDE.md</code>, docstrings, <code>--help</code> text</td>
-            <td>Corrects exactly what the change made factually wrong — a renamed symbol or path, a changed default, flag, signature, limit or format. In place, minimally, in the document's own language.</td>
+            <td><code>README</code>, <code>docs/</code>, the spec, API and configuration references, runbooks, <code>CLAUDE.md</code> and other agent guidance, docstrings, comments, <code>--help</code> text, and the examples inside any of them</td>
+            <td>Corrects exactly what the change made factually wrong — a renamed symbol or path, a changed default, flag, signature, limit, format or command, an example that would now behave differently. In place, minimally, in the document’s own language and style.</td>
           </tr>
           <tr>
             <td><strong>Historical</strong><br><span class="small">records what happened</span></td>
-            <td><code>CHANGELOG.md</code>, release notes, ADRs, migration notes, <code>tasks/archive/**</code></td>
-            <td>Never rewritten to match new code. A new entry is added where the project's convention calls for one; a past entry stays as it was written.</td>
+            <td><code>CHANGELOG.md</code>, release notes, ADRs, migration notes, <code>tasks/archive/**</code>, completed task artifacts</td>
+            <td>Never rewritten to match new code. A new entry is added where the project’s convention calls for one; a past entry stays exactly as it was written.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <p class="dim" style="margin-top:1rem">
-      Anything wider — a style rewrite, a pre-existing gap, a restructure, a correction needing a
-      product decision — is reported with the follow-up named, not absorbed into the diff. And
-      "nothing was affected" has to be earned by actually searching the docs for the symbols, paths
-      and values the change touched.
+    <p class="dim measure" style="margin-top:1.2rem">
+      What keeps this from becoming an endless documentation project is the scope rule: the duty is
+      what the change made <em>factually wrong</em>. Anything wider — a style rewrite, a gap that
+      predates the change, a restructure, a correction needing a product decision, or a fix larger
+      than the code change itself — is reported with the follow-up named, not absorbed into the diff.
+      And “nothing was affected” has to be earned by actually grepping for the symbols, paths, flags
+      and literal values the change touched.
     </p>
     <p class="small">
-      <code>/prorab:verify</code> sits deliberately outside this duty: it changes no behavior, so it
+      <code>/prorab:verify</code> sits deliberately outside this duty. It changes no behavior, so it
       falsifies no document — and when observed behavior contradicts a document, either one of them
-      can be the wrong one. That is a finding it reports with both readings named.
+      can be the wrong one. That is a finding it reports with both readings named, never a document
+      it quietly rewrites.
     </p>
   </section>
 
-  <section class="wrap" id="artifacts" data-reveal>
-    <p class="eyebrow">06</p>
+  <!-- ============ 08 memory ============ -->
+  <section class="wrap" id="memory" data-rail-label="memory" data-reveal>
+    <p class="eyebrow">08</p>
+    <h2>Project memory that can’t outrank the code.</h2>
+    <p class="dim measure">
+      Prorab accumulates a small, version-controlled memory during normal work. No <code>init</code>,
+      no <code>remember</code> command, no background process, no external model, no vector database —
+      the structure is created lazily under <code>tasks/memory/</code>, and every command still works
+      when it is absent.
+    </p>
+<pre><code>tasks/memory/
+├── INDEX.md          <span class="d"># one line per entry: link, type, status, topic, key paths</span>
+├── components/       <span class="d"># component, contract, pattern</span>
+├── decisions/
+├── gotchas/
+└── verification/     <span class="d"># commands that were actually re-verified</span></code></pre>
+    <p class="dim measure">Memory is deliberately <strong>last</strong> in the source-of-truth order:</p>
+<pre><code>current worktree → repository instructions and docs → tests, CI and other
+  executable evidence → task artifacts → <span class="d">memory</span></code></pre>
+    <p class="dim measure">
+      Memory accelerates discovery; it never proves current behavior by itself. A material claim that
+      affects behavior, architecture, an external contract, scope, DoD, an implementation choice or
+      the verification recipe must have its current source opened before it can be used. On a
+      conflict the current evidence wins and the entry is updated, marked <code>superseded</code> or
+      marked <code>stale</code> — an entry never overrides the code.
+    </p>
+    <p class="small">
+      Captured: durable architectural decisions, component responsibility, contracts and their
+      consumers, non-obvious constraints, recurring gotchas, verified commands, rejected alternatives
+      and why. Not captured: transcripts, reasoning, temporary status, one-off errors, ordinary code
+      facts that are cheaper to read directly, unmarked assumptions, or copies of task artifacts.
+      Usually zero to three entries per task are enough.
+    </p>
+  </section>
+
+  <!-- ============ 09 artifacts ============ -->
+  <section class="wrap" id="artifacts" data-rail-label="artifacts" data-reveal>
+    <p class="eyebrow">09</p>
     <h2>Artifact lifecycle</h2>
-    <p class="dim" style="max-width:64ch">
-      Before moving anything, a command verifies explicit artifact identity and links, refuses paths
-      outside <code>tasks/</code>, never overwrites an existing directory (deterministic
-      <code>-2</code>, <code>-3</code> suffixes), updates links, re-opens destinations and reports
-      every moved file. A blocker, a partial completion or a failed mandatory verification leaves
-      artifacts active.
+    <p class="dim measure">
+      A bundle is archived only after the command has re-checked scope and every mandatory DoD item
+      and recorded a successful final status. A blocker, a partial completion or a failed mandatory
+      check leaves everything active.
     </p>
 <pre><code>tasks/archive/
 └── YYYY/
     ├── &lt;task-slug&gt;/
     ├── refactor-&lt;task-slug&gt;/
     └── lint-&lt;plan-slug&gt;/</code></pre>
-    <p class="dim">
-      Archived work is never picked up as active by default. <code>/prorab:quick</code> and
-      <code>/prorab:verify</code> archive nothing at all — they each leave exactly one record. And no
-      command commits or pushes unless you explicitly ask.
+    <p class="dim measure">
+      Before moving anything, a command verifies explicit artifact identity and cross-links — a
+      similar slug alone is not enough — refuses paths outside <code>tasks/</code>, path traversal and
+      unexpanded globs, never overwrites an existing directory (deterministic <code>-2</code>,
+      <code>-3</code> suffixes), updates the links in the moved bundle and the remaining artifacts,
+      re-opens each destination and reports every moved file. No recursive deletion, no broad
+      destructive shell operations.
+    </p>
+    <p class="dim measure">
+      Archived work is never picked up as active by default: a lookup searches the archive only when
+      you name an archived task explicitly, when <code>announce</code> needs completed work, or when a
+      historical question requires it. <code>/prorab:quick</code> and <code>/prorab:verify</code>
+      archive nothing at all — they each leave exactly one record. And no command commits or pushes
+      unless you ask.
     </p>
   </section>
 
-  <section class="wrap" id="compare" data-reveal>
-    <p class="eyebrow">07</p>
+  <!-- ============ 10 compare ============ -->
+  <section class="wrap" id="compare" data-rail-label="compare" data-reveal>
+    <p class="eyebrow">10</p>
     <h2>How it compares</h2>
-    <p class="dim" style="max-width:64ch;margin-bottom:1.4rem">
+    <p class="dim measure" style="margin-bottom:1.4rem">
       Prorab sits between a hand-written Claude Code setup and a full product-development framework.
       Its narrower bet: an existing codebase needs two things at once — a repeatable path from an
       unclear task to verified code, and a separate, behavior-preserving path for paying down debt.
@@ -331,10 +651,21 @@
     </div>
 
     <p class="small" style="margin-top:1rem">
-      A comparison of documented <em>default workflows</em> as of 2026-07-25, not a benchmark of
-      model output. All of these are extensible, so "not in the default workflow" does not mean
-      "impossible to add". Full sources and a per-approach discussion are in the
+      A comparison of documented <em>default workflows</em> as of 2026-07-25, not a benchmark of model
+      output. All of these are extensible, so “not in the default workflow” does not mean “impossible
+      to add”. Full sources and a per-approach discussion are in the
       <a href="https://github.com/aartem1/prorab#how-does-prorab-compare">README</a>.
+    </p>
+
+    <p class="dim measure" style="margin-top:1.4rem">
+      Choose <strong>Prorab</strong> when auditability, behavior-preserving maintenance and a hard
+      context boundary matter more than agent portability. Choose <strong>Superpowers</strong> for a
+      prescriptive TDD/subagent methodology that follows you across coding tools. Choose
+      <strong>Spec Kit</strong> when specifications are the primary organizing artifact and you want a
+      large integration surface. Choose <strong>BMAD</strong> when the work starts before engineering
+      — market and domain analysis, PRDs, architecture, UX — and role separation is useful. Use
+      <strong>native Claude Code customization</strong> when the workflow is small or unusual enough
+      that owning the policy is cheaper than adopting a framework.
     </p>
 
     <div class="herocta" style="animation:none;margin-top:2rem">

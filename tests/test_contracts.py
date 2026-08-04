@@ -629,7 +629,7 @@ class SiteTests(unittest.TestCase):
     """
 
     SITE = ROOT / "site"
-    PAGES = ("index.html", "commands.html", "how-it-works.html")
+    PAGES = ("index.html", "walkthrough.html", "commands.html", "how-it-works.html")
 
     def setUp(self) -> None:
         self.pages = {name: read(self.SITE / name) for name in self.PAGES}
@@ -675,6 +675,15 @@ class SiteTests(unittest.TestCase):
         self.assertIn(f"marketplace add aartem1/{self.marketplace['name']}", landing)
         for plugin in self.versions:
             self.assertIn(f"install {plugin}@{self.marketplace['name']}", landing)
+
+    def test_every_page_can_reach_every_other_page(self) -> None:
+        """A new page is easy to add and easy to forget in four navigation blocks."""
+        for name, text in self.pages.items():
+            nav = re.search(r"<nav>(.*?)</nav>", text, flags=re.DOTALL)
+            self.assertIsNotNone(nav, name)
+            for other in self.PAGES:
+                target = "./" if other == "index.html" else other
+                self.assertIn(f'href="{target}"', nav.group(1), f"{name} → {other}")
 
     def test_internal_links_and_assets_resolve(self) -> None:
         for name, text in self.pages.items():
