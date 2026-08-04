@@ -72,7 +72,7 @@ const NAV_LABELS: Record<Page, string> = {
       <header class="site">
         <div class="wrap">
           <a class="brand" href={href(lang, 'overview')}><span class="dot"></span>prorab</a>
-          <nav aria-label={nav.label}>
+          <nav class="desktop-nav" aria-label={nav.label}>
             {
               PAGES.map((target) => (
                 <a
@@ -100,6 +100,47 @@ const NAV_LABELS: Record<Page, string> = {
               }
             </span>
           </nav>
+          <details class="mobile-menu" data-mobile-menu>
+            <summary>
+              <span>{nav.menu}</span>
+              <span class="menu-icon" aria-hidden="true"><i></i><i></i></span>
+            </summary>
+            <div class="mobile-panel">
+              <nav aria-label={nav.label}>
+                {
+                  PAGES.map((target) => (
+                    <a
+                      href={href(lang, target)}
+                      aria-current={target === page ? 'page' : undefined}
+                    >
+                      {NAV_LABELS[target]}
+                    </a>
+                  ))
+                }
+                <a class="github-link" href={REPO_URL}>
+                  <span>{nav.github}</span><span aria-hidden="true">↗</span>
+                </a>
+              </nav>
+              <div class="mobile-languages">
+                <span>{t.common.lang.label}</span>
+                <span class="langs" role="group" aria-label={t.common.lang.label}>
+                  {
+                    LANG_CODES.map((code) => (
+                      <a
+                        href={href(code, page)}
+                        hreflang={LANGS[code].hreflang}
+                        lang={LANGS[code].hreflang}
+                        aria-current={code === lang ? 'true' : undefined}
+                        title={LANGS[code].label}
+                      >
+                        {LANGS[code].short}
+                      </a>
+                    ))
+                  }
+                </span>
+              </div>
+            </div>
+          </details>
         </div>
       </header>
 

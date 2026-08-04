@@ -11,6 +11,7 @@ export const common = {
 
   nav: {
     label: 'Primary',
+    menu: 'Menu',
     sections: 'Sections',
     overview: 'Overview',
     walkthrough: 'Walkthrough',

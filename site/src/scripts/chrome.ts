@@ -21,6 +21,24 @@ if (header) {
   addEventListener('scroll', onScroll, { passive: true });
 }
 
+/* ---- mobile navigation ------------------------------------------------ */
+const mobileMenu = $<HTMLDetailsElement>('[data-mobile-menu]');
+if (mobileMenu) {
+  document.addEventListener('pointerdown', (event) => {
+    if (mobileMenu.open && event.target instanceof Node && !mobileMenu.contains(event.target)) {
+      mobileMenu.open = false;
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !mobileMenu.open) return;
+    mobileMenu.open = false;
+    $<HTMLElement>('summary', mobileMenu)?.focus();
+  });
+  matchMedia('(min-width: 821px)').addEventListener('change', (event) => {
+    if (event.matches) mobileMenu.open = false;
+  });
+}
+
 /* ---- pointer glow ------------------------------------------------------ */
 if (!reduced && matchMedia('(pointer: fine)').matches) {
   let raf = 0;

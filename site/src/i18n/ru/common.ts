@@ -5,6 +5,7 @@ export const common: Common = {
 
   nav: {
     label: 'Основная',
+    menu: 'Меню',
     sections: 'Разделы',
     overview: 'Обзор',
     walkthrough: 'Разбор',
