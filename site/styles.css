@@ -174,7 +174,7 @@ footer.site {
   font-size: 0.84rem;
 }
 footer.site .wrap { display: flex; gap: 1rem 2rem; flex-wrap: wrap; justify-content: space-between; }
-footer.site a { color: var(--dim); }
+footer.site a { color: var(--dim); display: inline-block; padding: 0.3rem 0; }
 
 /* ---- type ------------------------------------------------------------ */
 
@@ -276,13 +276,16 @@ pre .r { color: var(--red); }
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 0.22rem 0.5rem;
+  padding: 0.32rem 0.6rem;
   cursor: pointer;
   opacity: 0;
   transition: opacity 200ms var(--ease), color 200ms var(--ease), border-color 200ms var(--ease);
 }
 .copyblock:hover > button, .copyblock > button:focus-visible { opacity: 1; }
 .copyblock > button:hover { color: var(--amber); border-color: rgba(255, 157, 77, 0.4); }
+/* Without a hover state to reveal it, the button would stay invisible and still be
+   tappable — the worst of both. Show it. */
+@media (hover: none) { .copyblock > button { opacity: 0.6; } }
 
 /* ---- hero ------------------------------------------------------------ */
 
@@ -386,7 +389,7 @@ pre .r { color: var(--red); }
   background: none;
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 0.15rem 0.5rem;
+  padding: 0.3rem 0.6rem;
   cursor: pointer;
   transition: color 200ms var(--ease), border-color 200ms var(--ease);
 }
@@ -452,6 +455,7 @@ pre .r { color: var(--red); }
   font-size: 0.72rem;
   font-family: var(--mono);
   letter-spacing: 0.02em;
+  padding: 0.3rem 0; /* an 19px row is below any sane target size */
 }
 .rail a i {
   width: 18px; height: 2px; border-radius: 2px;
@@ -575,17 +579,34 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
 .amb.assuming .sp:hover,
 .amb.assuming .sp[aria-expanded="true"] { color: var(--red); background: var(--red-dim); }
 
-/* the group nothing in the sentence points at */
+/* The group nothing in the sentence points at. Rendered as a chip rather than another
+   underlined phrase: it is not part of the sentence, and at 0.6em an underline-only target
+   is both hard to read as a control and a much smaller hit area than its neighbours. */
 .amb .sp.ghost {
-  text-decoration-color: rgba(179, 157, 255, 0.55);
+  position: relative;
   font-family: var(--mono);
-  font-size: 0.62em;
+  font-size: 0.6em;
   letter-spacing: 0.02em;
+  line-height: 1;
   color: var(--violet);
-  vertical-align: 0.16em;
-  margin-left: 0.35em;
+  vertical-align: 0.28em;
+  margin-left: 0.55em;
+  padding: 0.62em 0.85em;
+  border: 1px dashed rgba(179, 157, 255, 0.5);
+  border-radius: 999px;
+  text-decoration: none;
 }
-.amb .sp.ghost:hover, .amb .sp.ghost[aria-expanded="true"] { background: var(--violet-dim); }
+/* The four phrases fill a 44px line box; without this the chip would be a 30px target
+   inset inside it, with dead space above and below exactly where the eye aims. */
+.amb .sp.ghost::after { content: ""; position: absolute; inset: -0.42em -0.2em; }
+.amb .sp.ghost:hover { background: var(--violet-dim); border-style: solid; }
+.amb .sp.ghost[aria-expanded="true"] {
+  color: var(--violet);
+  background: var(--violet-dim);
+  border-color: var(--violet);
+  border-style: solid;
+}
+.amb.assuming .sp.ghost { border-color: rgba(179, 157, 255, 0.5); }
 
 .amb .bar {
   display: flex;
@@ -830,13 +851,13 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
   margin-bottom: 0.25rem;
 }
 .pipe .node:hover { border-color: var(--line-2); color: var(--text); }
-.pipe .node[aria-selected="true"] {
+.pipe .node[aria-pressed="true"] {
   color: var(--amber);
   border-color: rgba(255, 157, 77, 0.5);
   background: var(--amber-dim);
   box-shadow: 0 0 0 1px rgba(255, 157, 77, 0.16);
 }
-.pipe .node.v[aria-selected="true"] {
+.pipe .node.v[aria-pressed="true"] {
   color: var(--violet);
   border-color: rgba(179, 157, 255, 0.5);
   background: var(--violet-dim);

@@ -332,7 +332,7 @@
     const tracks = $$('.track', pipe);
 
     const select = (node) => {
-      $$('.node', pipe).forEach((n) => n.setAttribute('aria-selected', String(n === node)));
+      $$('.node', pipe).forEach((n) => n.setAttribute('aria-pressed', String(n === node)));
       const violet = node.classList.contains('v');
       detail.classList.toggle('v', violet);
       detail.innerHTML = `
