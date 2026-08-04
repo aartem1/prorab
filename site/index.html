@@ -80,60 +80,64 @@
     <p class="eyebrow">Why it exists</p>
     <h2>A ticket is never as small as its sentence.</h2>
     <p class="lede" style="margin-bottom:0.4rem">
-      Here is a normal, reasonable, entirely unremarkable request. Click any phrase to see what it
-      leaves undecided.
+      Here is a normal, reasonable, entirely unremarkable request. Open each underlined phrase in
+      turn — and then the group that no phrase in the sentence points at.
     </p>
 
     <div class="amb" data-amb>
       <div class="ticket">
-        <span class="lab">the ticket, exactly as it arrives</span><span
+        <span class="lab">the ticket, exactly as it arrives</span>
+        <p class="sentence"
           >“<button class="sp" type="button" aria-expanded="false" aria-controls="amb-detail"
+            data-label="“Add”"
             data-title="“Add” — for whom, and under what limits?"
             data-q="Does everyone who can open the report get the button, or only the roles allowed to see the underlying rows?|Is the export rate-limited or audited — and if it is, does the person clicking it find out?"
+            data-a="everyone who can see the page gets the button|no rate limit, no audit entry"
           >Add</button> <button class="sp" type="button" aria-expanded="false" aria-controls="amb-detail"
+            data-label="“a CSV”"
             data-title="“a CSV” — a CSV in whose dialect?"
             data-q="Delimiter: a comma, or a semicolon for the locales where the comma is a decimal separator?|Encoding: UTF-8, or UTF-8 with a BOM so that Excel opens non-Latin text correctly?|Quoting and line endings: what happens to a value that itself contains the delimiter, a quote character, or a newline?|Dates and numbers: raw and ISO, or formatted the way the screen formats them?"
+            data-a="a comma|UTF-8, no BOM|RFC-4180 quoting, LF line endings|formatted exactly as the screen renders them"
           >a CSV</button> <button class="sp" type="button" aria-expanded="false" aria-controls="amb-detail"
+            data-label="“export”"
             data-title="“export” — what shape does the operation have?"
             data-q="A synchronous download, or a background job that notifies you when the file is ready?|What happens when the report takes longer than the request timeout?|Is there a row cap — and if it is exceeded, is the file truncated or is the request refused?"
+            data-a="a synchronous streaming download|nothing — it works until it doesn’t|no row cap"
           >export</button> to <button class="sp" type="button" aria-expanded="false" aria-controls="amb-detail"
+            data-label="“the reports page”"
             data-title="“the reports page” — which rows, which columns, which values?"
             data-q="Which rows: exactly what the active filters and sorting show, or every row the underlying query can return?|Which columns: the visible ones in their on-screen order, or the full record?|Which values: what is displayed after formatting and translation, or what is stored?"
-          >the reports page</button>.”<button class="sp ghost" type="button" aria-expanded="false" aria-controls="amb-detail"
-            data-title="Nothing in the sentence points here"
+            data-a="the rows currently shown, filters applied|the visible ones, in screen order|displayed values, already formatted"
+          >the reports page</button>.”</p>
+
+        <p class="ghostrow">
+          <span class="ghostlab">Those are the phrases. And then there are the decisions that no
+            phrase in the sentence points at:</span
+          ><button class="sp ghost" type="button" aria-expanded="false" aria-controls="amb-detail"
+            data-label="in no phrase at all"
+            data-title="Questions the sentence never raises"
             data-q="Empty result: a header-only file, a zero-byte file, or a refusal with a message?|The header row itself: the UI column labels in the current interface language, or stable field names a downstream script can rely on?"
-          >+ never mentioned</button></span>
+            data-a="a header-only file|the UI labels, in whatever language is active"
+          >open the unmentioned ones</button>
+        </p>
       </div>
 
       <div class="bar">
-        <span class="count"><b>14</b> decisions inside one sentence</span>
-        <button class="toggle" type="button" data-assume aria-pressed="false">show what an agent fills in silently</button>
+        <p class="count" data-progress></p>
+        <button class="toggle" type="button" data-assume aria-pressed="false"
+          aria-controls="amb-detail amb-assumed">show what an agent fills in silently</button>
       </div>
 
       <div class="detail" id="amb-detail" aria-live="polite"></div>
 
-      <div class="assumed" hidden>
+      <div class="assumed" id="amb-assumed" hidden>
         <h3>What gets decided for you, in the time it takes to start typing code</h3>
-        <ul>
-          <li>everyone who can see the page gets the button</li>
-          <li>no rate limit, no audit entry</li>
-          <li>delimiter <code>,</code></li>
-          <li>UTF-8, no BOM</li>
-          <li>RFC-4180 quoting, <code>\n</code> line endings</li>
-          <li>dates and numbers exactly as the screen renders them</li>
-          <li>a synchronous streaming download</li>
-          <li>no timeout handling — it works until it doesn&#39;t</li>
-          <li>no row cap</li>
-          <li>the rows currently shown, filters applied</li>
-          <li>the visible columns, in screen order</li>
-          <li>displayed values, already formatted</li>
-          <li>an empty result yields a header-only file</li>
-          <li>headers are the UI labels, in whatever language is active</li>
-        </ul>
+        <div class="grps" data-defaults></div>
         <p class="kicker">
-          Every one of these is defensible. None of them was your decision. And the tests will be
-          written to assert exactly these — by the same context that chose them, from the same
-          reading, in the same session. Green does not mean right; it means self-consistent.
+          One answer per question, in the same order you just read them. Every one is defensible.
+          None of them was your decision. And the tests will be written to assert exactly these — by
+          the same context that chose them, from the same reading, in the same session. Green does
+          not mean right; it means self-consistent.
         </p>
       </div>
     </div>

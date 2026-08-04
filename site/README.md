@@ -64,6 +64,13 @@ Two layout rules are load-bearing and easy to undo by accident:
 - **Grid items carry `min-width: 0`.** Otherwise one unbreakable token — a test name, a path —
   widens its track and puts the whole page into a horizontal scroll on a phone.
 
+The ambiguity widget on `index.html` keeps its questions and the silent answers to them on the same
+button, as positionally-paired `data-q` / `data-a` lists. Both the panel under the sentence and the
+"what an agent fills in silently" block are rendered from that one source, and every count on screen
+(`n of 14`, groups still closed) is summed from it — so the widget cannot claim a number it does not
+go on to list, and a question can never end up without its answer. Add a question and its answer
+together, or not at all.
+
 ```sh
 python3 -m unittest discover -s tests -v
 ```

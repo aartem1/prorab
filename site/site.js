@@ -215,26 +215,77 @@
   if (amb) {
     const spans = $$('.sp', amb);
     const detail = $('.detail', amb);
-    const questions = (span) => span.dataset.q.split('|').map((s) => s.trim()).filter(Boolean);
+    const progress = $('[data-progress]', amb);
+    const split = (v) => (v || '').split('|').map((s) => s.trim()).filter(Boolean);
 
-    // The counter is computed from the markup, so it can never drift from what is listed.
-    const total = spans.reduce((sum, span) => sum + questions(span).length, 0);
-    const counter = $('.count b', amb);
-    if (counter) counter.textContent = String(total);
+    // One question, one silent answer, paired by position. Both live on the same button, so the
+    // panel below and the "what an agent assumed" list can never drift out of correspondence.
+    const pairs = (span) => {
+      const answers = split(span.dataset.a);
+      return split(span.dataset.q).map((q, i) => ({ q, a: answers[i] || '' }));
+    };
+
+    // Every count on screen is derived from the markup: the widget cannot claim a number it does
+    // not go on to list.
+    const total = spans.reduce((sum, span) => sum + pairs(span).length, 0);
+    const opened = new Set();
+
+    const say = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+    const paint = () => {
+      const seen = [...opened].reduce((sum, span) => sum + pairs(span).length, 0);
+      const left = spans.length - opened.size;
+      amb.classList.toggle('complete', left === 0);
+      progress.innerHTML = left
+        ? `<b>${seen}</b> of <b>${total}</b> open decisions surfaced · ${say(left, 'group', 'groups')} still closed`
+        : `<b>${total}</b> open decisions in one sentence — and it stated the answer to none of them`;
+    };
+
+    const render = (span) => {
+      detail.classList.toggle('v', span.classList.contains('ghost'));
+      detail.innerHTML =
+        `<h3>${span.dataset.title}</h3><ol>${pairs(span)
+          .map(
+            ({ q, a }, i) =>
+              `<li style="--i:${i}"><span class="q">${q}</span>` +
+              (a ? `<span class="a">assumed: ${a}</span>` : '') +
+              '</li>',
+          )
+          .join('')}</ol>`;
+    };
 
     const select = (span) => {
-      spans.forEach((s) => s.setAttribute('aria-expanded', String(s === span)));
-      detail.classList.toggle('v', span.classList.contains('ghost'));
-      detail.innerHTML = `<h3>${span.dataset.title}</h3><ol>${
-        questions(span).map((q) => `<li>${q}</li>`).join('')
-      }</ol>`;
-      detail.classList.remove('swap');
-      void detail.offsetWidth;
-      detail.classList.add('swap');
+      opened.add(span);
+      spans.forEach((s) => {
+        s.setAttribute('aria-expanded', String(s === span));
+        s.classList.toggle('seen', opened.has(s));
+      });
+      render(span);
+      paint();
     };
 
     spans.forEach((span) => span.addEventListener('click', () => select(span)));
-    if (spans.length) select(spans[0]);
+
+    // Nothing is open to begin with: the first click has to visibly do something, and a panel that
+    // arrives pre-filled makes every later click read as a no-op.
+    detail.innerHTML =
+      `<h3 class="idle">${total} decisions are already made in this sentence</h3>` +
+      '<p class="idle-p">Not by whoever wrote it — by whoever writes the code first, silently, and ' +
+      'then tests the code against those same silent answers. Open a phrase to see which decisions.</p>';
+    paint();
+
+    const defaults = $('[data-defaults]', amb);
+    if (defaults) {
+      defaults.innerHTML = spans
+        .map(
+          (span) =>
+            `<div class="grp${span.classList.contains('ghost') ? ' ghost' : ''}">` +
+            `<h4>${span.dataset.label}</h4><ul>${pairs(span)
+              .map(({ a }) => `<li>${a}</li>`)
+              .join('')}</ul></div>`,
+        )
+        .join('');
+    }
 
     const toggle = $('[data-assume]', amb);
     const assumed = $('.assumed', amb);

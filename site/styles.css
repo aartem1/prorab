@@ -551,6 +551,7 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
   color: var(--faint);
   margin-bottom: 0.7rem;
 }
+.amb .sentence { margin: 0; }
 
 .amb .sp {
   font: inherit;
@@ -569,6 +570,9 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
   border-radius: 3px;
 }
 .amb .sp:hover { color: var(--amber); background: var(--amber-dim); }
+/* Two states, because they answer two different questions: `seen` is a trace the click leaves
+   behind ("I have opened this one"), `aria-expanded` is what the panel is showing right now. */
+.amb .sp.seen { color: var(--text); text-decoration-color: rgba(255, 157, 77, 0.75); }
 .amb .sp[aria-expanded="true"] {
   color: var(--amber);
   background: var(--amber-dim);
@@ -579,27 +583,33 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
 .amb.assuming .sp:hover,
 .amb.assuming .sp[aria-expanded="true"] { color: var(--red); background: var(--red-dim); }
 
-/* The group nothing in the sentence points at. Rendered as a chip rather than another
-   underlined phrase: it is not part of the sentence, and at 0.6em an underline-only target
-   is both hard to read as a control and a much smaller hit area than its neighbours. */
+/* The group nothing in the sentence points at. It gets its own row under the sentence rather
+   than a slot inside it: it is not part of the sentence — that is the entire point of it — and
+   inline at 0.6em it was both unreadable as a control and unexplained. */
+.amb .ghostrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.7rem;
+  margin: 1.1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line-2);
+}
+.amb .ghostlab { font-size: 0.85rem; line-height: 1.5; color: var(--faint); letter-spacing: 0; }
+
 .amb .sp.ghost {
-  position: relative;
   font-family: var(--mono);
-  font-size: 0.6em;
+  font-size: 0.78rem;
   letter-spacing: 0.02em;
   line-height: 1;
   color: var(--violet);
-  vertical-align: 0.28em;
-  margin-left: 0.55em;
-  padding: 0.62em 0.85em;
+  padding: 0.6rem 0.9rem;
   border: 1px dashed rgba(179, 157, 255, 0.5);
   border-radius: 999px;
   text-decoration: none;
 }
-/* The four phrases fill a 44px line box; without this the chip would be a 30px target
-   inset inside it, with dead space above and below exactly where the eye aims. */
-.amb .sp.ghost::after { content: ""; position: absolute; inset: -0.42em -0.2em; }
 .amb .sp.ghost:hover { background: var(--violet-dim); border-style: solid; }
+.amb .sp.ghost.seen { border-style: solid; color: var(--text); }
 .amb .sp.ghost[aria-expanded="true"] {
   color: var(--violet);
   background: var(--violet-dim);
@@ -611,16 +621,23 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
 .amb .bar {
   display: flex;
   align-items: center;
+  /* pinned to the edges, because the progress line to its left changes length on every click:
+     a control that slides sideways under the cursor is a control you miss */
+  justify-content: space-between;
   gap: 0.8rem 1.1rem;
   flex-wrap: wrap;
   margin-top: 0.9rem;
 }
 .amb .count {
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--faint);
 }
 .amb .count b { color: var(--amber); font-weight: 500; font-size: 1.15rem; letter-spacing: -0.02em; }
+.amb.complete .count { color: var(--dim); }
+/* the sweep is finished; the payoff is the next thing to press */
+.amb.complete .toggle { border-color: rgba(255, 122, 107, 0.55); color: var(--text); }
 
 .amb .detail {
   margin-top: 0.75rem;
@@ -633,11 +650,28 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
 }
 .amb .detail.v { border-left-color: var(--violet); }
 .amb .detail h3 { font-family: var(--mono); font-size: 0.9rem; color: var(--text); margin-bottom: 0.75rem; }
+.amb .detail h3.idle { color: var(--dim); }
+.amb .detail .idle-p { margin: 0; font-size: 0.92rem; color: var(--faint); max-width: 62ch; }
 .amb .detail ol { margin: 0; padding-left: 1.2rem; }
-.amb .detail li { color: var(--dim); font-size: 0.92rem; margin-bottom: 0.45rem; }
+.amb .detail li {
+  color: var(--dim);
+  font-size: 0.92rem;
+  margin-bottom: 0.45rem;
+  /* staggered entry: with a panel this far below the sentence, a cross-fade in place reads as a
+     flicker. Items arriving one after another read as an answer being written out. */
+  animation: swap 380ms var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
 .amb .detail li::marker { color: var(--faint); font-family: var(--mono); font-size: 0.8rem; }
 .amb .detail li:last-child { margin-bottom: 0; }
-.amb .detail.swap { animation: swap 320ms var(--ease); }
+.amb .detail li .a { display: none; }
+.amb.assuming .detail li .a {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  color: var(--red);
+}
 
 .amb .assumed {
   margin-top: 0.75rem;
@@ -648,7 +682,33 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
   padding: 1rem 1.15rem;
 }
 .amb .assumed h3 { font-size: 0.95rem; color: var(--text); }
-.amb .assumed ul { margin: 0.6rem 0 0; padding-left: 1.1rem; }
+.amb .assumed .grps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem 1.4rem;
+  margin-top: 0.9rem;
+}
+.amb .assumed .grp { min-width: 0; }
+/* the same shape as the ticket above: the phrases in a row, and then the group no phrase
+   points at, set apart below the rule */
+.amb .assumed .grp.ghost {
+  grid-column: 1 / -1;
+  border-top: 1px dashed var(--line-2);
+  padding-top: 0.85rem;
+}
+.amb .assumed .grp.ghost ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 1.4rem;
+}
+.amb .assumed h4 {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+.amb .assumed ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
 .amb .assumed li {
   font-family: var(--mono);
   font-size: 0.8rem;
