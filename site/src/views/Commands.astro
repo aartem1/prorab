@@ -1,0 +1,127 @@
+---
+import DataTable from '../components/DataTable.astro';
+import {
+  ALL_COMMANDS,
+  invocation,
+  PRODUCT_COMMANDS,
+  TECH_COMMANDS,
+  type CommandId,
+} from '../data/commands';
+import { REPO_URL } from '../data/marketplace';
+import { href, useTranslations, type Lang } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const c = t.commands;
+
+const toc = [
+  { id: 'lane', label: c.toc.lane },
+  ...ALL_COMMANDS.map((id) => ({ id, label: id })),
+  { id: 'flags', label: c.toc.flags },
+];
+---
+
+<Base lang={lang} page="commands" meta={c.meta}>
+  <section class="hero wrap" style="padding-top:3.5rem">
+    <p class="eyebrow">{c.hero.eyebrow}</p>
+    <h1><span data-words>{c.hero.title}</span></h1>
+    <p class="lede">{c.hero.lede}</p>
+
+    <ul class="toc" style="margin-top:2rem">
+      {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+    </ul>
+  </section>
+
+  <!-- ================= picking a lane ================= -->
+  <section class="wrap" id="lane" data-reveal>
+    <p class="eyebrow">{c.lane.eyebrow}</p>
+    <h2>{c.lane.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem" set:html={c.lane.lede} />
+    <DataTable table={c.lane.table} />
+  </section>
+
+  <!-- ================= product track ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow" set:html={c.product.eyebrow} />
+    <h2>{c.product.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.6rem" set:html={c.product.lede} />
+
+    {
+      PRODUCT_COMMANDS.map((id: CommandId) => {
+        const doc = c.docs[id];
+        return (
+          <div class="cmd" id={id}>
+            <h3>
+              {invocation(id)} <span class="tag">{doc.tag}</span>
+            </h3>
+            <p set:html={doc.intro} />
+            <dl>
+              {doc.rows.map((row) => (
+                <Fragment>
+                  <dt class={row.warn ? 'warn' : undefined}>{row.term}</dt>
+                  <dd set:html={row.body} />
+                </Fragment>
+              ))}
+            </dl>
+          </div>
+        );
+      })
+    }
+  </section>
+
+  <!-- ================= tech track ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow" set:html={c.tech.eyebrow} />
+    <h2>{c.tech.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.6rem" set:html={c.tech.lede} />
+
+    {
+      TECH_COMMANDS.map((id: CommandId) => {
+        const doc = c.docs[id];
+        return (
+          <div class="cmd v" id={id}>
+            <h3>
+              {invocation(id)} <span class="tag">{doc.tag}</span>
+            </h3>
+            <p set:html={doc.intro} />
+            <dl>
+              {doc.rows.map((row) => (
+                <Fragment>
+                  <dt class={row.warn ? 'warn' : undefined}>{row.term}</dt>
+                  <dd set:html={row.body} />
+                </Fragment>
+              ))}
+            </dl>
+          </div>
+        );
+      })
+    }
+  </section>
+
+  <!-- ================= flags ================= -->
+  <section class="wrap" id="flags" data-reveal>
+    <p class="eyebrow">{c.flags.eyebrow}</p>
+    <h2>{c.flags.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem" set:html={c.flags.lede} />
+    <DataTable table={c.flags.table} />
+    <p class="small" style="margin-top:1rem" set:html={c.flags.note} />
+  </section>
+
+  <!-- ================= language ================= -->
+  <section class="wrap" data-reveal>
+    <hr class="rule" />
+    <div style="padding-top:3rem">
+      <h2>{c.language.heading}</h2>
+      <p class="dim measure" set:html={c.language.body} />
+      <div class="herocta" style="animation:none">
+        <a class="btn" href={href(lang, 'how-it-works')}>{c.language.ctaHowItWorks}</a>
+        <a class="btn ghost" href={`${REPO_URL}/tree/main/plugins`}>{c.language.ctaSources}</a>
+      </div>
+    </div>
+  </section>
+</Base>

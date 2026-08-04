@@ -1,0 +1,6 @@
+---
+import Commands from '../views/Commands.astro';
+import { toLang } from '../i18n';
+---
+
+<Commands lang={toLang(Astro.currentLocale)} />

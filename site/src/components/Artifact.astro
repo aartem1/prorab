@@ -1,0 +1,18 @@
+---
+/** A named panel showing what a step wrote down. The panels on the walkthrough are labelled
+    reconstructions, not captured output — the page says so once, above all of them. */
+interface Props {
+  name: string;
+  /** A code block. Omit and pass markup through the slot instead — a table, for example. */
+  code?: string;
+}
+
+const { name, code } = Astro.props;
+---
+
+<div class="artifact">
+  <span class="name">{name}</span>
+  <div class="inner">
+    {code ? <pre><code set:html={code} /></pre> : <slot />}
+  </div>
+</div>

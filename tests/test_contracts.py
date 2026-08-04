@@ -623,29 +623,54 @@ class ContextHygieneTests(unittest.TestCase):
 class SiteTests(unittest.TestCase):
     """The docs site is a current-state document: it may not drift from the manifests.
 
-    Only the mechanical part is enforced here — every command listed, versions matching the
-    manifests, the real marketplace name in the install snippet, no dead internal links. Prose
-    accuracy stays a human duty, like every other current-state document.
+    The site is an Astro project under `site/`, and its pages are generated from `src/views/`
+    plus one dictionary per language. These tests run against those **sources**, not the build
+    output: structural correctness — every dictionary key present, no dead import — is the
+    TypeScript compiler's job (`npm --prefix site run build` runs `astro check` first, and a
+    failing check fails the deploy). What is checked here is what a type cannot see: that the
+    site still describes the plugins this repository actually ships, that every language has
+    every page, and that nothing personal leaks out of the manifest. Prose accuracy stays a
+    human duty, like every other current-state document.
     """
 
     SITE = ROOT / "site"
-    PAGES = ("index.html", "walkthrough.html", "commands.html", "how-it-works.html")
+    SRC = SITE / "src"
+    PAGES = ("index", "walkthrough", "commands", "how-it-works")
+    # `en` lives at the root of the site, every other language under its own directory.
+    LOCALES = ("en", "ru")
+    DEFAULT_LOCALE = "en"
 
     def setUp(self) -> None:
-        self.pages = {name: read(self.SITE / name) for name in self.PAGES}
         marketplace = json.loads(read(ROOT / ".claude-plugin" / "marketplace.json"))
         self.marketplace = marketplace
         self.versions = {item["name"]: item["version"] for item in marketplace["plugins"]}
+        self.commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
+        self.sources = {
+            path: read(path)
+            for path in sorted(self.SRC.rglob("*"))
+            if path.is_file() and path.suffix in {".ts", ".astro", ".css"}
+        }
 
-    def test_the_site_is_static_and_self_contained(self) -> None:
-        """No build step: Vercel serves the directory as-is, so nothing may need compiling."""
-        for name in self.PAGES + ("styles.css", "site.js", "favicon.svg", "README.md"):
+    def invocation(self, command: Path) -> str:
+        namespace = "prorab" if command.parents[1].name == "prorab" else "prorab-tech"
+        return f"/{namespace}:{command.stem}"
+
+    def test_the_site_builds_to_a_static_bundle(self) -> None:
+        """No adapter, no server: the deploy is a directory of files, as it always was."""
+        for name in ("package.json", "astro.config.mjs", "tsconfig.json", "README.md"):
             self.assertTrue((self.SITE / name).is_file(), name)
-        # a package manifest anywhere in site/ would mean a build step crept in
-        self.assertEqual([], list(self.SITE.glob("**/package.json")))
+        package = json.loads(read(self.SITE / "package.json"))
+        self.assertIn("astro", package["dependencies"])
+        # `astro check` gates the build: a dictionary with a missing key must not reach the deploy
+        self.assertIn("astro check", package["scripts"]["build"])
+        config = read(self.SITE / "astro.config.mjs")
+        self.assertNotIn("adapter", config)
+
+    def test_the_deploy_config_builds_the_site(self) -> None:
         vercel = json.loads(read(ROOT / "vercel.json"))
-        self.assertEqual("site", vercel["outputDirectory"])
-        self.assertIsNone(vercel["buildCommand"])
+        self.assertEqual("site/dist", vercel["outputDirectory"])
+        self.assertIn("--prefix site", vercel["buildCommand"])
+        self.assertIn("--prefix site", vercel["installCommand"])
 
     def test_the_deploy_config_cannot_shadow_the_plugin_manifests(self) -> None:
         """Plugin install reads .claude-plugin/ and plugins/ — the site must stay outside both."""
@@ -654,46 +679,95 @@ class SiteTests(unittest.TestCase):
         for entry in self.marketplace["plugins"]:
             self.assertTrue(entry["source"].startswith("./plugins/"), entry["source"])
 
-    def test_every_command_is_documented_on_the_site(self) -> None:
-        commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
-        reference = self.pages["commands.html"]
-        landing = self.pages["index.html"]
-        for command in commands:
-            namespace = "prorab" if command.parents[1].name == "prorab" else "prorab-tech"
-            invocation = f"/{namespace}:{command.stem}"
-            self.assertIn(invocation, reference, invocation)
-            self.assertIn(f'id="{command.stem}"', reference, invocation)
-            self.assertIn(invocation, landing, invocation)
+    def test_every_language_has_every_page(self) -> None:
+        """A new page is easy to add in one language and easy to forget in the others."""
+        for locale in self.LOCALES:
+            base = self.SRC / "pages" / ("" if locale == self.DEFAULT_LOCALE else locale)
+            for page in self.PAGES:
+                self.assertTrue((base / f"{page}.astro").is_file(), f"{locale} → {page}")
+            self.assertTrue((self.SRC / "i18n" / locale / "index.ts").is_file(), locale)
+        registry = read(self.SRC / "i18n" / "index.ts")
+        config = read(self.SITE / "astro.config.mjs")
+        for locale in self.LOCALES:
+            self.assertIn(f"'{locale}'", config, f"astro.config locales: {locale}")
+            self.assertIn(f"{locale}: {{", registry, f"i18n registry: {locale}")
 
-    def test_advertised_versions_match_the_manifests(self) -> None:
-        landing = self.pages["index.html"]
-        for plugin, version in self.versions.items():
-            self.assertIn(f"{plugin} <b>{version}</b>", landing, plugin)
+    def test_every_translation_is_typed_against_the_reference_dictionary(self) -> None:
+        """A language that re-exports English would ship English text under its own URLs.
+
+        The type annotation is what makes a missing key a build error rather than a blank on a
+        page nobody opened, so it is not optional decoration.
+        """
+        for locale in self.LOCALES:
+            if locale == self.DEFAULT_LOCALE:
+                continue
+            index = read(self.SRC / "i18n" / locale / "index.ts")
+            self.assertIn(": Dict =", index, f"{locale}/index.ts must be typed as Dict")
+            self.assertNotRegex(
+                index,
+                r"export\s*\{[^}]*\ben\b",
+                f"{locale}/index.ts re-exports the English dictionary",
+            )
+            for part in ("common", "overview", "walkthrough", "commands", "how-it-works"):
+                path = self.SRC / "i18n" / locale / f"{part}.ts"
+                self.assertTrue(path.is_file(), f"{locale}/{part}.ts")
+                self.assertIn("from '../en/", read(path), f"{locale}/{part}.ts must import its type")
+
+    def test_every_command_is_documented_in_every_language(self) -> None:
+        registry = read(self.SRC / "data" / "commands.ts")
+        self.assertEqual(10, len(self.commands))
+        for command in self.commands:
+            self.assertIn(f"'{command.stem}'", registry, f"data/commands.ts → {command.stem}")
+            for locale in self.LOCALES:
+                docs = read(self.SRC / "i18n" / locale / "commands.ts")
+                # a key is either a bare identifier or quoted when it contains a dash
+                self.assertRegex(
+                    docs,
+                    rf"(?m)^\s*'?{re.escape(command.stem)}'?:\s*\{{",
+                    f"{locale} → {command.stem}",
+                )
+            landing = read(self.SRC / "i18n" / self.DEFAULT_LOCALE / "overview.ts")
+            self.assertIn(self.invocation(command), landing, self.invocation(command))
+
+    def test_versions_and_the_marketplace_name_are_read_not_copied(self) -> None:
+        """A version pasted into prose is a second place for it to go stale, in every language."""
+        source = read(self.SRC / "data" / "marketplace.ts")
+        self.assertIn(".claude-plugin", source)
+        self.assertIn("marketplace.json", source)
+        for path, text in self.sources.items():
+            if path.name == "marketplace.ts":
+                continue
+            for version in self.versions.values():
+                self.assertNotIn(version, text, f"{path.name} hardcodes version {version}")
 
     def test_the_install_snippet_matches_the_real_marketplace(self) -> None:
-        landing = self.pages["index.html"]
-        self.assertIn(f"marketplace add aartem1/{self.marketplace['name']}", landing)
-        for plugin in self.versions:
-            self.assertIn(f"install {plugin}@{self.marketplace['name']}", landing)
+        source = read(self.SRC / "data" / "marketplace.ts")
+        self.assertIn(f"aartem1/{self.marketplace['name']}", source)
+        self.assertIn("marketplace add", source)
+        self.assertIn("install ", source)
 
-    def test_every_page_can_reach_every_other_page(self) -> None:
-        """A new page is easy to add and easy to forget in four navigation blocks."""
-        for name, text in self.pages.items():
-            nav = re.search(r"<nav>(.*?)</nav>", text, flags=re.DOTALL)
-            self.assertIsNotNone(nav, name)
-            for other in self.PAGES:
-                target = "./" if other == "index.html" else other
-                self.assertIn(f'href="{target}"', nav.group(1), f"{name} → {other}")
+    def test_the_site_exposes_nothing_personal_from_the_manifest(self) -> None:
+        """The manifest carries an owner name and an email. Only the GitHub link may cross over."""
+        owner = self.marketplace["owner"]
+        secrets = [owner["name"], owner["email"], owner["email"].split("@")[1]]
+        for path in sorted(self.SITE.rglob("*")):
+            if not path.is_file() or "node_modules" in path.parts or "dist" in path.parts:
+                continue
+            if path.suffix not in {".ts", ".astro", ".css", ".md", ".json", ".mjs", ".svg"}:
+                continue
+            text = read(path)
+            for secret in secrets:
+                self.assertNotIn(secret, text, f"{path.name} exposes {secret!r}")
 
-    def test_internal_links_and_assets_resolve(self) -> None:
-        for name, text in self.pages.items():
-            for target in set(re.findall(r'(?:href|src)="([^"#:]+)(?:#[^"]*)?"', text)):
-                if not target:
-                    continue
-                self.assertTrue((self.SITE / target).exists(), f"{name} → {target}")
-            # in-page anchors must exist too
-            for anchor in set(re.findall(r'href="#([^"]+)"', text)):
-                self.assertIn(f'id="{anchor}"', text, f"{name} → #{anchor}")
+    def test_the_load_bearing_layout_rules_still_hold(self) -> None:
+        """Both are easy to undo by accident and both break the site only on a real device."""
+        css = read(self.SRC / "styles" / "global.css")
+        # comments go first: the stylesheet documents this very rule, in prose that would match
+        declarations = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+        # a clipped axis on the root makes it the scroll container and breaks fragment jumps
+        self.assertNotRegex(declarations, r"(?m)^\s*(html|body)[^{]*\{[^}]*overflow-x:\s*hidden")
+        # without this one unbreakable token widens a grid track and scrolls the page sideways
+        self.assertIn("min-width: 0", css)
 
 
 if __name__ == "__main__":

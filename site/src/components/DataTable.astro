@@ -1,0 +1,26 @@
+---
+/**
+ * A prose table. The wrapper is load-bearing: wide tables scroll inside their own box rather than
+ * putting the whole page into a horizontal scroll on a phone.
+ */
+import type { Table } from '../i18n/types';
+
+interface Props {
+  table: Table;
+  class?: string;
+  style?: string;
+}
+
+const { table, class: cls, style } = Astro.props;
+---
+
+<div class="tablewrap" style={style}>
+  <table class={cls}>
+    <thead>
+      <tr>{table.head.map((cell) => <th set:html={cell} />)}</tr>
+    </thead>
+    <tbody>
+      {table.rows.map((row) => <tr>{row.map((cell) => <td set:html={cell} />)}</tr>)}
+    </tbody>
+  </table>
+</div>

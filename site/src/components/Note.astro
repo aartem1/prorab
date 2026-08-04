@@ -1,0 +1,13 @@
+---
+/** A callout. `warn` is the red one, `v` the violet one; both carry weight in the argument, so
+    neither is decorative. */
+interface Props {
+  text: string;
+  tone?: 'plain' | 'warn' | 'v';
+  style?: string;
+}
+
+const { text, tone = 'plain', style } = Astro.props;
+---
+
+<div class={tone === 'plain' ? 'note' : `note ${tone}`} style={style} set:html={text} />

@@ -1,0 +1,57 @@
+---
+/**
+ * What the probing context is handed, and what never crosses over to it. The forbidden column is
+ * blurred until you ask for it — the blur is decoration, the point is the list.
+ */
+interface Props {
+  handedTitle: string;
+  peekShow: string;
+  peekHide: string;
+  charterTitle: string;
+  charter: string;
+  forbiddenTitle: string;
+  forbidden: string;
+  foot: string;
+}
+
+const p = Astro.props;
+---
+
+<div class="blind" data-blind data-peek="false">
+  <div class="head">
+    <h3 style="margin:0">{p.handedTitle}</h3>
+    <button
+      class="toggle"
+      type="button"
+      data-peek
+      data-on={p.peekHide}
+      data-off={p.peekShow}
+      aria-pressed="false"
+      style="margin-left:auto">{p.peekShow}</button
+    >
+  </div>
+  <div class="cols">
+    <div class="col">
+      <h3>{p.charterTitle}</h3>
+      <pre><code set:html={p.charter} /></pre>
+    </div>
+    <div class="col forbidden">
+      <h3>{p.forbiddenTitle}</h3>
+      <pre><code set:html={p.forbidden} /></pre>
+    </div>
+  </div>
+  <p class="foot" set:html={p.foot} />
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-blind]').forEach((blind) => {
+    const button = blind.querySelector<HTMLButtonElement>('[data-peek]');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      const on = blind.dataset.peek !== 'true';
+      blind.dataset.peek = String(on);
+      button.setAttribute('aria-pressed', String(on));
+      button.textContent = (on ? button.dataset.on : button.dataset.off) ?? '';
+    });
+  });
+</script>

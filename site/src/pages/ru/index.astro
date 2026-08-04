@@ -1,0 +1,6 @@
+---
+import Overview from '../../views/Overview.astro';
+import { toLang } from '../../i18n';
+---
+
+<Overview lang={toLang(Astro.currentLocale)} />

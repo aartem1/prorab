@@ -1,0 +1,127 @@
+---
+/**
+ * The shell every page shares: head, skip link, header with the language switcher, the section
+ * rail, and the footer. Written once — the four views drop their content into the slot, and both
+ * locales render from this same file.
+ */
+import { CHANGELOG_URL, REPO_URL } from '../data/marketplace';
+import { href, LANG_CODES, LANGS, PAGES, useTranslations, type Lang, type Page } from '../i18n';
+import '../styles/global.css';
+
+interface Props {
+  lang: Lang;
+  page: Page;
+  meta: { title: string; description: string; ogTitle: string; ogDescription: string };
+  /** Accessible name for the section rail. Omit on pages that have no marked sections. */
+  rail?: string;
+}
+
+const { lang, page, meta, rail } = Astro.props;
+const t = useTranslations(lang);
+const nav = t.common.nav;
+
+const canonical = new URL(href(lang, page), Astro.site);
+/* One alternate per locale plus x-default, all absolute — a relative hreflang is ignored. */
+const alternates = LANG_CODES.map((code) => ({
+  code,
+  hreflang: LANGS[code].hreflang,
+  url: new URL(href(code, page), Astro.site).href,
+}));
+
+const NAV_LABELS: Record<Page, string> = {
+  overview: nav.overview,
+  walkthrough: nav.walkthrough,
+  commands: nav.commands,
+  'how-it-works': nav['how-it-works'],
+};
+---
+
+<!doctype html>
+<html lang={LANGS[lang].hreflang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <meta property="og:title" content={meta.ogTitle} />
+    <meta property="og:description" content={meta.ogDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:locale" content={lang === 'ru' ? 'ru_RU' : 'en_US'} />
+    <meta name="theme-color" content="#09090a" />
+    <link rel="canonical" href={canonical.href} />
+    {
+      alternates.map((alt) => (
+        <link rel="alternate" hreflang={alt.hreflang} href={alt.url} />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={new URL(href('en', page), Astro.site).href} />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+
+  <body>
+    <div
+      class="page"
+      data-copy={t.common.ui.copy}
+      data-copied={t.common.ui.copied}
+      data-copy-failed={t.common.ui.copyFailed}
+    >
+      <a class="skip" href="#main">{t.common.skip}</a>
+
+      <header class="site">
+        <div class="wrap">
+          <a class="brand" href={href(lang, 'overview')}><span class="dot"></span>prorab</a>
+          <nav aria-label={nav.label}>
+            {
+              PAGES.map((target) => (
+                <a
+                  href={href(lang, target)}
+                  aria-current={target === page ? 'page' : undefined}
+                >
+                  {NAV_LABELS[target]}
+                </a>
+              ))
+            }
+            <a href={REPO_URL}>{nav.github}&nbsp;↗</a>
+            <span class="langs" role="group" aria-label={t.common.lang.label}>
+              {
+                LANG_CODES.map((code) => (
+                  <a
+                    href={href(code, page)}
+                    hreflang={LANGS[code].hreflang}
+                    lang={LANGS[code].hreflang}
+                    aria-current={code === lang ? 'true' : undefined}
+                    title={LANGS[code].label}
+                  >
+                    {LANGS[code].short}
+                  </a>
+                ))
+              }
+            </span>
+          </nav>
+        </div>
+      </header>
+
+      {rail && <nav class="rail" data-rail aria-label={rail} />}
+
+      <main id="main">
+        <slot />
+      </main>
+
+      <footer class="site">
+        <div class="wrap">
+          <span>{t.common.footer.tagline}</span>
+          <span>
+            <a href={REPO_URL}>{t.common.footer.github}</a> ·
+            <a href={CHANGELOG_URL}>{t.common.footer.changelog}</a>
+          </span>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      import '../scripts/chrome';
+    </script>
+  </body>
+</html>

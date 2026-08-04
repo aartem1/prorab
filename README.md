@@ -489,11 +489,13 @@ prorab/
 │       ├── commands/              # audit.md refactor.md lint-audit.md lint-fix.md
 │       ├── references/            # project-knowledge.md execution.md documentation-sync.md
 │       └── README.md
-├── site/                          # the documentation site (static, no build step)
-│   ├── index.html walkthrough.html commands.html how-it-works.html
-│   ├── styles.css site.js favicon.svg
+├── site/                          # the documentation site (Astro, static output)
+│   ├── src/views/                 # one page body per page, shared by every language
+│   ├── src/i18n/{en,ru}/          # the text, one dictionary per language
+│   ├── src/components/ layouts/ scripts/ styles/
+│   ├── package.json astro.config.mjs
 │   └── README.md                  # how to run it locally and deploy it
-├── vercel.json                    # points a Vercel deployment at site/
+├── vercel.json                    # builds site/ and deploys site/dist
 ├── tests/test_contracts.py        # manifests/frontmatter + lifecycle scenario checks
 ├── README.md
 └── CHANGELOG.md
@@ -501,16 +503,21 @@ prorab/
 
 `site/` and `vercel.json` are inert as far as Claude Code is concerned: the marketplace reads
 `.claude-plugin/marketplace.json` and the `plugins/*` sources and ignores everything else, so the
-site cannot affect `/plugin install`.
+site cannot affect `/plugin install`. Its Node toolchain stays inside `site/` and its
+`node_modules/` and `dist/` are never committed.
 
 </details>
 
-**The documentation site.** [`site/`](site/README.md) is a four-page static site — no build step, no
-dependencies — deployed from the repository root via [`vercel.json`](vercel.json). It restates what
-this README and the command bodies say, so it is a **current-state document**: when a command, flag,
-tier, artifact path or version changes, the site changes in the same pass. `SiteTests` in
-`tests/test_contracts.py` enforces the mechanical part (every command listed, versions matching the
-manifests, every page reachable from every nav, no dead links or anchors).
+**The documentation site.** [`site/`](site/README.md) is a four-page static site in **English and
+Russian**, built with Astro and deployed from the repository root via
+[`vercel.json`](vercel.json). Page structure is written once and both languages render from it;
+the text lives in one type-checked dictionary per language, so a missing translation is a build
+error rather than a blank on a page nobody opened. It restates what this README and the command
+bodies say, so it is a **current-state document**: when a command, flag, tier, artifact path or
+version changes, the site changes in the same pass. `SiteTests` in `tests/test_contracts.py`
+enforces the mechanical part (every command documented in every language, every language routing
+to every page, versions read from the manifest rather than copied, nothing personal crossing over
+from it).
 
 **Adding a command**
 

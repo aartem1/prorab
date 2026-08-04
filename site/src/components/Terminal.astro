@@ -1,0 +1,126 @@
+---
+/**
+ * The hero schematic. Labelled a schematic in the caption because it is one: a condensed
+ * reconstruction of what three commands establish, not a captured transcript.
+ *
+ * The lines are rendered into the page, and the script replays them by re-typing what it finds
+ * there. With the script absent the whole run is simply already on screen.
+ */
+import type { TermLine } from '../i18n/types';
+
+interface Props {
+  caption: string;
+  replay: string;
+  lines: TermLine[];
+}
+
+const { caption, replay, lines } = Astro.props;
+---
+
+<div class="term" data-term>
+  <div class="bar">
+    <i></i><i></i><i></i>
+    <span>{caption}</span>
+    <button type="button" data-replay>{replay}</button>
+  </div>
+  <div class="body">
+    {
+      lines.map((line) => (
+        <span class={`l tl-${line.kind === 'gap' ? 'out' : line.kind}`} data-kind={line.kind}>
+          {line.kind === 'gap' ? ' ' : line.text}
+        </span>
+      ))
+    }
+    <span class="caret"></span>
+  </div>
+</div>
+
+<script>
+  const term = document.querySelector<HTMLElement>('[data-term]');
+  if (term) {
+    const body = term.querySelector<HTMLElement>('.body')!;
+    const caret = body.querySelector<HTMLElement>('.caret')!;
+    const lines = Array.from(body.querySelectorAll<HTMLElement>('.l'));
+    // capture the text before the first replay blanks it
+    const script = lines.map((line) => ({
+      kind: line.dataset.kind ?? 'out',
+      text: line.textContent ?? '',
+      node: line,
+    }));
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let token = 0;
+
+    /* Frame-driven, not timer-driven: accurate while the tab is visible, and paused (rather than
+       throttled into a crawl) while it is not. `step` is called with progress 0→1. */
+    const animate = (ms: number, step?: (p: number) => void) =>
+      new Promise<void>((resolve) => {
+        const start = performance.now();
+        const frame = (now: number) => {
+          const p = Math.min(1, (now - start) / ms);
+          step?.(p);
+          if (p < 1) requestAnimationFrame(frame);
+          else resolve();
+        };
+        requestAnimationFrame(frame);
+      });
+    const sleep = (ms: number) => animate(ms);
+
+    const showAll = () => {
+      token += 1;
+      script.forEach(({ node, kind, text }) => {
+        node.hidden = false;
+        node.textContent = kind === 'gap' ? ' ' : text;
+      });
+    };
+
+    async function play() {
+      const mine = ++token;
+      script.forEach(({ node }) => (node.hidden = true));
+
+      for (const { node, kind, text } of script) {
+        if (mine !== token) return;
+        node.hidden = false;
+        node.textContent = '';
+        // keep the caret trailing whatever line is currently being written
+        node.after(caret);
+
+        if (kind === 'gap') {
+          node.textContent = ' ';
+          await sleep(200);
+          continue;
+        }
+        if (kind === 'cmd') {
+          await animate(text.length * 16, (p) => {
+            if (mine === token) node.textContent = text.slice(0, Math.ceil(text.length * p));
+          });
+          if (mine !== token) return;
+          await sleep(230);
+        } else {
+          node.textContent = text;
+          await sleep(kind === 'file' || kind === 'bad' ? 340 : 200);
+        }
+      }
+    }
+
+    if (reduced) {
+      showAll();
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            io.disconnect();
+            play();
+          }
+        },
+        { threshold: 0.25 },
+      );
+      io.observe(term);
+    }
+
+    term.querySelector('[data-replay]')?.addEventListener('click', () => {
+      if (reduced) showAll();
+      else play();
+    });
+  }
+</script>

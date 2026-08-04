@@ -1,0 +1,211 @@
+---
+import Cards from '../components/Cards.astro';
+import DataTable from '../components/DataTable.astro';
+import Note from '../components/Note.astro';
+import { CONTRACT_MATRIX, CONTRACTS } from '../data/contracts';
+import { href, useTranslations, type Lang } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const h = t.howItWorks;
+
+/* Section numbers are structure — they order the argument and read the same in every language. */
+const sections = [
+  { id: 'dod', label: h.toc.dod },
+  { id: 'evidence', label: h.toc.evidence },
+  { id: 'blind', label: h.toc.blind },
+  { id: 'preserve', label: h.toc.preserve },
+  { id: 'cost', label: h.toc.cost },
+  { id: 'handoffs', label: h.toc.handoffs },
+  { id: 'docs', label: h.toc.docs },
+  { id: 'memory', label: h.toc.memory },
+  { id: 'artifacts', label: h.toc.artifacts },
+  { id: 'compare', label: h.toc.compare },
+];
+const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1).padStart(2, '0');
+---
+
+<Base lang={lang} page="how-it-works" meta={h.meta} rail={t.common.nav.sections}>
+  <section class="hero wrap" style="padding-top:3.5rem">
+    <p class="eyebrow">{h.hero.eyebrow}</p>
+    <h1>
+      <span data-words>{h.hero.titleA}</span>
+      <span class="grad">{h.hero.titleB}</span>
+    </h1>
+    <p class="lede">{h.hero.lede}</p>
+
+    <ul class="toc" style="margin-top:2rem">
+      {sections.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+    </ul>
+  </section>
+
+  <!-- ============ 01 DoD ============ -->
+  <section class="wrap" id="dod" data-rail-label={h.dod.rail} data-reveal>
+    <p class="eyebrow">{number('dod')}</p>
+    <h2>{h.dod.heading}</h2>
+    <p class="dim measure">{h.dod.lede}</p>
+    <DataTable table={h.dod.table} style="margin:1.4rem 0" />
+    <p class="dim measure" set:html={h.dod.metamorphic} />
+  </section>
+
+  <!-- ============ 02 evidence ============ -->
+  <section class="wrap" id="evidence" data-rail-label={h.evidence.rail} data-reveal>
+    <p class="eyebrow">{number('evidence')}</p>
+    <h2>{h.evidence.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.5rem">{h.evidence.lede}</p>
+
+    <Cards cards={h.evidence.routes} />
+
+    <Note text={h.evidence.worktree} tone="warn" style="margin-top:1.2rem" />
+
+    <h3 style="margin-top:2.2rem">{h.evidence.skepticHeading}</h3>
+    <p class="dim measure" set:html={h.evidence.skepticLede} />
+    <DataTable table={h.evidence.rubric} style="margin-bottom:1.2rem" />
+
+    <Note text={h.evidence.caveat} />
+
+    <h3 style="margin-top:2.2rem">{h.evidence.judgedHeading}</h3>
+    <p class="dim measure" set:html={h.evidence.judged} />
+  </section>
+
+  <!-- ============ 03 blind ============ -->
+  <section class="wrap" id="blind" data-rail-label={h.blind.rail} data-reveal>
+    <p class="eyebrow">{number('blind')}</p>
+    <h2>{h.blind.heading}</h2>
+    <p class="dim measure" set:html={h.blind.lede} />
+
+    <Cards cards={h.blind.cards} style="margin-top:1.4rem" />
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={h.blind.downgrades} />
+
+    <h3 style="margin-top:2.2rem">{h.blind.ladderHeading}</h3>
+    <p class="dim measure" style="margin-bottom:1.2rem" set:html={h.blind.ladderLede} />
+    <DataTable table={h.blind.ladder} />
+
+    <p class="dim measure" style="margin-top:1.2rem" set:html={h.blind.captures} />
+
+    <Note text={h.blind.locators} tone="v" style="margin-top:1rem" />
+  </section>
+
+  <!-- ============ 04 preservation ============ -->
+  <section class="wrap" id="preserve" data-rail-label={h.preserve.rail} data-reveal>
+    <p class="eyebrow">{number('preserve')}</p>
+    <h2>{h.preserve.heading}</h2>
+    <p class="dim measure" set:html={h.preserve.lede} />
+
+    <Cards cards={h.preserve.cards} style="margin-top:1.4rem" />
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={h.preserve.statics} />
+  </section>
+
+  <!-- ============ 05 cost ============ -->
+  <section class="wrap" id="cost" data-rail-label={h.cost.rail} data-reveal>
+    <p class="eyebrow">{number('cost')}</p>
+    <h2>{h.cost.heading}</h2>
+    <p class="dim measure" set:html={h.cost.lede} />
+    <DataTable table={h.cost.tiers} style="margin:1.3rem 0" />
+    <p class="dim measure" set:html={h.cost.cumulative} />
+
+    <h3 style="margin-top:2rem">{h.cost.occupancyHeading}</h3>
+    <p class="dim measure" style="margin-bottom:1.3rem">{h.cost.occupancyLede}</p>
+
+    <Cards cards={h.cost.occupancy} />
+
+    <h3 style="margin-top:2.2rem">{h.cost.contractsHeading}</h3>
+    <p class="dim measure" style="margin-bottom:1.2rem">{h.cost.contractsLede}</p>
+
+    <div class="tablewrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>{h.cost.matrixHead}</th>
+            {CONTRACTS.map((contract) => <th>{contract}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            CONTRACT_MATRIX.map((row) => (
+              <tr>
+                <td>{row.command}</td>
+                {row.cells.map((cell) =>
+                  cell === 'browser' ? (
+                    <td class="c">{h.cost.matrixIfBrowser}</td>
+                  ) : cell ? (
+                    <td class="y">✓</td>
+                  ) : (
+                    <td class="n">·</td>
+                  ),
+                )}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small" style="margin-top:1rem" set:html={h.cost.contractsNote} />
+
+    <Note text={h.cost.floor} tone="warn" style="margin-top:1.2rem" />
+  </section>
+
+  <!-- ============ 06 handoffs ============ -->
+  <section class="wrap" id="handoffs" data-rail-label={h.handoffs.rail} data-reveal>
+    <p class="eyebrow">{number('handoffs')}</p>
+    <h2>{h.handoffs.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem">{h.handoffs.lede}</p>
+    <DataTable table={h.handoffs.table} />
+    <p class="small" style="margin-top:1rem" set:html={h.handoffs.bounds} />
+  </section>
+
+  <!-- ============ 07 docs ============ -->
+  <section class="wrap" id="docs" data-rail-label={h.docs.rail} data-reveal>
+    <p class="eyebrow">{number('docs')}</p>
+    <h2>{h.docs.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem" set:html={h.docs.lede} />
+    <DataTable table={h.docs.table} />
+    <p class="dim measure" style="margin-top:1.2rem" set:html={h.docs.scope} />
+    <p class="small" set:html={h.docs.verifyNote} />
+  </section>
+
+  <!-- ============ 08 memory ============ -->
+  <section class="wrap" id="memory" data-rail-label={h.memory.rail} data-reveal>
+    <p class="eyebrow">{number('memory')}</p>
+    <h2>{h.memory.heading}</h2>
+    <p class="dim measure" set:html={h.memory.lede} />
+    <pre><code set:html={h.memory.tree} /></pre>
+    <p class="dim measure" set:html={h.memory.orderLede} />
+    <pre><code set:html={h.memory.order} /></pre>
+    <p class="dim measure" set:html={h.memory.rule} />
+    <p class="small" set:html={h.memory.captured} />
+  </section>
+
+  <!-- ============ 09 artifacts ============ -->
+  <section class="wrap" id="artifacts" data-rail-label={h.artifacts.rail} data-reveal>
+    <p class="eyebrow">{number('artifacts')}</p>
+    <h2>{h.artifacts.heading}</h2>
+    <p class="dim measure">{h.artifacts.lede}</p>
+    <pre><code set:html={h.artifacts.tree} /></pre>
+    <p class="dim measure" set:html={h.artifacts.safety} />
+    <p class="dim measure" set:html={h.artifacts.lookup} />
+  </section>
+
+  <!-- ============ 10 compare ============ -->
+  <section class="wrap" id="compare" data-rail-label={h.compare.rail} data-reveal>
+    <p class="eyebrow">{number('compare')}</p>
+    <h2>{h.compare.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem">{h.compare.lede}</p>
+    <DataTable table={h.compare.table} />
+    <p class="small" style="margin-top:1rem" set:html={h.compare.tableNote} />
+    <p class="dim measure" style="margin-top:1.4rem" set:html={h.compare.choose} />
+
+    <div class="herocta" style="animation:none;margin-top:2rem">
+      <a class="btn" href={`${href(lang, 'overview')}#install`}>{h.compare.ctaInstall}</a>
+      <a class="btn ghost" href={href(lang, 'commands')}>{h.compare.ctaCommands}</a>
+    </div>
+  </section>
+</Base>

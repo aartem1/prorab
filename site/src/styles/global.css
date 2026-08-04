@@ -162,6 +162,41 @@ header.site nav a:hover::after,
 header.site nav a[aria-current="page"]::after { right: 0; }
 header.site nav a[aria-current="page"] { color: var(--text); }
 
+/* The language switcher. A segmented pair rather than a dropdown: with two locales the whole
+   choice fits on screen, and the link goes to the same page in the other language — not to the
+   home page, which is the usual way a switcher loses your place. */
+header.site .langs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  /* pulls the control back into optical alignment with the text links beside it */
+  margin-left: -0.35rem;
+}
+header.site .langs a {
+  display: inline-flex;
+  align-items: center;
+  /* WCAG target size: the pill is small, the hit area is not */
+  min-height: 24px;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--faint);
+  transition: color 180ms var(--ease), background 180ms var(--ease);
+}
+/* the sliding underline belongs to the page links; here it would read as a second current-page mark */
+header.site .langs a::after { content: none; }
+header.site .langs a:hover { color: var(--text); }
+header.site .langs a[aria-current="true"] {
+  background: rgba(255, 157, 77, 0.14);
+  color: var(--amber);
+}
+
 main { padding-bottom: 5rem; }
 
 section { padding: 4.5rem 0 0; }
@@ -230,7 +265,13 @@ code {
   border: 1px solid rgba(255, 157, 77, 0.14);
   border-radius: 5px;
   padding: 0.07em 0.36em;
-  white-space: nowrap;
+  /* Breaks only when it would otherwise overflow — and `anywhere` rather than `break-word`
+     because only `anywhere` lowers the element's min-content width, which is what lets a grid
+     track shrink. With `nowrap` here, one long token (`tasks/IMPL-lint-<plan>-batch-<id>.md`, or
+     a Russian phrase that is longer than its English original) sets the min-content width of its
+     container and scrolls the whole page sideways on a phone. Where a break would read badly —
+     `given → expected` — the text uses non-breaking spaces instead of relying on a global rule. */
+  overflow-wrap: anywhere;
 }
 
 a { color: var(--amber); text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -653,25 +694,34 @@ a.cmdlink span { font-size: 0.85rem; color: var(--dim); display: block; margin-t
 .amb .detail h3.idle { color: var(--dim); }
 .amb .detail .idle-p { margin: 0; font-size: 0.92rem; color: var(--faint); max-width: 62ch; }
 .amb .detail ol { margin: 0; padding-left: 1.2rem; }
+/* Every panel is on the page until the script takes over, so with JavaScript off the section
+   reads as one long list rather than an empty box inviting a click that does nothing. */
+.amb .detail .pane + .pane { margin-top: 1.4rem; }
+.amb.js .detail .pane + .pane { margin-top: 0; }
 .amb .detail li {
   color: var(--dim);
   font-size: 0.92rem;
   margin-bottom: 0.45rem;
-  /* staggered entry: with a panel this far below the sentence, a cross-fade in place reads as a
-     flicker. Items arriving one after another read as an answer being written out. */
+}
+/* staggered entry: with a panel this far below the sentence, a cross-fade in place reads as a
+   flicker. Items arriving one after another read as an answer being written out. */
+.amb .detail .pane.on li {
   animation: swap 380ms var(--ease) backwards;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
 .amb .detail li::marker { color: var(--faint); font-family: var(--mono); font-size: 0.8rem; }
 .amb .detail li:last-child { margin-bottom: 0; }
-.amb .detail li .a { display: none; }
-.amb.assuming .detail li .a {
+.amb .detail li .a {
   display: block;
   margin-top: 0.25rem;
   font-family: var(--mono);
   font-size: 0.76rem;
   color: var(--red);
 }
+/* Once the script is running the silent answers are something you reveal, not something you are
+   handed — that reveal is the point of the widget. Without it they simply stay visible. */
+.amb.js .detail li .a { display: none; }
+.amb.js.assuming .detail li .a { display: block; }
 
 .amb .assumed {
   margin-top: 0.75rem;
@@ -1061,7 +1111,11 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 .cmd > p { font-size: 0.96rem; color: var(--dim); }
 .cmd dl { margin: 1rem 0 0; display: grid; gap: 0.55rem; font-size: 0.9rem; }
-@media (min-width: 640px) { .cmd dl { grid-template-columns: 7.5rem 1fr; gap: 0.55rem 1rem; } }
+/* grid items default to min-width:auto, so one long path would widen the track past the card */
+.cmd dt, .cmd dd { min-width: 0; }
+@media (min-width: 640px) {
+  .cmd dl { grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.55rem 1rem; }
+}
 .cmd dt {
   font-family: var(--mono);
   font-size: 0.68rem;

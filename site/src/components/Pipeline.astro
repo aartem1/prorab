@@ -1,0 +1,117 @@
+---
+/**
+ * The two tracks, as things you press. Every node's description is rendered into the page, so
+ * with the script absent the section is a complete reference rather than an empty panel; the
+ * script then adds `.js` and shows one at a time.
+ */
+import type { PipeNode } from '../i18n/types';
+
+interface Props {
+  tabProduct: string;
+  tabTech: string;
+  writes: string;
+  product: PipeNode[];
+  tech: PipeNode[];
+}
+
+const p = Astro.props;
+const tracks = [
+  { key: 'product', label: p.tabProduct, nodes: p.product, violet: false },
+  { key: 'tech', label: p.tabTech, nodes: p.tech, violet: true },
+];
+/* One flat list of panes, indexed the same way the nodes are, so a node and its description
+   cannot drift apart. */
+const panes = tracks.flatMap((track) =>
+  track.nodes.map((node) => ({ ...node, violet: track.violet })),
+);
+---
+
+<div class="pipe" data-pipe>
+  <div class="tabs">
+    {
+      tracks.map((track, i) => (
+        <button
+          type="button"
+          class={track.violet ? 'v' : undefined}
+          data-track={track.key}
+          aria-pressed={i === 0 ? 'true' : 'false'}
+        >
+          {track.label}
+        </button>
+      ))
+    }
+  </div>
+
+  {
+    tracks.map((track) => (
+      <div class="track" data-track={track.key}>
+        {track.nodes.map((node) => (
+          <button
+            class={track.violet ? 'node v' : 'node'}
+            type="button"
+            data-node={panes.findIndex((pane) => pane.cmd === node.cmd)}
+          >
+            <small>{node.step}</small>
+            {node.name}
+          </button>
+        ))}
+      </div>
+    ))
+  }
+
+  <div class="detail">
+    {
+      panes.map((node, index) => (
+        <div class={node.violet ? 'pane v' : 'pane'} data-pane={index}>
+          <h3>{node.cmd}</h3>
+          <p set:html={node.what} />
+          <span class="writes">
+            {p.writes} <span set:html={node.writes} />
+          </span>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  const pipe = document.querySelector<HTMLElement>('[data-pipe]');
+  if (pipe) {
+    const detail = pipe.querySelector<HTMLElement>('.detail')!;
+    const panes = Array.from(detail.querySelectorAll<HTMLElement>('.pane'));
+    const tracks = Array.from(pipe.querySelectorAll<HTMLElement>('.track'));
+    const nodes = Array.from(pipe.querySelectorAll<HTMLButtonElement>('.node'));
+
+    pipe.classList.add('js');
+
+    const select = (node: HTMLButtonElement) => {
+      const index = node.dataset.node ?? '';
+      nodes.forEach((other) => other.setAttribute('aria-pressed', String(other === node)));
+      panes.forEach((pane) => (pane.hidden = pane.dataset.pane !== index));
+      detail.classList.toggle('v', node.classList.contains('v'));
+      detail.classList.remove('swap');
+      void detail.offsetWidth;
+      detail.classList.add('swap');
+    };
+
+    nodes.forEach((node) => {
+      node.addEventListener('click', () => select(node));
+      node.addEventListener('mouseenter', () => select(node));
+    });
+
+    const showTrack = (key: string) => {
+      pipe.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((tab) => {
+        tab.setAttribute('aria-pressed', String(tab.dataset.track === key));
+      });
+      tracks.forEach((track) => (track.hidden = track.dataset.track !== key));
+      const first = pipe.querySelector<HTMLButtonElement>(`.track[data-track="${key}"] .node`);
+      if (first) select(first);
+    };
+
+    pipe.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((tab) => {
+      tab.addEventListener('click', () => showTrack(tab.dataset.track ?? ''));
+    });
+
+    showTrack(tracks[0]?.dataset.track ?? '');
+  }
+</script>

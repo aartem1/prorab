@@ -1,0 +1,6 @@
+---
+import HowItWorks from '../views/HowItWorks.astro';
+import { toLang } from '../i18n';
+---
+
+<HowItWorks lang={toLang(Astro.currentLocale)} />

@@ -1,0 +1,230 @@
+---
+/**
+ * The ticket, and the decisions it leaves open.
+ *
+ * Everything is rendered server-side, including all five panels and the silent defaults: with the
+ * script absent the section still reads as a complete argument, just without the counter. The
+ * script adds `.js` to the widget and only then starts hiding things — the classic order, and the
+ * reason a reader with JavaScript off is not shown an empty box that says "open a phrase".
+ *
+ * Every count on screen is summed from the groups below, so the widget cannot claim a number it
+ * does not go on to list, and a question cannot appear without the answer an agent would assume.
+ */
+import type { AmbGroup, Plural } from '../i18n/types';
+
+interface Props {
+  ticketLabel: string;
+  /** The sentence with a `{n}` slot per group — the order is the translator's to choose. */
+  sentence: string;
+  groups: AmbGroup[];
+  ghostLead: string;
+  ghost: AmbGroup;
+  progress: string;
+  progressGroups: Plural;
+  progressDone: string;
+  idleTitle: string;
+  idleBody: string;
+  assumedPrefix: string;
+  showAssumed: string;
+  hideAssumed: string;
+  assumedTitle: string;
+  assumedKicker: string;
+}
+
+const props = Astro.props;
+const all = [...props.groups, props.ghost];
+const total = all.reduce((sum, group) => sum + group.decisions.length, 0);
+
+/* Split on the slots and keep them, so the literal text between phrases stays where the
+   translator put it. */
+const parts = props.sentence.split(/(\{\d+\})/);
+const slot = (part: string) => {
+  const match = /^\{(\d+)\}$/.exec(part);
+  return match ? Number(match[1]) : null;
+};
+---
+
+<div
+  class="amb"
+  data-amb
+  data-total={total}
+  data-progress-tpl={props.progress}
+  data-progress-done={props.progressDone}
+  data-plural={JSON.stringify(props.progressGroups)}
+>
+  <div class="ticket">
+    <span class="lab">{props.ticketLabel}</span>
+    <p class="sentence">
+      {
+        parts.map((part) => {
+          const index = slot(part);
+          if (index === null) return <Fragment set:html={part} />;
+          const group = props.groups[index];
+          return group ? (
+            <button
+              class="sp"
+              type="button"
+              aria-expanded="false"
+              aria-controls="amb-detail"
+              data-group={index}
+            >
+              {group.text}
+            </button>
+          ) : null;
+        })
+      }
+    </p>
+
+    <p class="ghostrow">
+      <span class="ghostlab" set:html={props.ghostLead} /><button
+        class="sp ghost"
+        type="button"
+        aria-expanded="false"
+        aria-controls="amb-detail"
+        data-group={props.groups.length}
+        >{props.ghost.text}</button
+      >
+    </p>
+  </div>
+
+  <div class="bar">
+    <p class="count" data-progress><b>{total}</b></p>
+    <button
+      class="toggle"
+      type="button"
+      data-assume
+      data-on={props.hideAssumed}
+      data-off={props.showAssumed}
+      aria-pressed="false"
+      aria-controls="amb-detail amb-assumed">{props.showAssumed}</button
+    >
+  </div>
+
+  <div class="detail" id="amb-detail" aria-live="polite">
+    <div class="pane idle" data-pane="idle" hidden>
+      <h3 class="idle">{props.idleTitle.replace('{total}', String(total))}</h3>
+      <p class="idle-p">{props.idleBody}</p>
+    </div>
+    {
+      all.map((group, index) => (
+        <div class="pane" data-pane={index}>
+          <h3 set:html={group.title} />
+          <ol>
+            {group.decisions.map((decision, i) => (
+              <li style={`--i:${i}`}>
+                <span class="q" set:html={decision.question} />
+                <span class="a">
+                  {props.assumedPrefix} <span set:html={decision.assumed} />
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="assumed" id="amb-assumed">
+    <h3>{props.assumedTitle}</h3>
+    <div class="grps">
+      {
+        all.map((group, index) => (
+          <div class={index === all.length - 1 ? 'grp ghost' : 'grp'}>
+            <h4 set:html={group.label} />
+            <ul>
+              {group.decisions.map((decision) => (
+                <li set:html={decision.assumed} />
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+    <p class="kicker" set:html={props.assumedKicker} />
+  </div>
+</div>
+
+<script>
+  const amb = document.querySelector<HTMLElement>('[data-amb]');
+  if (amb) {
+    const buttons = Array.from(amb.querySelectorAll<HTMLButtonElement>('.sp'));
+    const detail = amb.querySelector<HTMLElement>('.detail')!;
+    const panes = Array.from(detail.querySelectorAll<HTMLElement>('.pane[data-pane]'));
+    const idle = detail.querySelector<HTMLElement>('[data-pane="idle"]')!;
+    const progress = amb.querySelector<HTMLElement>('[data-progress]')!;
+    const assumed = amb.querySelector<HTMLElement>('.assumed')!;
+    const toggle = amb.querySelector<HTMLButtonElement>('[data-assume]')!;
+
+    const total = Number(amb.dataset.total ?? 0);
+    const template = amb.dataset.progressTpl ?? '';
+    const done = amb.dataset.progressDone ?? '';
+    const forms: Record<string, string> = JSON.parse(amb.dataset.plural ?? '{}');
+
+    /* Russian needs three plural forms where English needs two, so the category comes from
+       Intl rather than from an `n === 1` test that would be wrong in one of the two. */
+    const rules = new Intl.PluralRules(document.documentElement.lang || 'en');
+    const plural = (n: number) => {
+      const form = forms[rules.select(n)] ?? forms.other ?? '';
+      return form.replace('{n}', String(n));
+    };
+
+    const paneFor = (index: number) => panes.find((pane) => pane.dataset.pane === String(index));
+    const sizeOf = (index: number) => paneFor(index)?.querySelectorAll('li').length ?? 0;
+
+    /* Take over: hide what the script now manages. Until this runs, every panel is on the page. */
+    amb.classList.add('js');
+    panes.forEach((pane) => (pane.hidden = true));
+    idle.hidden = false;
+    assumed.hidden = true;
+
+    const opened = new Set<number>();
+
+    const paint = () => {
+      const seen = [...opened].reduce((sum, index) => sum + sizeOf(index), 0);
+      const left = buttons.length - opened.size;
+      amb.classList.toggle('complete', left === 0);
+      progress.innerHTML = left
+        ? template
+            .replace('{seen}', `<b>${seen}</b>`)
+            .replace('{total}', `<b>${total}</b>`)
+            .replace('{left}', plural(left))
+        : done.replace('{total}', `<b>${total}</b>`);
+    };
+
+    const select = (index: number) => {
+      opened.add(index);
+      buttons.forEach((button) => {
+        const own = Number(button.dataset.group);
+        button.setAttribute('aria-expanded', String(own === index));
+        button.classList.toggle('seen', opened.has(own));
+      });
+      idle.hidden = true;
+      panes.forEach((pane) => (pane.hidden = pane.dataset.pane !== String(index)));
+
+      const pane = paneFor(index);
+      if (pane) {
+        // re-trigger the staggered entry: without the reflow the class change is coalesced away
+        pane.classList.remove('on');
+        void pane.offsetWidth;
+        pane.classList.add('on');
+      }
+      // the group nothing in the sentence points at gets the violet edge
+      detail.classList.toggle('v', index === buttons.length - 1);
+      paint();
+    };
+
+    buttons.forEach((button) =>
+      button.addEventListener('click', () => select(Number(button.dataset.group))),
+    );
+
+    toggle.addEventListener('click', () => {
+      const on = toggle.getAttribute('aria-pressed') !== 'true';
+      toggle.setAttribute('aria-pressed', String(on));
+      toggle.textContent = (on ? toggle.dataset.on : toggle.dataset.off) ?? '';
+      assumed.hidden = !on;
+      amb.classList.toggle('assuming', on);
+    });
+
+    paint();
+  }
+</script>

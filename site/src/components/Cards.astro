@@ -1,0 +1,25 @@
+---
+/** A grid of labelled cards. `min-width: 0` on the items is what keeps one long token from
+    widening a track and putting the page into a horizontal scroll. */
+import type { Card } from '../i18n/types';
+
+interface Props {
+  cards: Card[];
+  columns?: 'two' | 'three';
+  style?: string;
+}
+
+const { cards, columns = 'two', style } = Astro.props;
+---
+
+<div class={`grid ${columns}`} style={style}>
+  {
+    cards.map((card) => (
+      <div class="card">
+        <span class="num" set:html={card.num} />
+        <h3 set:html={card.title} />
+        <p class="dim" set:html={card.body} />
+      </div>
+    ))
+  }
+</div>

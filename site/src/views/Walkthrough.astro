@@ -1,0 +1,187 @@
+---
+import Artifact from '../components/Artifact.astro';
+import Cards from '../components/Cards.astro';
+import DataTable from '../components/DataTable.astro';
+import Note from '../components/Note.astro';
+import { href, useTranslations, type Lang } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const w = t.walkthrough;
+
+/* The step numbers are structure, not text: they are the same in every language, and the order
+   they impose is the argument of the page. */
+const toc = [
+  { id: 'request', label: w.toc.request },
+  { id: 'refine', label: w.toc.refine },
+  { id: 'clear', label: w.toc.clear },
+  { id: 'build', label: w.toc.build },
+  { id: 'verify', label: w.toc.verify },
+  { id: 'announce', label: w.toc.announce },
+  { id: 'lanes', label: w.toc.lanes },
+  { id: 'result', label: w.toc.result },
+];
+---
+
+<Base lang={lang} page="walkthrough" meta={w.meta} rail={w.railLabel}>
+  <section class="hero wrap" style="padding-top:3.5rem">
+    <p class="eyebrow">{w.hero.eyebrow}</p>
+    <h1>
+      <span data-words>{w.hero.titleA}</span>
+      <span class="grad">{w.hero.titleB}</span>
+    </h1>
+    <p class="lede">{w.hero.lede}</p>
+
+    <Note text={w.hero.note} style="margin-top:1.8rem" />
+
+    <ul class="toc" style="margin-top:2rem">
+      {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+    </ul>
+  </section>
+
+  <!-- ============ 0. the request ============ -->
+  <section class="wrap step" id="request" data-rail-label={w.request.rail} data-reveal>
+    <p class="lab"><b>0</b>{w.request.lab}</p>
+    <h2>{w.request.heading}</h2>
+    <p class="dim measure" set:html={w.request.body} />
+    <p class="dim measure">{w.request.kicker}</p>
+  </section>
+
+  <!-- ============ 1. refine ============ -->
+  <section class="wrap step" id="refine" data-rail-label={w.refine.rail} data-reveal>
+    <p class="lab"><b>1</b>{w.refine.lab}</p>
+    <h2 set:html={w.refine.heading} />
+    <pre><code set:html={w.refine.invocation} /></pre>
+
+    <p class="dim measure" set:html={w.refine.intro} />
+
+    <div class="legendmap">
+      {
+        w.refine.legend.map((row) => (
+          <div class="row">
+            <b>{row.mark}</b>
+            <span set:html={row.text} />
+          </div>
+        ))
+      }
+    </div>
+
+    <Artifact name={w.refine.mapName} code={w.refine.map} />
+
+    <p class="dim measure" set:html={w.refine.asks} />
+
+    <Artifact name={w.refine.roundName} code={w.refine.round} />
+
+    <p class="dim measure" set:html={w.refine.stops} />
+    <p class="dim measure" set:html={w.refine.forks} />
+
+    <Artifact name={w.refine.ideaName} code={w.refine.idea} />
+
+    <Note text={w.refine.note} />
+  </section>
+
+  <!-- ============ 2. clear ============ -->
+  <section class="wrap step" id="clear" data-rail-label={w.clear.rail} data-reveal>
+    <p class="lab"><b>2</b>{w.clear.lab}</p>
+    <h2 set:html={w.clear.heading} />
+    <p class="dim measure" set:html={w.clear.why} />
+    <p class="dim measure" set:html={w.clear.cost} />
+    <pre><code set:html={w.clear.snippet} /></pre>
+    <p class="small" set:html={w.clear.caveat} />
+  </section>
+
+  <!-- ============ 3. build ============ -->
+  <section class="wrap step" id="build" data-rail-label={w.build.rail} data-reveal>
+    <p class="lab"><b>3</b>{w.build.lab}</p>
+    <h2 set:html={w.build.heading} />
+    <p class="dim measure" set:html={w.build.consent} />
+
+    <Artifact name={w.build.blockerName} code={w.build.blocker} />
+
+    <p class="dim measure" set:html={w.build.autonomy} />
+
+    <h3 style="margin-top:2rem">{w.build.testHeading}</h3>
+    <p class="dim measure" set:html={w.build.testLede} />
+
+    <Artifact name={w.build.redName} code={w.build.red} />
+
+    <p class="dim measure" set:html={w.build.skeptic} />
+
+    <Note text={w.build.rubric} tone="warn" />
+
+    <p class="dim measure" set:html={w.build.sabotage} />
+
+    <h3 style="margin-top:2rem">{w.build.docsHeading}</h3>
+    <p class="dim measure" set:html={w.build.docs} />
+
+    <Artifact name={w.build.implName}>
+      <DataTable table={w.build.impl} />
+    </Artifact>
+
+    <p class="dim measure" set:html={w.build.handoff} />
+  </section>
+
+  <!-- ============ 4. verify ============ -->
+  <section class="wrap step" id="verify" data-rail-label={w.verify.rail} data-reveal>
+    <p class="lab"><b>4</b>{w.verify.lab}</p>
+    <h2 set:html={w.verify.heading} />
+    <p class="dim measure" set:html={w.verify.intro} />
+
+    <Cards cards={w.verify.halves} />
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={w.verify.noFixes} />
+
+    <Artifact name={w.verify.verdictName}>
+      <DataTable table={w.verify.verdicts} />
+    </Artifact>
+
+    <p class="dim measure" set:html={w.verify.twoRows} />
+
+    <Artifact name={w.verify.coverageName}>
+      <DataTable table={w.verify.coverage} />
+    </Artifact>
+
+    <p class="dim measure" set:html={w.verify.budget} />
+  </section>
+
+  <!-- ============ 5. announce ============ -->
+  <section class="wrap step" id="announce" data-rail-label={w.announce.rail} data-reveal>
+    <p class="lab"><b>5</b>{w.announce.lab}</p>
+    <h2 set:html={w.announce.heading} />
+    <p class="dim measure" set:html={w.announce.intro} />
+
+    <Artifact name={w.announce.messageName} code={w.announce.message} />
+
+    <p class="small" set:html={w.announce.languageNote} />
+  </section>
+
+  <!-- ============ 6. the other lanes ============ -->
+  <section class="wrap step" id="lanes" data-rail-label={w.lanes.rail} data-reveal>
+    <p class="lab"><b>6</b>{w.lanes.lab}</p>
+    <h2>{w.lanes.heading}</h2>
+
+    <Cards cards={w.lanes.cards} />
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={w.lanes.verifyAnywhere} />
+  </section>
+
+  <!-- ============ 7. result ============ -->
+  <section class="wrap step" id="result" data-rail-label={w.result.rail} data-reveal>
+    <p class="lab"><b>7</b>{w.result.lab}</p>
+    <h2>{w.result.heading}</h2>
+    <pre><code set:html={w.result.tree} /></pre>
+
+    <p class="dim measure" set:html={w.result.why} />
+    <p class="dim measure" set:html={w.result.archiving} />
+
+    <div class="herocta" style="animation:none;margin-top:2rem">
+      <a class="btn" href={`${href(lang, 'overview')}#install`}>{w.result.ctaInstall}</a>
+      <a class="btn ghost" href={href(lang, 'how-it-works')}>{w.result.ctaMechanics}</a>
+    </div>
+  </section>
+</Base>

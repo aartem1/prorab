@@ -1,0 +1,94 @@
+---
+/**
+ * The context dial. How many contexts each tier spends, and the absolute ceiling above it.
+ *
+ * The numbers are facts about the framework and live here; only the explanation of each tier is
+ * translated. The dots and the default tier are rendered into the page, so with the script absent
+ * the dial still shows a real reading rather than an empty row.
+ */
+interface Props {
+  tier: string;
+  readout: string;
+  legendSpent: string;
+  legendCeiling: string;
+  tiers: { S: string; M: string; L: string };
+}
+
+const p = Astro.props;
+
+/** Contexts per tier, and the hard ceiling reachable only on confirmed critical risk. */
+const SPEND = { S: 2, M: 6, L: 12 } as const;
+const CEILING = 16;
+const START = 'M' as const;
+
+type Tier = keyof typeof SPEND;
+const TIERS = Object.keys(SPEND) as Tier[];
+const dots = Array.from({ length: CEILING }, (_, i) => i);
+---
+
+<div class="budget" data-budget data-spend={JSON.stringify(SPEND)} data-readout={p.readout}>
+  <div class="head">
+    <div class="tabs">
+      {
+        TIERS.map((tier) => (
+          <button type="button" data-tier={tier} aria-pressed={tier === START ? 'true' : 'false'}>
+            {p.tier.replace('{n}', tier)}
+          </button>
+        ))
+      }
+    </div>
+    <span class="readout" set:html={p.readout.replace('{n}', `<b>${SPEND[START]}</b>`)} />
+  </div>
+
+  <div class="dots">
+    {
+      dots.map((i) => (
+        <i
+          class={[i >= SPEND.L ? 'ceil' : '', i < SPEND[START] ? 'on' : ''].filter(Boolean).join(' ')}
+        />
+      ))
+    }
+  </div>
+
+  <div class="legend">
+    <span><em style="background:var(--amber)"></em> {p.legendSpent}</span>
+    <span><em style="border:1px dashed rgba(255,157,77,.34)"></em> {p.legendCeiling}</span>
+  </div>
+
+  <p class="why" set:html={p.tiers[START]}></p>
+
+  <script is:inline type="application/json" data-budget-why set:html={JSON.stringify(p.tiers)} />
+</div>
+
+<script>
+  const budget = document.querySelector<HTMLElement>('[data-budget]');
+  if (budget) {
+    const cells = Array.from(budget.querySelectorAll<HTMLElement>('.dots i'));
+    const readout = budget.querySelector<HTMLElement>('.readout')!;
+    const why = budget.querySelector<HTMLElement>('.why')!;
+
+    const spend: Record<string, number> = JSON.parse(budget.dataset.spend ?? '{}');
+    const template = budget.dataset.readout ?? '';
+    const texts: Record<string, string> = JSON.parse(
+      budget.querySelector('[data-budget-why]')?.textContent ?? '{}',
+    );
+
+    const apply = (tier: string) => {
+      const n = spend[tier];
+      if (n === undefined) return;
+      cells.forEach((cell, i) => {
+        cell.style.transitionDelay = `${i * 26}ms`;
+        cell.classList.toggle('on', i < n);
+      });
+      readout.innerHTML = template.replace('{n}', `<b>${n}</b>`);
+      why.innerHTML = texts[tier] ?? '';
+      budget.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.tier === tier));
+      });
+    };
+
+    budget.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.addEventListener('click', () => apply(button.dataset.tier ?? ''));
+    });
+  }
+</script>

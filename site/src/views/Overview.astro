@@ -1,0 +1,274 @@
+---
+import Ambiguity from '../components/Ambiguity.astro';
+import Budget from '../components/Budget.astro';
+import Blind from '../components/Blind.astro';
+import Cards from '../components/Cards.astro';
+import Note from '../components/Note.astro';
+import Oracle from '../components/Oracle.astro';
+import Pipeline from '../components/Pipeline.astro';
+import Terminal from '../components/Terminal.astro';
+import { INSTALL_LINES, PLUGINS } from '../data/marketplace';
+import { href, useTranslations, type Lang } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const o = t.overview;
+
+/* The install snippet is generated from the marketplace manifest, so the site cannot advertise a
+   plugin name or a version the marketplace does not actually ship. */
+const install = INSTALL_LINES.map((line) => `<span class="c">/plugin</span> ${line}`).join('\n');
+
+/** `/prorab-tech:audit` → `commands.html#audit`, in the current locale. */
+const commandHref = (cmd: string) =>
+  `${href(lang, 'commands')}#${cmd.slice(cmd.indexOf(':') + 1)}`;
+---
+
+<Base lang={lang} page="overview" meta={o.meta} rail={t.common.nav.sections}>
+  <!-- ================= hero ================= -->
+  <section class="hero wrap">
+    <p class="eyebrow">{o.hero.eyebrow}</p>
+    <h1>
+      <span data-words>{o.hero.titleA}</span>
+      <span class="grad">{o.hero.titleB}</span>
+    </h1>
+    <p class="lede">{o.hero.lede}</p>
+
+    <div class="herocta">
+      <a class="btn" href="#install">{o.hero.ctaInstall}</a>
+      <a class="btn ghost" href={href(lang, 'walkthrough')}>{o.hero.ctaWalkthrough}</a>
+    </div>
+
+    <div class="badges">
+      {PLUGINS.map((plugin) => (
+        <span class="badge">{plugin.name} <b>{plugin.version}</b></span>
+      ))}
+      <span class="badge">{o.hero.badges.runtime}</span>
+      <span class="badge">{o.hero.badges.artifacts}</span>
+    </div>
+
+    <Terminal caption={o.terminal.caption} replay={o.terminal.replay} lines={o.terminal.lines} />
+    <p class="small" style="margin-top:0.7rem" set:html={o.terminal.note} />
+  </section>
+
+  <!-- ================= the problem ================= -->
+  <section class="wrap" id="problem" data-rail-label={o.problem.rail} data-reveal>
+    <p class="eyebrow">{o.problem.eyebrow}</p>
+    <h2>{o.problem.heading}</h2>
+    <p class="lede" style="margin-bottom:0.4rem">{o.problem.lede}</p>
+
+    <Ambiguity
+      ticketLabel={o.problem.ticketLabel}
+      sentence={o.problem.sentence}
+      groups={o.problem.groups}
+      ghostLead={o.problem.ghostLead}
+      ghost={o.problem.ghost}
+      progress={o.problem.progress}
+      progressGroups={o.problem.progressGroups}
+      progressDone={o.problem.progressDone}
+      idleTitle={o.problem.idleTitle}
+      idleBody={o.problem.idleBody}
+      assumedPrefix={o.problem.assumedPrefix}
+      showAssumed={o.problem.showAssumed}
+      hideAssumed={o.problem.hideAssumed}
+      assumedTitle={o.problem.assumedTitle}
+      assumedKicker={o.problem.assumedKicker}
+    />
+
+    <Note text={o.problem.note} tone="warn" style="margin-top:1.2rem" />
+  </section>
+
+  <!-- ================= the thesis ================= -->
+  <section class="wrap" id="thesis" data-rail-label={o.thesis.rail} data-reveal>
+    <p class="eyebrow">{o.thesis.eyebrow}</p>
+    <h2>{o.thesis.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.6rem">{o.thesis.lede}</p>
+
+    <Cards cards={o.thesis.cards} />
+
+    <p class="dim measure" style="margin-top:1.6rem" set:html={o.thesis.dodLede} />
+    <pre><code set:html={o.thesis.dodExample} /></pre>
+  </section>
+
+  <!-- ================= the oracle rule ================= -->
+  <section class="wrap" id="oracle" data-rail-label={o.oracle.rail} data-reveal>
+    <p class="eyebrow">{o.oracle.eyebrow}</p>
+    <h2>{o.oracle.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.5rem" set:html={o.oracle.lede} />
+
+    <Oracle
+      impl46={o.oracle.impl46}
+      impl40={o.oracle.impl40}
+      impl47={o.oracle.impl47}
+      hint={o.oracle.hint}
+      passed={o.oracle.passed}
+      failed={o.oracle.failed}
+      reqName={o.oracle.reqName}
+      reqSource={o.oracle.reqSource}
+      reqCode={o.oracle.reqCode}
+      snapName={o.oracle.snapName}
+      snapSource={o.oracle.snapSource}
+      snapCode={o.oracle.snapCode}
+      states={o.oracle.states}
+    />
+
+    <h3 style="margin-top:2.4rem">{o.oracle.chainHeading}</h3>
+    <p class="dim measure">{o.oracle.chainLede}</p>
+    <div class="chain">
+      {
+        o.oracle.hops.map((hop) => (
+          <div class="hop">
+            <b set:html={hop.name} />
+            <span set:html={hop.what} />
+            <em set:html={hop.refuses} />
+          </div>
+        ))
+      }
+    </div>
+
+    <Note text={o.oracle.note} style="margin-top:1.4rem" />
+  </section>
+
+  <!-- ================= blindness ================= -->
+  <section class="wrap" id="outside-in" data-rail-label={o.outsideIn.rail} data-reveal>
+    <p class="eyebrow">{o.outsideIn.eyebrow}</p>
+    <h2>{o.outsideIn.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.5rem" set:html={o.outsideIn.lede} />
+
+    <Blind
+      handedTitle={o.outsideIn.handedTitle}
+      peekShow={o.outsideIn.peekShow}
+      peekHide={o.outsideIn.peekHide}
+      charterTitle={o.outsideIn.charterTitle}
+      charter={o.outsideIn.charter}
+      forbiddenTitle={o.outsideIn.forbiddenTitle}
+      forbidden={o.outsideIn.forbidden}
+      foot={o.outsideIn.foot}
+    />
+
+    <Note text={o.outsideIn.note} tone="v" style="margin-top:1.2rem" />
+  </section>
+
+  <!-- ================= the loop ================= -->
+  <section class="wrap" id="loop" data-rail-label={o.loop.rail} data-reveal>
+    <p class="eyebrow">{o.loop.eyebrow}</p>
+    <h2 set:html={o.loop.heading} />
+    <p class="dim measure" style="margin-bottom:1.2rem">{o.loop.lede}</p>
+    <pre><code set:html={o.loop.script} /></pre>
+
+    <p class="dim measure" set:html={o.loop.quick} />
+
+    <h3 style="margin-top:2.4rem">{o.loop.tracksHeading}</h3>
+    <p class="dim measure" style="margin-bottom:0.4rem" set:html={o.loop.tracksLede} />
+
+    <Pipeline
+      tabProduct={o.loop.tabProduct}
+      tabTech={o.loop.tabTech}
+      writes={o.loop.writes}
+      product={o.loop.product}
+      tech={o.loop.tech}
+    />
+  </section>
+
+  <!-- ================= cost ================= -->
+  <section class="wrap" id="cost" data-rail-label={o.cost.rail} data-reveal>
+    <p class="eyebrow">{o.cost.eyebrow}</p>
+    <h2>{o.cost.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.6rem">{o.cost.lede}</p>
+
+    <Budget
+      tier={o.cost.tier}
+      readout={o.cost.readout}
+      legendSpent={o.cost.legendSpent}
+      legendCeiling={o.cost.legendCeiling}
+      tiers={o.cost.tiers}
+    />
+
+    <p class="dim measure" style="margin-top:1.2rem" set:html={o.cost.enforced} />
+    <Note text={o.cost.occupancy} style="margin-top:1rem" />
+    <Note text={o.cost.floor} tone="warn" style="margin-top:0.7rem" />
+  </section>
+
+  <!-- ================= install ================= -->
+  <section class="wrap" id="install" data-rail-label={o.install.rail} data-reveal>
+    <p class="eyebrow">{o.install.eyebrow}</p>
+    <h2>{o.install.heading}</h2>
+    <p class="dim measure">{o.install.lede}</p>
+    <pre><code set:html={install} /></pre>
+    <p class="small" set:html={o.install.update} />
+
+    <h3 style="margin-top:2.2rem">{o.install.firstTaskHeading}</h3>
+    <pre><code set:html={o.install.firstTask} /></pre>
+    <p class="dim measure">{o.install.firstTaskNote}</p>
+  </section>
+
+  <!-- ================= when not to ================= -->
+  <section class="wrap" id="fit" data-rail-label={o.fit.rail} data-reveal>
+    <p class="eyebrow">{o.fit.eyebrow}</p>
+    <h2>{o.fit.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.6rem">{o.fit.lede}</p>
+
+    <Cards cards={o.fit.cards} />
+
+    <Note text={o.fit.note} style="margin-top:1.2rem" />
+  </section>
+
+  <!-- ================= artifacts ================= -->
+  <section class="wrap" id="artifacts" data-rail-label={o.artifacts.rail} data-reveal>
+    <p class="eyebrow">{o.artifacts.eyebrow}</p>
+    <h2>{o.artifacts.heading}</h2>
+    <p class="dim measure">{o.artifacts.lede}</p>
+    <pre><code set:html={o.artifacts.tree} /></pre>
+
+    <div class="stats" style="margin-top:1.4rem">
+      {
+        o.artifacts.stats.map((stat) => (
+          <div class="stat">
+            <b>{stat.value}</b>
+            <span>{stat.label}</span>
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={o.artifacts.archiving} />
+  </section>
+
+  <!-- ================= command index ================= -->
+  <section class="wrap" data-reveal>
+    <p class="eyebrow">{o.index.eyebrow}</p>
+    <h2>{o.index.heading}</h2>
+    <p class="dim measure" style="margin-bottom:1.4rem" set:html={o.index.lede} />
+
+    <div class="grid three">
+      {
+        o.index.links.map((link) => (
+          <a
+            class={link.cmd.startsWith('/prorab-tech') ? 'cmdlink tech' : 'cmdlink'}
+            href={commandHref(link.cmd)}
+          >
+            <b>{link.cmd}</b>
+            <span>{link.what}</span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ================= closing ================= -->
+  <section class="wrap" data-reveal>
+    <hr class="rule" />
+    <div style="padding-top:3rem">
+      <h2 style="max-width:24ch">{o.closing.heading}</h2>
+      <p class="lede">{o.closing.lede}</p>
+      <div class="herocta" style="animation:none">
+        <a class="btn" href="#install">{o.closing.ctaInstall}</a>
+        <a class="btn ghost" href={href(lang, 'walkthrough')}>{o.closing.ctaWalkthrough}</a>
+      </div>
+    </div>
+  </section>
+</Base>

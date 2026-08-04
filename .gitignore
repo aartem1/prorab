@@ -1,2 +1,9 @@
 __pycache__/
 *.py[cod]
+
+# site/ is an Astro project: only its sources are tracked, never its dependencies or output
+node_modules/
+site/dist/
+site/.astro/
+.vercel/
+.DS_Store

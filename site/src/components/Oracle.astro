@@ -1,0 +1,144 @@
+---
+/**
+ * Two tests that differ in nothing except where their expected value came from, against three
+ * states of one implementation. An illustration you can click, not a live test run.
+ *
+ * Which test passes in which state is a fact, not prose — it lives here, so no translation can
+ * accidentally make the snapshot test look useful.
+ */
+import type { OracleState } from '../i18n/types';
+
+interface Props {
+  impl46: string;
+  impl40: string;
+  impl47: string;
+  hint: string;
+  passed: string;
+  failed: string;
+  reqName: string;
+  reqSource: string;
+  reqCode: string;
+  snapName: string;
+  snapSource: string;
+  snapCode: string;
+  states: Record<'46' | '40' | '47', OracleState>;
+}
+
+const p = Astro.props;
+
+type Key = '46' | '40' | '47';
+const KEYS: Key[] = ['46', '40', '47'];
+const LABELS: Record<Key, string> = { '46': p.impl46, '40': p.impl40, '47': p.impl47 };
+
+/* DoD #2 fixes the answer at 47 rows, so the requirement test is red until the implementation
+   returns 47 — and the snapshot test is green exactly while the golden file matches the code
+   that produced it. */
+const STATUS: Record<Key, { req: 'pass' | 'fail'; snap: 'pass' | 'fail' }> = {
+  '46': { req: 'fail', snap: 'pass' },
+  '40': { req: 'fail', snap: 'fail' },
+  '47': { req: 'pass', snap: 'fail' },
+};
+
+const START: Key = '46';
+const pill = (status: 'pass' | 'fail') => (status === 'pass' ? p.passed : p.failed);
+---
+
+<div
+  class="oracle"
+  data-oracle
+  data-status={JSON.stringify(STATUS)}
+  data-passed={p.passed}
+  data-failed={p.failed}
+>
+  <div class="head">
+    <div class="seg">
+      {
+        KEYS.map((key) => (
+          <button type="button" data-impl={key} aria-pressed={key === START ? 'true' : 'false'}>
+            {LABELS[key]}
+          </button>
+        ))
+      }
+    </div>
+    <span class="hint" set:html={p.hint} />
+  </div>
+
+  <div class="pair">
+    <div class={`tcase ${STATUS[START].req}`} data-case="req">
+      <div class="top">
+        <span class="name">{p.reqName}</span>
+        <span class={`pill ${STATUS[START].req === 'pass' ? 'ok' : 'bad'}`}>
+          {pill(STATUS[START].req)}
+        </span>
+        <span class="src">{p.reqSource}</span>
+      </div>
+      <pre><code set:html={p.reqCode} /></pre>
+      <span class="verdict">{p.states[START].req}</span>
+    </div>
+
+    <div class={`tcase ${STATUS[START].snap}`} data-case="snap">
+      <div class="top">
+        <span class="name">{p.snapName}</span>
+        <span class={`pill ${STATUS[START].snap === 'pass' ? 'ok' : 'bad'}`}>
+          {pill(STATUS[START].snap)}
+        </span>
+        <span class="src">{p.snapSource}</span>
+      </div>
+      <pre><code set:html={p.snapCode} /></pre>
+      <span class="verdict">{p.states[START].snap}</span>
+    </div>
+  </div>
+
+  <p class="verdictline" set:html={p.states[START].line} />
+
+  <script is:inline type="application/json" data-oracle-states set:html={JSON.stringify(p.states)} />
+</div>
+
+<script>
+  type Status = 'pass' | 'fail';
+  type State = { req: string; snap: string; line: string };
+
+  const oracle = document.querySelector<HTMLElement>('[data-oracle]');
+  if (oracle) {
+    const req = oracle.querySelector<HTMLElement>('[data-case="req"]')!;
+    const snap = oracle.querySelector<HTMLElement>('[data-case="snap"]')!;
+    const line = oracle.querySelector<HTMLElement>('.verdictline')!;
+    const json = oracle.querySelector('[data-oracle-states]')?.textContent ?? '{}';
+
+    const states: Record<string, State> = JSON.parse(json);
+    const status: Record<string, { req: Status; snap: Status }> = JSON.parse(
+      oracle.dataset.status ?? '{}',
+    );
+    const words = { pass: oracle.dataset.passed ?? '', fail: oracle.dataset.failed ?? '' };
+
+    const paint = (box: HTMLElement, verdict: Status, message: string) => {
+      box.classList.remove('pass', 'fail', 'swap');
+      box.classList.add(verdict);
+      const badge = box.querySelector<HTMLElement>('.pill')!;
+      badge.className = `pill ${verdict === 'pass' ? 'ok' : 'bad'}`;
+      badge.textContent = words[verdict];
+      box.querySelector<HTMLElement>('.verdict')!.textContent = message;
+      void box.offsetWidth;
+      box.classList.add('swap');
+    };
+
+    const apply = (key: string) => {
+      const state = states[key];
+      const verdicts = status[key];
+      if (!state || !verdicts) return;
+      paint(req, verdicts.req, state.req);
+      paint(snap, verdicts.snap, state.snap);
+      line.innerHTML = state.line;
+      line.classList.remove('swap');
+      void line.offsetWidth;
+      line.classList.add('swap');
+      oracle.querySelectorAll<HTMLButtonElement>('.seg button').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.impl === key));
+      });
+    };
+
+    oracle.querySelectorAll<HTMLButtonElement>('.seg button').forEach((button) => {
+      button.addEventListener('click', () => apply(button.dataset.impl ?? ''));
+    });
+  }
+</script>
