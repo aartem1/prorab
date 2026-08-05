@@ -23,6 +23,8 @@ DOC_SYNC = (
 )
 # Product-track only, and loaded only when the scope has a browser surface.
 WEB_PROBING = PRODUCT / "references" / "web-probing.md"
+# Product-track only, and loaded only when the task in front of the command has seams.
+SEGMENTED = PRODUCT / "references" / "segmented-run.md"
 # Commands that actually drive a browser, and so load the method.
 WEB_PROBERS = (
     PRODUCT / "commands" / "build.md",
@@ -480,6 +482,130 @@ class WebProbingTests(unittest.TestCase):
         self.assertIn("never upgrades a behavior's own\nverdict", self.contract)
         # the handoff must not leak an implementation hint into the blind charter
         self.assertIn("no path, symbol or selector crosses over", self.contract)
+
+
+class SegmentedRunTests(unittest.TestCase):
+    """A task with seams runs as a chain of small runs whose state lives on disk, not in a context.
+
+    The failure mode this addresses is not "too few agents" — it is a main loop asked to live for
+    hours. So the answer is a topology, not a bigger tier: `refine` cuts the idea at its seams,
+    `build` executes one segment per fresh context and writes the outcome to a ledger, and the run
+    survives compaction, `/clear` and interruption because the ledger is the state.
+    """
+
+    def setUp(self) -> None:
+        self.contract = read(SEGMENTED)
+        self.refine = read(PRODUCT / "commands" / "refine.md")
+        self.build = read(PRODUCT / "commands" / "build.md")
+
+    def test_the_method_lives_in_the_product_track_only(self) -> None:
+        """The tech track's unit is a candidate or a batch — already small by construction."""
+        self.assertTrue(SEGMENTED.is_file())
+        self.assertFalse((TECH / "references" / "segmented-run.md").exists())
+        for command in sorted(TECH.glob("commands/*.md")):
+            self.assertNotIn("segmented-run.md", read(command), command)
+
+    def test_only_the_two_commands_that_cut_or_execute_load_it(self) -> None:
+        reference = "${CLAUDE_PLUGIN_ROOT}/references/segmented-run.md"
+        # conditional in both, so an ordinary idea never pays for the method
+        self.assertIn(reference, self.refine)
+        self.assertIn("**only when** the idea shows XL signals", self.refine)
+        self.assertIn(reference, self.build)
+        self.assertIn("**only when** Phase 0.5 selects XL", self.build)
+        for name in ("quick.md", "verify.md", "announce.md", "ask.md"):
+            self.assertNotIn(reference, read(PRODUCT / "commands" / name), name)
+
+    def test_xl_is_a_tier_and_is_detected_from_seams_not_from_size(self) -> None:
+        self.assertIn("## XL signals", self.contract)
+        self.assertIn("If the work has no seam, it is not XL", self.contract)
+        self.assertIn("under-decomposed", self.contract)
+        self.assertIn("never a forced shard", self.contract)
+        # a tier, not a new command: the same two commands keep the task
+        self.assertIn("`--tier=XL`", self.build)
+        self.assertFalse((PRODUCT / "commands" / "epic.md").exists())
+
+    def test_a_bigger_ceiling_is_explicitly_rejected_as_the_answer(self) -> None:
+        self.assertIn("more of exactly what degrades", self.contract)
+        self.assertIn("per-segment cap", self.build)
+        self.assertIn("no global context ceiling", self.contract)
+
+    def test_the_seam_rules_protect_coherence(self) -> None:
+        self.assertIn("## Seam discipline", self.contract)
+        self.assertIn("leaves the repository green", self.contract)
+        self.assertIn("never split a coherent edit", self.contract)
+        self.assertIn("a contract change from its call-sites", self.contract)
+        self.assertIn("a DoD item from its test", self.contract)
+        self.assertIn("exactly one segment", self.contract)
+        # a segment too big for one executor is a bad cut, not a licence to fan out
+        self.assertIn("sized to S or M", self.contract)
+
+    def test_refine_cuts_the_idea_and_records_the_cut(self) -> None:
+        self.assertIn("Segment plan", self.refine)
+        self.assertIn("## Segment plan", self.contract)
+        for field in ("Depends on", "DoD items", "Publishes", "Expected tier"):
+            self.assertIn(field, self.contract, field)
+        # an unresolved fork inside one segment must not hold up the whole run
+        self.assertIn("blocks that segment only", self.contract)
+        # the code map is sliced per segment, so a brief carries only its own share
+        self.assertIn("segments served", self.refine)
+
+    def test_state_lives_on_disk_so_the_run_survives_its_own_context(self) -> None:
+        for marker in ("## Segment ledger", "## Frozen interfaces", "## Resume"):
+            self.assertIn(marker, self.contract, marker)
+        self.assertIn("tasks/segments/<slug>/SEG-<nn>", self.contract)
+        self.assertIn("resumed:", self.contract)
+        self.assertIn("never re-run a `done` segment", self.contract)
+        self.assertIn("the ledger is the state", self.contract)
+
+    def test_each_segment_gets_a_fresh_context_and_a_sliced_brief(self) -> None:
+        self.assertIn("## Segment brief", self.contract)
+        self.assertIn("## Segment capsule", self.contract)
+        self.assertIn("one fresh `Agent` context per segment", self.contract)
+        self.assertIn("`max_turns: 20`", self.contract)
+        self.assertIn("at most 3 contexts per segment", self.contract)
+        # sequential, because a Workflow script cannot write the ledger between segments
+        self.assertIn("cannot touch the filesystem", self.contract)
+        self.assertIn("never the whole IDEA", self.contract)
+
+    def test_a_failed_segment_does_not_waste_the_rest_of_the_run(self) -> None:
+        self.assertIn("## Failure and the ready frontier", self.contract)
+        self.assertIn("one retry", self.contract)
+        self.assertIn("`blocked`", self.contract)
+        self.assertIn("ready frontier is empty", self.contract)
+
+    def test_integration_is_checked_between_levels_not_only_at_the_end(self) -> None:
+        self.assertIn("## Integration checkpoints", self.contract)
+        self.assertIn("cross-segment only", self.build)
+        self.assertIn("Don't re-review every segment's diff", self.build)
+
+    def test_checkpoint_commits_need_a_branch_dedicated_to_the_task(self) -> None:
+        self.assertIn("## Checkpoint commits", self.contract)
+        self.assertIn("dedicated to this task", self.contract)
+        self.assertIn("asked once", self.contract)
+        self.assertIn("never on `main`/`master`", self.contract)
+        # a dirty tree must not be swept into a checkpoint
+        self.assertIn("never `git add -A`", self.contract)
+        self.assertIn("foreign", self.contract)
+
+    def test_several_repositories_only_on_an_explicit_request(self) -> None:
+        self.assertIn("## Several repositories", self.contract)
+        self.assertIn("only when the user explicitly asks", self.contract)
+        self.assertIn("never clone, fetch or create", self.contract)
+        self.assertIn("provider before consumer", self.contract)
+
+    def test_the_quality_floor_survives_segmentation(self) -> None:
+        """Cutting the work smaller may not cut the evidence."""
+        self.assertIn("quality floor", self.contract)
+        self.assertIn("red-first", self.contract)
+        self.assertIn("Run output discipline", self.contract)
+        self.assertIn("1500 tokens", self.contract)
+        # the aggregate DoD table is still the handoff verify reuses
+        self.assertIn("coverage-evidence handoff", self.contract)
+        self.assertIn("## Stage handoff", self.contract)
+
+    def test_a_partial_run_stays_active_and_archives_with_its_records(self) -> None:
+        self.assertIn("every segment is `done`", self.contract)
+        self.assertIn("tasks/segments/<slug>/", self.build)
 
 
 class DocumentationSyncTests(unittest.TestCase):

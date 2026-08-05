@@ -326,16 +326,71 @@ export const howItWorks = {
           'Expandable to an absolute ceiling of 16, only for confirmed critical risk or an ' +
             'explicit <code>--thorough</code>.',
         ],
+        [
+          '<strong>XL</strong>',
+          '3 <em>per segment</em>',
+          '<code>build</code> only, for a task with real seams: a chain of small runs instead of ' +
+            'one long one, with no run-wide ceiling.',
+        ],
       ],
     } as Table,
     cumulative:
-      'The count is <strong>cumulative for the whole command</strong> and includes the main ' +
-      'context plus every delegated or Workflow context, retries included. Enforcement is ' +
-      'mechanical: every delegated context carries a turn limit (6/8/12 for S/M/L), review→fix ' +
+      'The count is <strong>cumulative for the whole command</strong> — XL excepted, below — and ' +
+      'includes the main context plus every delegated or Workflow context, retries included. ' +
+      'Enforcement is mechanical: every delegated context carries a turn limit (6/8/12 for S/M/L, ' +
+      'and 20 for an XL segment executor, which has to go red-first → implement → run → fix), ' +
+      'review→fix ' +
       'cycles are capped at 1/2/3, a completed round that produces no new confirmed non-duplicate ' +
       'finding stops fan-out immediately, and a generated Workflow script tracks its remaining ' +
       'allowance with a counter and a <code>boundedAgent()</code> wrapper that throws before ' +
       'exceeding it. Unbounded fan-out is forbidden outright.',
+
+    xlHeading: 'The one tier that is not a number of contexts',
+    xlLede:
+      'A very large task — many components, many pages, several repositories, one page carrying a ' +
+      'great deal of logic — does not run out of agents. It runs out of <strong>main loop</strong>: ' +
+      'one orchestrating context has to survive from intake to the final report, and over a ' +
+      'multi-hour run compaction takes the plan with it. A higher ceiling would buy more of exactly ' +
+      'what degrades, so XL changes the topology instead.',
+    xl: [
+      {
+        num: 'seams',
+        title: 'Cut while the idea is refined',
+        body:
+          '<code>refine</code> cuts the idea into segments, each sized to an ordinary S or M ' +
+          'build, each closing its own DoD items and leaving the repository green. A cut may never ' +
+          'split a coherent edit, a contract change from its call-sites, or a DoD item from its ' +
+          'test. A task with no such seam is <em>not</em> XL — it is an idea that needs one more ' +
+          'refinement round, and the rules say so rather than sharding it anyway.',
+      },
+      {
+        num: 'segment contexts',
+        title: 'A fresh context per segment',
+        body:
+          '<code>build</code> runs the segments sequentially, each in its own context, on a brief ' +
+          'that carries its DoD, its scope fence, its slice of the Code map and the interfaces ' +
+          'earlier segments froze — never the whole idea. At most three contexts per segment, and ' +
+          'the orchestrator never opens a segment’s diff.',
+      },
+      {
+        num: 'run ledger',
+        title: 'The state lives on disk',
+        body:
+          'The IMPL becomes the run’s ledger: segment statuses, the interfaces each segment ' +
+          'published, the integration checkpoints. That is what lets a run measured in hours ' +
+          'survive compaction, <code>/clear</code> and an outright interruption — the same command ' +
+          'continues from the first unfinished segment, and a finished one is never re-run.',
+      },
+      {
+        num: 'ready frontier',
+        title: 'A failed segment costs a segment',
+        body:
+          'One retry, then the segment is marked blocked and the run carries on with everything ' +
+          'that does not depend on it; it stops to ask only when nothing is ready. The floor is ' +
+          'untouched: red-first inside every segment, its own independent verifier, the full ' +
+          'recipe at each completed level, and a final review that is cross-segment only.',
+      },
+    ] as Card[],
 
     occupancyHeading: 'The second axis: occupancy',
     occupancyLede:
@@ -388,11 +443,12 @@ export const howItWorks = {
 
     contractsHeading: 'The same principle, applied to the commands’ own text',
     contractsLede:
-      'The shared rules live in four contracts, and a command loads only the ones it can act on. A ' +
-      'read-only command has no business paying for the executor rules, and a change with no ' +
-      'browser surface never pays for the web method.',
+      'The shared rules live in five contracts, and a command loads only the ones it can act on. A ' +
+      'read-only command has no business paying for the executor rules, a change with no browser ' +
+      'surface never pays for the web method, and an ordinary idea never pays for the segmented one.',
     matrixHead: 'Command',
     matrixIfBrowser: 'if browser',
+    matrixIfXl: 'if XL',
     contractsNote:
       '<code>verify</code> runs checks and writes tests, but changes no behavior — so it falsifies ' +
       'no document and carries no documentation duty. The tech track has no web contract at all: ' +

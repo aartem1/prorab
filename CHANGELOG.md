@@ -6,6 +6,89 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.16.0 · prorab-tech 0.12.0
+
+**A task too big for one run is now cut at its seams and executed one segment at a time.** The
+framework could describe a large feature but not finish one. `refine` produced a flat IDEA — one
+scope, one DoD list, the order of stages in prose — and `build` implemented it in a single run whose
+orchestrating context had to survive from intake to the final report. On work spanning many
+components, pages, or repositories that context is what breaks first: compaction takes the plan with
+it, a thirty-item DoD table stops fitting beside the work, and one forty-file diff reviews worse than
+ten four-file diffs. Raising the 12/16-context ceiling would have bought **more of exactly what
+degrades**, so this release changes the shape of the run instead of its budget.
+
+- **New tier `XL` — a topology, not a bigger number.** It is the one tier whose cap is not
+  cumulative: the orchestrator is a single context for the whole run and holds only the ledger, each
+  segment gets **at most 3 contexts** (executor, one independent verifier, at most one recon), and no
+  run-wide ceiling applies because nothing in the run fans out unbounded. Selected by the triage, or
+  pinned with `--tier=XL`; `--tier=L` pins the old single-run shape even for an IDEA that carries a
+  segment plan. Deliberately **not** a new command — the same `refine → build` pair keeps the task.
+- **New `references/segmented-run.md`**, loaded **only** by `refine` when the idea shows XL signals
+  and by `build` when its triage selects XL, so an ordinary idea never pays for it — the same
+  conditional shape `web-probing.md` established. It holds the whole method: seam discipline, the
+  `Segment plan` and ledger templates, the brief and capsule contracts, the per-segment budget,
+  failure handling, checkpoint commits and resume.
+- **`refine` cuts once, and only where a seam actually exists.** A new Phase 3.5 cuts the idea before
+  settling it, from code it has already read — no extra `Explore` context, its two-context cap
+  unchanged — and puts the order to the user in one `AskUserQuestion` round. A cut may never split a
+  coherent edit, a contract change from its call-sites, or a DoD item from its test; every DoD item
+  belongs to **exactly one** segment; every segment leaves the repository green and names the
+  interface it publishes for later ones. **If the work has no such seam, it is not XL** — it is an
+  idea still under-decomposed, and the honest answer is one more refinement round, never a forced
+  shard of coherent work. An unresolved `[?:…]` inside a segment blocks that segment only.
+- **`build` executes from a ledger on disk, which is what makes a multi-hour run possible at all.**
+  Phase 3X materializes `tasks/IMPL-<slug>.md` as the run's state — the segment table with per-segment
+  status, the interfaces each segment froze, the integration checkpoints, a per-context usage journal
+  — then runs the ready frontier one segment at a time, each in **one fresh `Agent` context**
+  (`max_turns: 20`, because a segment has to go red-first → implement → run → fix). Per-segment detail
+  goes to `tasks/segments/<slug>/SEG-<nn>-*.md`, written by the context that implemented it; the
+  orchestrator never opens a segment's diff and acts on the capsule and the digests. **Because the
+  ledger is the state, the run survives its own context**: after compaction, `/clear` or an outright
+  interruption, re-invoking `/prorab:build <slug>` continues from the first unfinished segment, logs
+  `resumed: <n> done, <m> pending, <k> blocked`, and greps each finished segment's published interface
+  to catch drift. A `done` segment is never re-run.
+- **No `Workflow` at XL, and that is a design constraint rather than an omission.** A workflow script
+  cannot touch the filesystem, so it could not write the ledger between segments — the very state the
+  resume depends on. And a segment that would need fan-out inside itself is a segment that was cut
+  wrong: the fix is a better seam, not an escape hatch.
+- **A failed segment costs a segment, not the afternoon.** One retry with the failure digest in the
+  brief, then `blocked` with its reason recorded, and the run carries on with the rest of the frontier;
+  a blocked segment holds up only its dependents. The command stops and asks the user when the ready
+  frontier is empty and work remains — the global blockers (failed spike, IDEA contradicting the code,
+  missing secret, an IDEA defect on Scope/DoD) still stop it the moment they appear. Never `done` over
+  a red check.
+- **The evidence floor does not shrink when the work is cut smaller.** Each segment keeps the red-first
+  discipline and its own independent verifier; the full recipe runs at each completed DAG level instead
+  of after every segment (which costs more than it finds) and once at the end. The final review becomes
+  **cross-segment only** — integration, coherence of published-and-consumed interfaces, scope creep,
+  DoD completeness — because re-reviewing every segment's diff at the end rebuilds the single enormous
+  review that segmenting exists to avoid. The DoD skeptic still runs in a fresh context, over the
+  aggregate table, and the mutation budget applies to critical clusters across the whole run.
+- **Checkpoint commits, narrowly.** Hours of work in one dirty worktree is a crash away from being
+  lost, so `build` may commit after each green segment — **only** on a branch dedicated to this task
+  (one it created, or one the user confirms), never on `main`/`master`, asked **once** before the first
+  segment and recorded in the ledger. It stages only the paths that segment declared, never
+  `git add -A`, and paths already dirty at the start are recorded as foreign and never staged.
+- **Several repositories, only when the user explicitly asks.** Each segment then carries `Repo:`,
+  every declared repository must be an existing local checkout the user named, and the run must never
+  clone, fetch or create one. Provider before consumer: the repository owning a contract runs first and
+  the contract lands in `Frozen interfaces` for the consumer's brief. No cross-repository commit
+  coordination or PR chain — the report says what is left uncommitted where.
+- **`verify` needed no change.** The aggregate DoD table keeps the `proof` column, so the
+  coverage-evidence handoff works exactly as before: `verify` re-hashes the fresh proofs and spends its
+  budget on behaviors nobody checked. A segmented run is invisible to it, which is the point.
+- **Fourteen new contract tests**, written before the prose they check, lock the parts that would decay
+  quietly: that XL is detected from seams rather than size, that the seam rules forbid the three
+  splits, that state lives on disk and a `done` segment is never re-run, that a brief is a slice and
+  never the whole IDEA, that checkpoint commits need a dedicated branch, and that the method stays in
+  the product track and is loaded only conditionally.
+- **What this release deliberately does not do.** Segments run sequentially — parallel segments remain
+  available only explicitly and only with worktree isolation, since two agents editing one tree clobber
+  each other. There is no segment limit per invocation and no forced hand-back: the run continues while
+  ready segments remain. Proposal 22's pre-dispatch byte estimation is still not implemented; what now
+  exists is its "split by seam" half, applied at idea level where a seam can still be chosen honestly
+  instead of imposed on an executor already mid-run.
+
 ## prorab 0.15.0 · prorab-tech 0.12.0
 
 **A web UI is driven headless by default — the model authors the session instead of watching it.**

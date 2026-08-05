@@ -112,7 +112,9 @@ export const commands = {
             'was rejected and why</em>, risk spikes, remaining assumptions, and a numbered ' +
             'Definition of Done. Plus a <em>Code map</em> handoff: every file it opened with a ' +
             'content hash, reuse and change points, contracts at risk, conventions to mirror, and ' +
-            'an honest list of what it did <em>not</em> study.',
+            'an honest list of what it did <em>not</em> study. An idea too big for one run also ' +
+            'gets a <em>Segment plan</em>: the cut into segments, each one independently checkable ' +
+            'and each leaving the repository green.',
         },
         {
           term: 'Budget',
@@ -165,8 +167,12 @@ export const commands = {
           body:
             'Working code plus <code>tasks/IMPL-&lt;slug&gt;.md</code>: the task DAG, the per-file ' +
             'change list, the test plan, the verification recipe, the decisions and deviations, ' +
-            'and a DoD table with a <code>proof</code> column. Archives the completed bundle into ' +
-            '<code>tasks/archive/&lt;YYYY&gt;/</code> — only after verification passed.',
+            'and a DoD table with a <code>proof</code> column. On a segmented idea that same file ' +
+            'is the run’s <em>ledger</em> — segment statuses, the interfaces each segment froze for ' +
+            'the next ones, the integration checkpoints — with per-segment detail in ' +
+            '<code>tasks/segments/&lt;slug&gt;/</code>. Archives the completed bundle into ' +
+            '<code>tasks/archive/&lt;YYYY&gt;/</code> — only after verification passed, and at XL ' +
+            'only once every segment is done.',
         },
         {
           term: 'Stops on',
@@ -192,7 +198,8 @@ export const commands = {
             'the verification recipe from repository guidance, CI and task runners rather than ' +
             'assuming a stack — a missing command is reported as a gap, not invented. Records ' +
             'which of its tests were proven able to fail, so <code>verify</code> does not re-prove ' +
-            'them.',
+            'them. On an idea with seams it runs each segment in a fresh context, so an interrupted ' +
+            'run continues from the first unfinished segment instead of starting over.',
         },
       ],
     },
@@ -545,8 +552,9 @@ export const commands = {
       head: ['Flag', 'Effect'],
       rows: [
         [
-          '<code>--tier=S|M|L</code>',
-          'Pins the context tier: 2, 6 or 12 contexts cumulative for the whole command.',
+          '<code>--tier=S|M|L|XL</code>',
+          'Pins the context tier: 2, 6 or 12 contexts cumulative for the whole command — or, at ' +
+            '<code>XL</code>, 3 per segment of a segmented run.',
         ],
         [
           '<code>--fast</code>',

@@ -589,8 +589,11 @@ the symbol names, the paths, the framework, the ORM`,
       'Workflow context, retries included — and it is enforced in code, not in prose: a generated ' +
       'Workflow script carries the remaining allowance, counts what it schedules, and routes ' +
       'every launch through a wrapper that throws before exceeding it. You can pin the choice ' +
-      'with <code>--fast</code>, <code>--thorough</code> or <code>--tier=S|M|L</code>; the ' +
-      '16-context ceiling stays absolute.',
+      'with <code>--fast</code>, <code>--thorough</code> or <code>--tier=S|M|L|XL</code>; the ' +
+      '16-context ceiling stays absolute for the single-run tiers. <code>XL</code> is the one ' +
+      'exception to a cumulative count, and so not one of the readings above: it bounds 3 contexts ' +
+      'per segment of a segmented run, because a multi-hour task runs out of main loop long before ' +
+      'it runs out of agents.',
 
     occupancy:
       '<strong>The tier limits context count; separate rules limit context size.</strong> Raw test ' +

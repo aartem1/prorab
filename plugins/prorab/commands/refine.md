@@ -11,6 +11,8 @@ You write NO code right now and change no project code. Only reading code/docs a
 
 **Project knowledge.** At the start, read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` and apply its language, source-of-truth, bounded recall, freshness, and capture rules. This command is a dialogue, so everything the user reads — paraphrase, unclarity map, `AskUserQuestion` options, the final summary, the IDEA draft — is in the task's language. This main-context work does not consume an extra delegated context.
 
+**Segmented run.** Read `${CLAUDE_PLUGIN_ROOT}/references/segmented-run.md` **only when** the idea shows XL signals — stages that cannot start before an earlier one lands, several subsystems plus repetition across surfaces (pages, screens, entities), a DoD heading past roughly eight items, a pre-stage everything else sits on, or an explicit request spanning repositories. Most ideas are one build and never pay for that file. When it does apply, the cut becomes part of refinement (Phase 3.5) and the settled idea carries a `Segment plan`; the dialogue's focus shifts accordingly — settle the seams, the order and the interfaces between segments, and let intra-segment detail ride into the segment brief as a local `[?:…]`.
+
 ---
 
 ## Principles
@@ -79,6 +81,12 @@ Between question rounds it's allowed to:
 - offer the user alternative formulations of the idea ("this can be read as: A or B — which is closer?");
 - propose moving things out of scope ("this can go into a separate iteration, agreed?").
 
+### Phase 3.5 — Cutting into segments (XL only)
+
+Skip this phase unless the XL signals hold; for an ordinary idea a segment plan is ceremony. When they do hold, cut the idea **before** settling it, following the seam discipline in the `Segmented run` contract, and put the cut to the user in **one** `AskUserQuestion` round: the order (what has to land first), and which segment is the walking skeleton when several sit on shared plumbing.
+
+Cut from what you have already read. This phase is not a reason to open more files or spend another `Explore` context — the seams follow from the settled scope and the behaviors you already know are checkable, and the `Code map` you have been keeping is enough to name files per segment. The DoD gets its numbers in Phase 4, so propose the cut in terms of behaviors here and record the numbered `DoD → segment` mapping when you write the summary. If no seam survives the discipline — a coherent edit, a contract change with its call-sites, or a DoD item with its test would have to be split — say so plainly instead of inventing one: the idea is not ready to be cut, and one more refinement round is cheaper than a plan that shards coherent work.
+
 ### Phase 4 — Final settling
 
 When you consider the idea mature (no 🟥, no key 🟧 left), give the **final idea summary** in a structured form:
@@ -105,7 +113,7 @@ When you consider the idea mature (no 🟥, no key 🟧 left), give the **final 
 
 ### Code map (handoff for build — so it does not re-study what is still fresh)
 - Provenance: commit `<sha>`, recorded `<YYYY-MM-DD>`
-- Files studied (`path` — role — `sha1`): …
+- Files studied (`path` — role — `sha1` — segments served, at XL only): …
 - Ready to reuse (file:line → what it already gives): …
 - Change points (file:line → what has to change): …
 - Conflicts / contracts at risk (file:line → what breaks): …
@@ -114,8 +122,11 @@ When you consider the idea mature (no 🟥, no key 🟧 left), give the **final 
 - Verification commands OBSERVED (unverified hint — build must confirm before running): …
 - Web surfaces OBSERVED (only if the idea touches a browser surface; same unverified-hint status): documented start command and base URL · routes/screens a consumer reaches · the user-facing handles (button/label/heading text) the requirement implies · the project's own e2e harness and its invocation, or "none". No selectors, no component names — a later blind check may carry these into its charter, and only what a user can see is allowed across.
 
+### Segment plan (XL only — the execution unit for build; shape in the `Segmented run` contract)
+- Segment count, the global-DoD→segment mapping (by the numbers from the `Definition of Done` below — every item in exactly one segment), then one block per segment: goal, dependencies, its DoD items, files/subsystems, what it publishes, expected tier, local forks.
+
 ### Order of stages (what comes first, prerequisites/pre-stages)
-- …
+- … (at XL the `Segment plan` above is the ordered version of this — don't write the order twice)
 
 ### Key decisions (what and why, and what was rejected — why)
 - …
@@ -138,7 +149,7 @@ After this, **ask the user**: are they ready to move to the spec/plan, or want t
 
 If the user agrees — propose (don't do it silently) saving the summary to `tasks/ideas/IDEA-<kebab-slug>.md` so it can be worked on further in a separate session (e.g. via **`/prorab:build`** or a manual implementation).
 
-Once it is saved, name the exact next step: **`/clear`, then `/prorab:build <slug>`**. The fresh context is deliberate, not a chore — build's DoD check has to be independent of this dialogue, and the saved `Code map` is what keeps the fresh session from re-studying the code. If what actually remains is a one-or-two-file change with no external contract touched, say so and point at **`/prorab:quick`** instead: same discipline, far less ceremony.
+Once it is saved, name the exact next step: **`/clear`, then `/prorab:build <slug>`**. The fresh context is deliberate, not a chore — build's DoD check has to be independent of this dialogue, and the saved `Code map` is what keeps the fresh session from re-studying the code. If what actually remains is a one-or-two-file change with no external contract touched, say so and point at **`/prorab:quick`** instead: same discipline, far less ceremony. If the idea carries a `Segment plan`, add one sentence about what that buys them: build will run the segments one at a time, each in a fresh context, and the same command **continues** an interrupted run from the ledger rather than starting over.
 
 After the user confirms the settled summary, run bounded automatic capture. Save only decisions,
 constraints, rejected alternatives, or cross-task facts that meet the durable-memory bar; do not

@@ -6,11 +6,15 @@ Six agentic-development commands for Claude Code:
   Dialogue, questions, code study, hunting for contradictions. Writes no code.
   Result — `tasks/ideas/IDEA-<slug>.md` in the working project, carrying a `Code map` handoff of
   what it already read (file content hashes, reuse/change points, conflicts, conventions, gaps).
+  An idea too big for one run also carries a `Segment plan`: the cut into independently checkable
+  segments, each leaving the repository green.
 - **`/prorab:build`** (`commands/build.md`) — turnkey implementation of a refined idea via
   a multi-agent ultracode Workflow. Reuses the IDEA's `Code map` when the recorded hashes still
   match, so recon isn't paid for twice. It derives the project's verification recipe from repository
   guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack.
-  Result — code + `tasks/IMPL-<slug>.md`.
+  On a segmented idea it runs the segments one at a time, each in a fresh context, keeping the run's
+  state in a ledger so an interrupted run continues from the same command.
+  Result — code + `tasks/IMPL-<slug>.md` (plus `tasks/segments/<slug>/` at XL).
 - **`/prorab:quick`** (`commands/quick.md`) — the cheap lane for a 1–2 file everyday change:
   no IDEA/IMPL, no archive, no Workflow, at most two contexts. Keeps the floor (DoD stated before
   editing, red-for-the-right-reason test, the project's own checks, one independent verifier) and
@@ -58,7 +62,10 @@ checks but changes no behavior, so it loads execution and not documentation sync
 [`references/web-probing.md`](references/web-probing.md), is loaded by `build`, `quick` and `verify`
 **only when the scope has a browser surface**: it makes a headless run the default instrument for a
 web UI, keeps pixels to the pointwise cases that are genuinely perceptual, and splits the work across
-the stages so each pays once. Memory is a
+the stages so each pays once. A fifth,
+[`references/segmented-run.md`](references/segmented-run.md), is loaded by `refine` and `build`
+**only when the task is XL** — seam discipline, the `Segment plan` and ledger templates, the segment
+brief and capsule, the per-segment budget, checkpoint commits and resume. Memory is a
 lazy,
 small Markdown structure under `tasks/memory/`; exact paths/symbols/terms are recalled first, and
 material claims are re-checked because current code remains the source of truth. Successful
@@ -70,7 +77,12 @@ remain supported, and no archive entry is selected as active work by default.
 **Bounded adaptive budget.** Before fanning out, `build` picks tier S/M/L with hard cumulative caps:
 2/6/12 model contexts (L may expand to an absolute 16 only for confirmed critical risk or explicit
 `--thorough`), mandatory `maxTurns`, review-cycle caps 1/2/3, and an immediate stop after a round
-with no new confirmed findings. `refine` allows at most two Explore contexts; `announce` allows one
+with no new confirmed findings. A fourth tier, **XL**, exists for a task with real seams, and it is the
+one whose cap is not cumulative: the orchestrator is a single context holding only the ledger, and each
+segment gets at most 3 contexts. That is the point of it — a multi-hour task runs out of main loop long
+before it runs out of agents, so `refine` cuts the idea into segments and `build` runs them one at a
+time, each in a fresh context, from a ledger on disk that lets an interrupted run continue from the
+same command. `refine` allows at most two Explore contexts; `announce` allows one
 delegated context and one fact-check pass; `ask` allows one delegated context; `quick` is fixed at two
 contexts with no Workflow. `verify` uses the same 2/6/12 tiers but always spends at least one of them
 on the blind prober, because blindness cannot be self-imposed by a context that has read the diff;

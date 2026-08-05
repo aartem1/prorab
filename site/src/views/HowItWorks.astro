@@ -111,6 +111,11 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <DataTable table={h.cost.tiers} style="margin:1.3rem 0" />
     <p class="dim measure" set:html={h.cost.cumulative} />
 
+    <h3 style="margin-top:2rem">{h.cost.xlHeading}</h3>
+    <p class="dim measure" style="margin-bottom:1.3rem" set:html={h.cost.xlLede} />
+
+    <Cards cards={h.cost.xl} />
+
     <h3 style="margin-top:2rem">{h.cost.occupancyHeading}</h3>
     <p class="dim measure" style="margin-bottom:1.3rem">{h.cost.occupancyLede}</p>
 
@@ -135,6 +140,8 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
                 {row.cells.map((cell) =>
                   cell === 'browser' ? (
                     <td class="c">{h.cost.matrixIfBrowser}</td>
+                  ) : cell === 'xl' ? (
+                    <td class="c">{h.cost.matrixIfXl}</td>
                   ) : cell ? (
                     <td class="y">✓</td>
                   ) : (

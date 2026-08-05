@@ -84,6 +84,7 @@ For a two-file change where all that ceremony costs more than the work itself, s
 |---|---|
 | Think an idea through before anyone writes code | `/prorab:refine` |
 | Implement a refined idea, end to end | `/prorab:build` |
+| Ship something too big for one run — many components, pages, or repositories | the same two commands: they switch to a segmented run |
 | Make a small everyday change (1–2 files) | `/prorab:quick` |
 | Check that what shipped actually works for its users | `/prorab:verify` |
 | Tell the team what shipped | `/prorab:announce` |
@@ -109,6 +110,9 @@ raw idea ──/prorab:refine──▶ IDEA-<slug>.md ──/prorab:build──�
                                                                   └──/prorab:verify──▶ VERIFY + tests
 
 small change ──/prorab:quick──▶ code + QUICK-<slug>.md   (escalates to refine+build if it isn't small)
+
+large idea ──▶ the same two commands: the IDEA carries a Segment plan, and build runs the segments one
+               at a time from a resumable ledger (tier XL)
 ```
 
 `/prorab:verify` is optional and works on any scope — after `build`, after `quick`, or on a branch
@@ -116,8 +120,8 @@ nobody used the framework for.
 
 | Command | What it does |
 |---|---|
-| **`/prorab:refine`** | Works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md` with a `Code map` handoff of what it read. |
-| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Records which of its tests were proven able to fail, so `verify` doesn't re-prove them. Result — code + `tasks/IMPL-<slug>.md`. |
+| **`/prorab:refine`** | Works a raw idea up to spec-readiness: skeptical questions, code study, surfacing contradictions and gaps. Writes no code. Result — `tasks/ideas/IDEA-<slug>.md` with a `Code map` handoff of what it read. An idea too big for one run also gets a `Segment plan`: the cut into independently checkable segments, each of which leaves the repository green. |
+| **`/prorab:build`** | Turnkey implementation of a refined idea via a multi-agent Workflow: recon → plan → DAG-ordered implementation → adversarial review → verification. Reuses the IDEA's `Code map` when the recorded file hashes still match. Derives the verification recipe from repo guidance, CI, task runners and test conventions instead of assuming a stack. Records which of its tests were proven able to fail, so `verify` doesn't re-prove them. On a segmented idea it runs each segment in a fresh context and keeps the run's state in a ledger, so an interrupted run continues from the same command. Result — code + `tasks/IMPL-<slug>.md`. |
 | **`/prorab:quick`** | The cheap lane: no IDEA/IMPL, no archive, no Workflow, at most 2 contexts. Keeps the floor — a DoD stated before editing, a red-for-the-right-reason test, the project's own checks, one independent verifier. Result — code + one compact `tasks/quick/QUICK-<slug>.md` record. |
 | **`/prorab:verify`** | Black-box check that the implemented functionality works **for its users**, plus proof that a test would catch it breaking. Resolves the scope by command (uncommitted / branch vs base / commit range / task artifact) and asks only when that is genuinely undetermined. The context that drives the system gets a charter of surfaces and expected results and **never** the implementation, the diff or a path; expected values come from the requirement, and a `works` resting on the system's own output is downgraded. Writes no product code — defects are routed with their reproduction, and the only code it writes is the missing tests, each proven by a mutation. Reuses the proof `build`/`quick` already recorded instead of re-proving it. A web UI is driven **headless by default** — the prober authors one consumer session and judges a structured result instead of clicking through screenshots — with pixels reserved for the pointwise perceptual cases and an interactive visual session only on a named, logged trigger. Result — a graded verdict per behavior + `tasks/verify/VERIFY-<slug>.md`. |
 | **`/prorab:announce`** | A concise, precise announcement of the results (what was done/new/changed, methods, how it's computed), dense enough to forward in a messenger. Reads IMPL/diff/IDEA and fact-checks. Writes no code, makes no commit. |
@@ -212,6 +216,7 @@ these files document what was decided and why.
 tasks/
 ├── ideas/IDEA-<slug>.md                     # refine
 ├── IMPL-<slug>.md                           # build
+├── segments/<slug>/SEG-<nn>-<name>.md       # build, at XL only
 ├── quick/QUICK-<slug>.md                    # quick
 ├── verify/VERIFY-<slug>.md                  # verify
 ├── audits/AUDIT-<slug>.md                   # audit
@@ -236,7 +241,12 @@ about a screen, the change wasn't small. `/prorab:announce` produces its text in
   studied with content hashes, reuse/change points, conflicts, conventions, gaps).
 - `/prorab:build` reads an active IDEA, reuses its `Code map` where hashes still match, writes
   `tasks/IMPL-<slug>.md`, and after verified completion moves the linked bundle into
-  `tasks/archive/<YYYY>/<task-slug>/`.
+  `tasks/archive/<YYYY>/<task-slug>/`. At XL that IMPL is also the run's **segment ledger** — the
+  segment table with per-segment status, the interfaces each segment froze for the next ones, the
+  integration checkpoints — and each segment's own detail goes to `tasks/segments/<slug>/SEG-<nn>-*.md`,
+  written by the context that implemented it. The ledger is what makes the run resumable: re-invoking
+  the command continues from the first unfinished segment. The bundle archives only when every segment
+  is `done`; one blocked or pending segment keeps the whole thing active.
 - `/prorab:quick` writes one compact `tasks/quick/QUICK-<slug>.md`: what changed and why, the DoD
   table, the exact checks and their results, the documentation it corrected, and the verifier's
   verdict. On a slug collision it uses the same deterministic `-2`, `-3` suffix and never overwrites.
@@ -314,10 +324,24 @@ radius, novelty, reversibility, uncertainty — and pick a tier.
 | **S** | 2 | No Workflow at all. |
 | **M** | 6 | |
 | **L** | 12 | Expandable to an absolute ceiling of 16, only for confirmed critical risk or explicit `--thorough`. |
+| **XL** | 3 *per segment* | `build` only, and only for a task with seams: the run becomes a chain of small runs. No run-wide ceiling — see below. |
 
 The count is cumulative for the whole command and includes the main context plus every delegated or
 Workflow context, retries included. You can pin the choice with `--fast`, `--thorough`,
-`--tier=S|M|L` or `--verification=economy|balanced|thorough`; the 16-context ceiling stays absolute.
+`--tier=S|M|L|XL` or `--verification=economy|balanced|thorough`; the 16-context ceiling stays absolute
+for the single-run tiers.
+
+**XL is the exception, because a very large task does not run out of agents — it runs out of main
+loop.** One orchestrating context has to survive from intake to the final report, and across a
+multi-hour task compaction takes the plan with it, a thirty-item DoD table stops fitting beside the
+work, and a forty-file diff reviews worse than ten four-file diffs. A higher ceiling buys more of
+exactly what degrades. So XL changes the topology instead: `refine` cuts the idea at its seams into
+segments, each sized to an ordinary S or M build, and `build` runs them one at a time — **one fresh
+context per segment**, at most three contexts each, with a thin orchestrator that holds only the
+ledger. The state of the run lives in that ledger on disk, so an interrupted run resumes from the same
+command instead of starting over, and a segment that fails blocks its dependents rather than the
+afternoon. A task that cannot be cut without splitting a coherent edit is not XL — it is an idea that
+needs one more refinement round, and the seam rules say so out loud rather than sharding it anyway.
 
 **A tier bounds how many contexts open, not how full each one gets** — those are two different
 things, and a context stuffed with material nobody reads judges worse than one given the range that
@@ -332,15 +356,17 @@ the intended shape of the cheap lane, not an exception to the rule.
 Compaction never buys silence: the exit code and the failure counts are always reported in full.
 Shortening *what* failed is allowed; concealing *that* something failed is a false report.
 
-The same principle applies to the commands' own text. The shared rules live in four contracts, and a
+The same principle applies to the commands' own text. The shared rules live in five contracts, and a
 command loads only the ones it can act on: `project-knowledge.md` (language, source-of-truth order,
 memory, delegated-return capsules, archive) is read by all ten; `execution.md` (run output and
 main-loop discipline, deterministic steps) only by the seven that run checks or analyzers;
-`documentation-sync.md` only by the four that change product code; and `web-probing.md` (the headless
+`documentation-sync.md` only by the four that change product code; `web-probing.md` (the headless
 instrument ladder, the locator rule, the runner) only by `build`, `quick` and `verify`, and only when
-the scope in front of them actually has a browser surface. `ask`, `announce` and `refine` load neither
-of the middle two, which is where the biggest part of their prompt used to go, and `verify` skips
-documentation sync — it writes tests, never behavior.
+the scope in front of them actually has a browser surface; and `segmented-run.md` (seam discipline, the
+ledger, the segment brief and capsule, resume) only by `refine` and `build`, and only when the task in
+front of them is XL. `ask`, `announce` and `refine` load neither of the middle two, which is where the
+biggest part of their prompt used to go, and `verify` skips documentation sync — it writes tests, never
+behavior.
 
 What the budget never buys back: the safety floor is non-negotiable at every tier — the
 characterization net or baseline, the contract diff, the drift search, a DoD skeptic, and a
@@ -350,9 +376,10 @@ sabotage-proven gate whenever one is created or changed.
 <summary><b>How the budget is enforced, and how verification escalates</b></summary>
 
 **Enforcement.** Every delegated context carries a mandatory turn limit (`max_turns` for direct
-agents, `maxTurns` in workflow configuration — 6/8/12 for S/M/L), and review→fix cycles are capped
-at 1/2/3. A completed round that produces no new confirmed, non-duplicate finding stops fan-out
-immediately. Judge panels are used only when there are at least two genuinely different designs, and
+agents, `maxTurns` in workflow configuration — 6/8/12 for S/M/L; at XL a segment executor gets 20,
+because it has to go red-first → implement → run → fix, and its verifier 8), and review→fix cycles are
+capped at 1/2/3, or at XL one per segment plus one per integration checkpoint. A completed round that
+produces no new confirmed, non-duplicate finding stops fan-out immediately. Judge panels are used only when there are at least two genuinely different designs, and
 they consume the same cap. Generated Workflow scripts enforce their remaining allowance with a
 counter and a `boundedAgent()` wrapper; unbounded `agent()`/`pipeline()` fan-out is forbidden.
 
@@ -388,7 +415,8 @@ re-deriving it, except that any staleness in `refactor`'s hashed provenance forc
 evidence → one independent reviewer → a second only on conflict or high blast radius → a
 three-reviewer panel only for confirmed contract, security or business-critical risk.
 
-**Mutation intensity** is controlled separately from the S/M/L context tier:
+**Mutation intensity** is controlled separately from the context tier, and at XL its budget applies to
+critical clusters across the whole run rather than per segment:
 
 - **`economy`** — no mutation, for low-risk contract-untouched work with strong executable evidence;
 - **`balanced`** — the default; at most one mutation per critical invariant or risk cluster;
