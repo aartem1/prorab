@@ -29,6 +29,7 @@ SEGMENTED = PRODUCT / "references" / "segmented-run.md"
 WEB_PROBERS = (
     PRODUCT / "commands" / "build.md",
     PRODUCT / "commands" / "quick.md",
+    PRODUCT / "commands" / "revise.md",
     PRODUCT / "commands" / "verify.md",
 )
 
@@ -36,6 +37,7 @@ WEB_PROBERS = (
 RUNNERS = (
     PRODUCT / "commands" / "build.md",
     PRODUCT / "commands" / "quick.md",
+    PRODUCT / "commands" / "revise.md",
     PRODUCT / "commands" / "verify.md",
     TECH / "commands" / "refactor.md",
     TECH / "commands" / "lint-fix.md",
@@ -46,6 +48,7 @@ RUNNERS = (
 EXECUTORS = (
     PRODUCT / "commands" / "build.md",
     PRODUCT / "commands" / "quick.md",
+    PRODUCT / "commands" / "revise.md",
     TECH / "commands" / "refactor.md",
     TECH / "commands" / "lint-fix.md",
 )
@@ -84,7 +87,7 @@ class ManifestAndCommandTests(unittest.TestCase):
 
     def test_command_frontmatter_and_reference_links(self) -> None:
         commands = sorted(PRODUCT.glob("commands/*.md")) + sorted(TECH.glob("commands/*.md"))
-        self.assertEqual(10, len(commands))
+        self.assertEqual(11, len(commands))
         for command in commands:
             text = read(command)
             match = re.match(r"^---\n(.*?)\n---\n", text, flags=re.DOTALL)
@@ -276,6 +279,103 @@ class QuickLaneTests(unittest.TestCase):
         self.assertIn("AssertionError", self.quick)
         self.assertIn("One independent verifier", self.quick)
         self.assertIn("refuted if in doubt", self.quick)
+
+
+class RevisionLaneTests(unittest.TestCase):
+    """The continuation lane: cheap because it inherits, bounded so it cannot become `build`."""
+
+    def setUp(self) -> None:
+        self.revise = read(PRODUCT / "commands" / "revise.md")
+
+    def test_the_ceiling_is_what_keeps_it_a_revision(self) -> None:
+        """Past six contexts the work is a build; a lane that can grow to XL would absorb one."""
+        self.assertIn("at most 2 model contexts total", self.revise)
+        self.assertIn("at most 6 model contexts total", self.revise)
+        self.assertIn("No `Workflow`", self.revise)
+        self.assertIn("no segmented run", self.revise)
+        # and the contract that would make one possible is never loaded
+        self.assertNotIn("segmented-run.md", self.revise)
+
+    def test_one_rolling_record_per_task_not_one_per_round(self) -> None:
+        self.assertIn("tasks/revisions/REVISION-<slug>.md", self.revise)
+        self.assertIn("## Artifact template", self.revise)
+        self.assertIn("type: revision", self.revise)
+        self.assertIn("never one file per round", self.revise)
+        # written after the verifier, so it records the real outcome
+        self.assertIn("after the verifier", self.revise)
+
+    def test_there_is_no_state_machine_and_no_closing_run(self) -> None:
+        """The absence of a next remark ends the process; a status field would only drift."""
+        self.assertIn("There is no start and no finish", self.revise)
+        self.assertIn("no closing run", self.revise)
+        self.assertIn("needs no `status` field", self.revise)
+        self.assertNotIn("status: done", self.revise)
+        self.assertNotIn("reopened", self.revise)
+
+    def test_history_is_append_only_and_carries_the_outcome(self) -> None:
+        self.assertIn("append-only", self.revise)
+        self.assertIn("Don't rewrite `History`", self.revise)
+        # a reversed decision is a new line, not an edit of the old one
+        self.assertIn("A reversed decision is a new line", self.revise)
+        # including when the iteration did not succeed
+        self.assertIn("`escalated`", self.revise)
+
+    def test_the_evidence_floor_is_the_same_one_quick_keeps(self) -> None:
+        self.assertIn("right-reason red", self.revise)
+        self.assertIn("AssertionError", self.revise)
+        self.assertIn("One independent verifier", self.revise)
+        self.assertIn("refuted if in doubt", self.revise)
+        # and the expectation comes from the remark, never from what the code returns
+        self.assertIn("comes from the user's current message", self.revise)
+
+    def test_the_verifier_sees_one_iteration_not_the_accumulated_diff(self) -> None:
+        self.assertIn("this iteration's diff only", self.revise)
+        self.assertIn("never the task's accumulated diff", self.revise)
+
+    def test_recon_is_paid_once_and_reused_by_hash(self) -> None:
+        """The same mechanism build applies to the IDEA's map, applied across rounds instead."""
+        self.assertIn("git hash-object", self.revise)
+        self.assertIn("Provenance", self.revise)
+        self.assertIn("map reused: <n> fresh, <m> stale", self.revise)
+        self.assertIn("spend **zero** recon", self.revise)
+        # a matching hash proves the file is unchanged, not that it was read correctly
+        self.assertIn("not that the earlier reading of it was right", self.revise)
+
+    def test_a_stale_entry_is_patched_pointwise(self) -> None:
+        self.assertIn("re-read **only** those entries", self.revise)
+        self.assertIn("Patch only the `Code map` entries this iteration made stale", self.revise)
+
+    def test_it_resolves_a_task_by_evidence_and_never_defaults_to_the_archive(self) -> None:
+        self.assertIn("Do not select `tasks/archive/**` by default", self.revise)
+        self.assertIn("A similar slug alone is never enough", self.revise)
+        self.assertIn("archives nothing, ever", self.revise)
+        # nothing to continue is a routing answer, not a reason to invent a task
+        self.assertIn("/prorab:quick", self.revise)
+
+    def test_foreign_worktree_changes_stay_out_of_the_iteration(self) -> None:
+        self.assertIn("git status --porcelain", self.revise)
+        self.assertIn("pre-existing foreign changes are not yours", self.revise)
+        self.assertIn("Do not revert or absorb them", self.revise)
+
+    def test_it_hands_over_instead_of_growing(self) -> None:
+        self.assertIn("Eligibility gate", self.revise)
+        self.assertIn("Escalation is mandatory", self.revise)
+        self.assertIn("/prorab:refine", self.revise)
+        self.assertIn("/prorab-tech:refactor", self.revise)
+        # but ordinary continuous work is explicitly not a trigger
+        self.assertIn("is **not** a gate trigger", self.revise)
+
+    def test_the_rest_of_the_track_knows_the_artifact_exists(self) -> None:
+        """A new artifact nobody reads is a fork in the project's history, not a record."""
+        for command, marker in (
+            ("verify.md", "tasks/revisions/REVISION-*.md"),
+            ("announce.md", "tasks/revisions/REVISION-<slug>.md"),
+            ("ask.md", "tasks/revisions/REVISION-*.md"),
+        ):
+            self.assertIn(marker, read(PRODUCT / "commands" / command), command)
+        # and the two commands that hand work to it name it
+        for command in ("quick.md", "build.md"):
+            self.assertIn("/prorab:revise", read(PRODUCT / "commands" / command), command)
 
 
 class VerifyLaneTests(unittest.TestCase):
@@ -731,7 +831,7 @@ class ContextHygieneTests(unittest.TestCase):
             self.assertIn("that one wins", text, reference)
 
     def test_every_command_names_an_occupancy_limit(self) -> None:
-        self.assertEqual(10, len(self.ALL_COMMANDS))
+        self.assertEqual(11, len(self.ALL_COMMANDS))
         for command in self.ALL_COMMANDS:
             text = read(command)
             self.assertTrue(
@@ -841,7 +941,7 @@ class SiteTests(unittest.TestCase):
 
     def test_every_command_is_documented_in_every_language(self) -> None:
         registry = read(self.SRC / "data" / "commands.ts")
-        self.assertEqual(10, len(self.commands))
+        self.assertEqual(11, len(self.commands))
         for command in self.commands:
             self.assertIn(f"'{command.stem}'", registry, f"data/commands.ts → {command.stem}")
             for locale in self.LOCALES:

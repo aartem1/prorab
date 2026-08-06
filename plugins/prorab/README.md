@@ -1,6 +1,6 @@
 # The prorab plugin
 
-Six agentic-development commands for Claude Code:
+Seven agentic-development commands for Claude Code:
 
 - **`/prorab:refine`** (`commands/refine.md`) — work a raw idea up to spec-readiness.
   Dialogue, questions, code study, hunting for contradictions. Writes no code.
@@ -21,6 +21,20 @@ Six agentic-development commands for Claude Code:
   hands the task over to `refine`+`build` or the tech track as soon as its eligibility gate fires.
   Result — code + one compact `tasks/quick/QUICK-<slug>.md` record (change, DoD table, checks,
   documentation corrected, verifier verdict), so small changes still leave a trace.
+- **`/prorab:revise`** (`commands/revise.md`) — the continuation lane: the next batch of remarks on
+  a result already implemented, applied as one complete iteration that leaves the repository green.
+  What puts work here is continuity rather than size — it resolves which task the feedback is about
+  (explicit slug, or by the change set intersecting an active `IMPL`/`QUICK`/`REVISION`) and then
+  re-hashes that task's `Code map`, so a round whose files are unchanged spends **zero** recon.
+  Same floor as `quick`: the expected result stated before the edit and taken from the feedback
+  rather than from the code, red-first where the behavior admits a test, the project's own checks,
+  one independent verifier that sees only this iteration's diff and the recorded invariants.
+  Bounded at 2 contexts by default and 6 at most — no L, no XL, no segmented run; a remark needing
+  more, changing an external contract or the security model, or requiring its own product decision,
+  is handed to `refine`+`build`. There is no start and no close: the absence of a next remark is the
+  end of the process.
+  Result — code + one rolling `tasks/revisions/REVISION-<slug>.md` per task, with an append-only
+  `History`, the `Invariants` later rounds may not break, and no `status` field to keep in sync.
 - **`/prorab:verify`** (`commands/verify.md`) — black-box check that shipped functionality really
   works for the people who use it, plus proof that a test would catch it breaking. The scope
   (uncommitted / branch vs base / commit range / task artifact) is resolved with `git` commands and
@@ -46,20 +60,21 @@ Six agentic-development commands for Claude Code:
   against current code/docs or Git history, and identifies historical-only/uncertain facts.
 
 Pipeline: `refine → IDEA → build → memory capture + archive → announce`, with `verify` available
-after any implementation step. `ask` is available at any time, and `quick` is a separate short lane
-beside the pipeline for changes too small to deserve it.
+after any implementation step and `revise` looping on the result for as many rounds of remarks as it
+takes. `ask` is available at any time, and `quick` is a separate short lane beside the pipeline for
+changes too small to deserve it.
 Commands are global; artifacts, memory, and archive are local to the working project.
 
-**Project memory and archive.** All six commands read the bundled
+**Project memory and archive.** All seven commands read the bundled
 [`references/project-knowledge.md`](references/project-knowledge.md) contract — language,
 source-of-truth order, memory, delegated-return capsules and the archive lifecycle. Two sibling
 contracts are loaded only by the commands that need them:
 [`references/execution.md`](references/execution.md) (run output discipline, main-loop discipline,
-deterministic steps) by `build`, `quick` and `verify`, and
-[`references/documentation-sync.md`](references/documentation-sync.md) by the first two only. `refine`,
+deterministic steps) by `build`, `quick`, `revise` and `verify`, and
+[`references/documentation-sync.md`](references/documentation-sync.md) by the first three only. `refine`,
 `announce` and `ask` load neither, so they no longer pay for contracts they cannot use; `verify` runs
 checks but changes no behavior, so it loads execution and not documentation sync. A fourth,
-[`references/web-probing.md`](references/web-probing.md), is loaded by `build`, `quick` and `verify`
+[`references/web-probing.md`](references/web-probing.md), is loaded by `build`, `quick`, `revise` and `verify`
 **only when the scope has a browser surface**: it makes a headless run the default instrument for a
 web UI, keeps pixels to the pointwise cases that are genuinely perceptual, and splits the work across
 the stages so each pays once. A fifth,
@@ -84,12 +99,15 @@ before it runs out of agents, so `refine` cuts the idea into segments and `build
 time, each in a fresh context, from a ledger on disk that lets an interrupted run continue from the
 same command. `refine` allows at most two Explore contexts; `announce` allows one
 delegated context and one fact-check pass; `ask` allows one delegated context; `quick` is fixed at two
-contexts with no Workflow. `verify` uses the same 2/6/12 tiers but always spends at least one of them
+contexts with no Workflow; `revise` defaults to those same two and stops at six, with no L, XL or
+segmented run available to it — past that ceiling a remark is a build, not a revision. `verify` uses the same 2/6/12 tiers but always spends at least one of them
 on the blind prober, because blindness cannot be self-imposed by a context that has read the diff;
 its probers fan out on instrument boundaries, never per behavior. Recon carried in the IDEA's `Code map` and still hash-fresh costs `build`
-zero recon contexts, and the saving is banked rather than respent. The same idea covers test evidence:
-`build` and `quick` record which of their tests were proven able to fail (`red-first`/`mutation` plus the
-test file's hash), and `verify` reuses a fresh proof instead of running the mutation again. The quality
+zero recon contexts, and the saving is banked rather than respent. `revise` applies the same mechanism
+across rounds of the same task: its `REVISION` carries the map forward, so the second and every later
+round re-hashes it instead of re-reading the code. The same idea covers test evidence:
+`build`, `quick` and `revise` record which of their tests were proven able to fail (`red-first`/`mutation`
+plus the test file's hash), and `verify` reuses a fresh proof instead of running the mutation again. The quality
 floor remains mandatory.
 
 **Bounded occupancy, too.** A tier caps how many contexts open; the shared `Context hygiene` contract
@@ -105,7 +123,7 @@ one independent verifier by default. Mutation intensity is separate from S/M/L: 
 none for low-risk work, `balanced` allows one per critical risk cluster, and `thorough` may cover
 each substantial DoD item. Selected mutations run only in a temporary isolated worktree.
 
-**Documentation sync.** `build` and `quick` own the documentation their change falsifies: current-state
+**Documentation sync.** `build`, `quick` and `revise` own the documentation their change falsifies: current-state
 documents (README, `docs/`, the spec, `CLAUDE.md`, usage text, docstrings and comments) are corrected
 in place as part of the change, while historical ones (`CHANGELOG.md`, release notes, ADRs, the
 archive) are never rewritten to match new code. A current-state document still contradicting the diff
@@ -114,7 +132,7 @@ is a review finding, not a follow-up. The full rule lives in
 on purpose: it changes no behavior, so a document contradicting what it observed is a finding it
 reports with both readings named — the document may be the stale one.
 
-**Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`), the
+**Language.** Command bodies and the internal work are in English; artifacts (`IDEA`/`IMPL`/`REVISION`), the
 `refine` dialogue and the `announce` text are in the task's language (Russian by default). See the
 [root README](../../README.md).
 

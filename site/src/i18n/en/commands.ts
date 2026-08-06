@@ -11,20 +11,20 @@ export const commands = {
   meta: {
     title: 'Commands — Prorab',
     description:
-      'All ten Prorab commands: refine, build, quick, verify, announce, ask, audit, refactor, ' +
-      'lint-audit, lint-fix — what each one takes, what it writes, what it refuses to do, and when ' +
-      'to reach for a different one.',
-    ogTitle: 'Prorab — ten commands',
+      'All eleven Prorab commands: refine, build, quick, revise, verify, announce, ask, audit, ' +
+      'refactor, lint-audit, lint-fix — what each one takes, what it writes, what it refuses to do, ' +
+      'and when to reach for a different one.',
+    ogTitle: 'Prorab — eleven commands',
     ogDescription:
-      'Six commands for product work and four for technical quality, with inputs, outputs, limits, ' +
-      'and handoff points.',
+      'Seven commands for product work and four for technical quality, with inputs, outputs, ' +
+      'limits, and handoff points.',
   },
 
   hero: {
     eyebrow: 'Reference',
-    title: 'Ten commands.',
+    title: 'Eleven commands.',
     lede:
-      'Six commands handle product work; four handle technical quality. For each command, this ' +
+      'Seven commands handle product work; four handle technical quality. For each command, this ' +
       'page lists its input, output, limits, and handoff points.',
   },
 
@@ -39,7 +39,10 @@ export const commands = {
     lede:
       'Use the table below as a starting point. <code>quick</code> checks the task again after ' +
       'reading the code and routes larger work to the full workflow. <code>refine</code> can point ' +
-      'a genuinely small task back to <code>quick</code>.',
+      'a genuinely small task back to <code>quick</code>. Between <code>quick</code> and ' +
+      '<code>revise</code> the question is continuity, not size: a one-line fix that belongs to a ' +
+      'task already built is a <code>revise</code>; a two-file change that continues nothing is a ' +
+      '<code>quick</code>.',
     table: {
       head: ['The situation', 'Reach for'],
       rows: [
@@ -50,6 +53,10 @@ export const commands = {
         [
           'One or two files, one layer, nothing published changes, and you can already state <code>given → expected</code>',
           '<code>/prorab:quick</code>',
+        ],
+        [
+          'You looked at something already built and want the next round of remarks applied to it',
+          '<code>/prorab:revise</code>',
         ],
         [
           'Something shipped and you want to know whether it works for the people who use it',
@@ -75,7 +82,8 @@ export const commands = {
     eyebrow: 'Product track · <code>prorab</code>',
     heading: 'From an unclear idea to a verified result.',
     lede:
-      'Four stages plus two you reach for as needed. <code>verify</code> is optional and works on ' +
+      'Four stages plus three you reach for as needed. <code>revise</code> loops on the result for ' +
+      'as many rounds of remarks as it takes, and <code>verify</code> is optional and works on ' +
       'any scope — after <code>build</code>, after <code>quick</code>, or on a branch nobody used ' +
       'the framework for.',
   },
@@ -243,6 +251,59 @@ export const commands = {
       ],
     },
 
+    revise: {
+      tag: '2 contexts, 6 at most',
+      intro:
+        'Applies the next batch of remarks to a result the framework already built. What puts work ' +
+        'here is continuity rather than size: it inherits the task’s hashed code map and recorded ' +
+        'invariants, so each round costs less than the one before it.',
+      rows: [
+        {
+          term: 'Takes',
+          body:
+            'What you checked and what should be different, in plain words. Optionally a slug or ' +
+            'artifact path first; otherwise it resolves the task itself — an active ' +
+            '<code>REVISION</code>, <code>IMPL</code> or <code>QUICK</code> whose files intersect ' +
+            'the current change set — and asks once when several candidates are genuinely equal.',
+        },
+        {
+          term: 'Writes',
+          body:
+            'Code plus one rolling <code>tasks/revisions/REVISION-&lt;slug&gt;.md</code> per task, ' +
+            'updated on every round rather than duplicated: a <em>Code map</em> in the same format ' +
+            'the IDEA carries, the <em>Invariants</em> later rounds may not break, an ' +
+            '<strong>append-only</strong> history of one line per iteration — remark, what ' +
+            'changed, the check digest, the red-first test hash, the verdict — and an ' +
+            '<em>Open</em> section that is empty when nothing is unclosed.',
+        },
+        {
+          term: 'Budget',
+          body:
+            'Two contexts by default — itself plus one independent verifier that sees only this ' +
+            'iteration’s diff — and six at most when the batch genuinely spans subsystems. No L, ' +
+            'no XL, no segmented run: past that ceiling the work is a build, not a revision. A ' +
+            'round whose recorded hashes all still match spends <strong>zero</strong> on recon.',
+        },
+        {
+          term: 'Escalates',
+          body:
+            'A remark that is really a new capability needing its own product decision, one that ' +
+            'changes an external contract or the security model, or one that would need more than ' +
+            'six contexts. It hands over to <code>/prorab:refine</code> or the tech track and ' +
+            'records the handover in the history line.',
+        },
+        {
+          term: 'Refuses',
+          warn: true,
+          body:
+            'To add a status field, a state machine, or a closing run — the absence of a next ' +
+            'remark is what finishes the process. To write a file per round, to rewrite an earlier ' +
+            'history line when a decision is reversed, to archive anything, or to edit an archived ' +
+            'bundle it links to.',
+        },
+      ],
+    },
+
     verify: {
       tag: 'black box',
       intro:
@@ -253,7 +314,7 @@ export const commands = {
         {
           term: 'Takes',
           body:
-            'A slug, an IMPL/QUICK path, a branch or base ref, a commit range, ' +
+            'A slug, an IMPL/QUICK/REVISION path, a branch or base ref, a commit range, ' +
             '<code>uncommitted</code>, or a free description. Empty derives the scope from git and ' +
             'asks only when it is genuinely undetermined — with concrete candidates, never a vague ' +
             '“what should I check?”.',

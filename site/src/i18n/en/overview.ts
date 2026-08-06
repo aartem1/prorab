@@ -22,7 +22,7 @@ export const overview = {
   },
 
   hero: {
-    eyebrow: 'Claude Code marketplace · two plugins · ten commands',
+    eyebrow: 'Claude Code marketplace · two plugins · eleven commands',
     titleA: 'Clarify the task.',
     titleB: 'Then verify the code.',
     lede:
@@ -421,6 +421,8 @@ the symbol names, the paths, the framework, the ORM`,
 
 <span class="d">── session 2 ────────────────────────────────────────────</span>
 <span class="c">/prorab:build</span>      <span class="d">→ working code + tasks/IMPL-csv-export.md</span>
+<span class="c">/prorab:revise</span>     <span class="d">→ your remarks applied, round after round, into one
+                     rolling REVISION record — no round pays for recon twice</span>
 <span class="c">/prorab:verify</span>     <span class="d">→ outside-in verdict + the tests nobody wrote</span>
 <span class="c">/prorab:announce</span>   <span class="d">→ a short factual message you can forward</span>`,
 
@@ -481,6 +483,18 @@ the symbol names, the paths, the framework, the ORM`,
           'computed. Readable in 20–30 seconds by someone who will never open the diff. Claims ' +
           'are taken from what landed — the IMPL and the diff — not from what the IDEA intended.',
         writes: 'text in chat (a file only when the task is already archived)',
+      },
+      {
+        step: 'loop',
+        name: 'revise',
+        cmd: '/prorab:revise',
+        what:
+          'You looked at the result and it is not right yet. This applies the next batch of ' +
+          'remarks to the task already built, as one complete iteration that leaves the repository ' +
+          'green — because any round may be the last. It re-hashes that task’s code map first, so ' +
+          'an unchanged file is never read twice, and it caps itself at two contexts by default ' +
+          'and six at all. Nothing to open, nothing to close: no next remark is the end.',
+        writes: 'code + one rolling tasks/revisions/REVISION-&lt;slug&gt;.md, history append-only',
       },
       {
         step: 'alt',
@@ -730,6 +744,7 @@ the symbol names, the paths, the framework, the ORM`,
       { cmd: '/prorab:refine', what: 'Think an idea through before anyone writes code' },
       { cmd: '/prorab:build', what: 'Implement a refined idea, end to end' },
       { cmd: '/prorab:quick', what: 'Make a small everyday change (1–2 files)' },
+      { cmd: '/prorab:revise', what: 'Apply the next round of remarks to something built' },
       { cmd: '/prorab:verify', what: 'Check it actually works for its users' },
       { cmd: '/prorab:announce', what: 'Tell the team what shipped' },
       { cmd: '/prorab:ask', what: 'Ask about this project or its history' },

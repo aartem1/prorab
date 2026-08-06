@@ -25,8 +25,11 @@ accelerator, never the only source.
 2. Extract exact paths, symbols, component/event/API names, tool commands, and domain terms.
 3. Search `tasks/memory/INDEX.md` and matching entries exact-first. Keep recall task-specific and
    compact; missing memory is non-fatal.
-4. Search related active IDEA/IMPL/AUDIT/LINT/ANNOUNCE artifacts and `tasks/archive/**`. Archived
-   artifacts are historical evidence, not current state.
+4. Search related active IDEA/IMPL/QUICK/REVISION/VERIFY/AUDIT/LINT/ANNOUNCE artifacts and
+   `tasks/archive/**`. Archived artifacts are historical evidence, not current state. A
+   `tasks/revisions/REVISION-*.md` is the exception worth reaching for first on a "why does it
+   behave like this" question about shipped work: its `History` records the remarks that reshaped
+   the result after the original build, and its `Invariants` say which of them are pinned by a test.
 5. Inspect current code, repository instructions, and project docs for every material claim about
    current behavior, architecture, contracts/consumers, ownership, or verification. Use read-only
    tests/commands only when they are already supported and necessary; do not mutate state.

@@ -6,6 +6,71 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.17.0 · prorab-tech 0.12.0
+
+**The round after the first one now has a lane.** `build` could finish a feature; it could not
+absorb the sentence that always follows — *"the heading is too big on mobile, and going back drops
+the filter."* Those remarks had two homes, and both were wrong. Ordinary chat messages after `build`
+kept no record and re-read the code every session. `/prorab:quick` kept the discipline but is
+forbidden by construction from linking to an IDEA or IMPL, so three rounds of the same conversation
+became three unrelated `QUICK-*` files, each paying full recon, and the task's written history
+forked. The gap was never about size — it was about **continuity**, and nothing in the framework
+modelled it.
+
+- **New `/prorab:revise` — the continuation lane.** Its input is what you checked and what should
+  be different; its output is one complete iteration that leaves the repository green, because any
+  round may be the last. It keeps `quick`'s floor exactly: the expected result stated in chat
+  *before* the edit and taken **from your remark, never from what the code returns**, a red-first
+  test where the behavior admits one, the project's own checks, the documentation duty, and one
+  independent verifier. What it adds is inheritance — and what it deliberately does not add is a
+  process to manage.
+- **Continuity, not size, is what routes work here.** A one-line copy fix belonging to a task
+  already built is a `revise`; a two-file change that continues nothing stays a `quick`. `quick`
+  now says so in its own gate, as a **sideways** hand-off rather than an escalation: at its default
+  tier `revise` is the same two contexts doing the same work, so the routing buys history and
+  recon reuse, not budget.
+- **Recon is paid once per task instead of once per round.** The `REVISION` carries the same
+  hashed `Code map` an IDEA does — one format across `refine`, `build` and `revise`, rather than a
+  third dialect of the same handoff. Every call re-hashes it with `git hash-object` first: all
+  fresh → **zero** recon contexts and straight to the work; some stale → only those entries are
+  re-read, logged as `map reused: <n> fresh, <m> stale`. IDEA/IMPL are re-opened only on a named
+  trigger. One difference from the IDEA's map, in the right direction: these verification commands
+  are recorded as **CONFIRMED**, because this lane actually ran them.
+- **A ceiling instead of a tier ladder — the one design decision the whole command rests on.**
+  S is 2 contexts, M is 6, and there is no L, no XL and no segmented run available at all. The
+  spec this was built from allowed the full ladder up to 16; that would have made `revise` a second
+  owner of heavy orchestration with a duplicate copy of the tier logic, and two releases later the
+  copies drift. Past six contexts the work is a build, and the eligibility gate hands it to
+  `refine` — as it does for a remark that is really a new capability, changes an external contract,
+  or changes the security model. Ordinary large-but-continuous work is explicitly **not** a trigger.
+- **One rolling `tasks/revisions/REVISION-<slug>.md` per task, and no state machine.** The
+  `History` is **append-only** — one line per iteration carrying the remark, what changed, the check
+  digest, the red-first test hash and the verdict — so a reversed decision is a new line, never an
+  edit of the old one. Beside it: the `Invariants` later rounds may not break, and an `Open` section
+  that is empty when nothing is unclosed. There is **no `status` field, no `done`, no `reopen` and
+  no closing run**: an iteration's outcome lives in its own history line, and the absence of a next
+  remark is what ends the process. No `iteration` counter and no stored baseline either — the
+  position in `History` and the map's `Provenance` already say both, and a second copy only drifts.
+- **The archive stays immutable, and the boundary is now explicit.** An active `REVISION` is
+  mutable; `tasks/archive/**` is not. Archiving a bundle no longer implies the task is closed to
+  further work — the revision links the archived IDEA/IMPL and never edits them, so the archive
+  keeps saying what was true when the build finished. `revise` archives nothing, ever.
+- **The rest of the track learned the artifact exists**, which is what keeps it a record rather
+  than a fork in the history: `verify` accepts a `REVISION` as scope and treats it as the
+  requirements *as they now stand* where it and the IMPL disagree, and reuses the red-first hashes
+  from its history the way it already reuses a DoD table's proof column; `announce` reads it beside
+  the IMPL and lets it win, because announcing an IMPL that two rounds have since reworked
+  describes a version nobody shipped; `ask` reaches for it first on a "why does it behave like
+  this" question; `build` names it as where remarks go once the user has looked at the result.
+- **Foreign changes in the worktree stay foreign.** Each call snapshots `git status --porcelain`
+  and keeps pre-existing dirt out of the iteration's diff, out of the verifier's input and out of
+  the record — neither reverted nor absorbed. The verifier sees **this iteration's diff only**,
+  never the task's accumulated one.
+- Twelve contract tests pin the lane's load-bearing properties — the six-context ceiling and the
+  absence of the segmented-run contract, one rolling record, no state machine, append-only history,
+  hash-based reuse, pointwise staleness, evidence floor, archive immutability, and the fact that
+  four sibling commands know the artifact by name.
+
 ## prorab 0.16.0 · prorab-tech 0.12.0
 
 **A task too big for one run is now cut at its seams and executed one segment at a time.** The

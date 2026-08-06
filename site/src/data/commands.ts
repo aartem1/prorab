@@ -9,6 +9,7 @@ export type CommandId =
   | 'refine'
   | 'build'
   | 'quick'
+  | 'revise'
   | 'verify'
   | 'announce'
   | 'ask'
@@ -21,6 +22,7 @@ export const PRODUCT_COMMANDS: CommandId[] = [
   'refine',
   'build',
   'quick',
+  'revise',
   'verify',
   'announce',
   'ask',

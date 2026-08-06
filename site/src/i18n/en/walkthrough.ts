@@ -449,6 +449,20 @@ Where to see it: Reports → the toolbar above the table`,
           'fires, leaving a record marked <code>escalated</code> if it had already touched files.',
       },
       {
+        num: '/prorab:revise',
+        title: 'The round after',
+        body:
+          'The first build is rarely the last word. You look at the result, and the heading is too ' +
+          'big on mobile, and going back drops the filter. That is not a new task and not a bug ' +
+          'report — it is the next round of the same one, and this is the lane for it. It resolves ' +
+          'which task you mean, re-hashes the code map that task already carries so an unchanged ' +
+          'file is never read twice, and applies the batch under the same floor <code>quick</code> ' +
+          'keeps — with the expected result taken from <em>your</em> remark rather than from what ' +
+          'the code currently does. Everything lands in one rolling ' +
+          '<code>tasks/revisions/REVISION-&lt;slug&gt;.md</code> whose history only ever grows. ' +
+          'There is no start and no finish: when you stop having remarks, it is finished.',
+      },
+      {
         num: 'prorab-tech',
         title: 'The inverted proof',
         body:

@@ -31,7 +31,7 @@ You don't commit/push. Your result is the announcement text in chat, ready to co
 ### Phase 0 — What we're announcing
 
 Determine the announcement's subject from `$ARGUMENTS`:
-- slug / path to an active or archived IMPL/IDEA → take it; for a slug, search active artifacts first and then `tasks/archive/**`;
+- slug / path to an active or archived IMPL/IDEA → take it; for a slug, search active artifacts first and then `tasks/archive/**`. Always check whether an active `tasks/revisions/REVISION-<slug>.md` exists for that task: the result was reworked after the IMPL was written, and announcing the IMPL alone would describe a version nobody shipped;
 - commit(s)/hash → take the diff of those commits;
 - free description → match to the latest relevant work;
 - **empty** → take the latest completed work: prefer a recently archived task bundle, then a completed active `tasks/IMPL-*.md`, then recent commits (`git log --oneline -n 5`, `git show --stat`). Never treat a partial/blocked IMPL as completed. If ambiguous — list 2–3 candidates and ask.
@@ -39,7 +39,7 @@ Determine the announcement's subject from `$ARGUMENTS`:
 ### Phase 1 — Gathering the facts (read-only)
 
 Gather what **actually** landed, from the most reliable sources (in order of trust):
-1. **The IMPL doc**, active or archived — what was done, deviations from the plan, DoD status, follow-ups, known quirks. This is the primary source of "what exactly shipped".
+1. **The IMPL doc**, active or archived — what was done, deviations from the plan, DoD status, follow-ups, known quirks. This is the primary source of "what exactly shipped". **When a `tasks/revisions/REVISION-<slug>.md` exists for the task, read it with the IMPL and let it win where they differ:** its `History` is what happened *after* the IMPL was final, so a behavior the IMPL describes may have been reworked two iterations ago, and its `Open` names what is still not closed — announcing that as shipped is the failure mode this check exists to prevent.
 2. **Diff/commits** — `git show --stat`/`git diff` on the feature's commit(s): which user-facing surfaces actually changed (endpoints, screens, columns, formats). Separate user-facing changes from internal ones.
 3. **The IDEA** `tasks/ideas/IDEA-<slug>.md` — for phrasing "problem/why" and the product decisions (terms, thresholds, computation method). But take "done" from the IMPL/diff, not the IDEA.
 4. **Verification status** — from the IMPL/session: tests/build green, a production run/reconciliations. Needed so as not to over-promise.

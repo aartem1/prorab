@@ -615,8 +615,10 @@ export const howItWorks = {
     lookup:
       'Archived work is never picked up as active by default: a lookup searches the archive only ' +
       'when you name an archived task explicitly, when <code>announce</code> needs completed work, ' +
-      'or when a historical question requires it. <code>/prorab:quick</code> and ' +
-      '<code>/prorab:verify</code> archive nothing at all — they each leave exactly one record. ' +
+      'or when a historical question requires it. <code>/prorab:quick</code>, ' +
+      '<code>/prorab:revise</code> and <code>/prorab:verify</code> archive nothing at all — they ' +
+      'each leave exactly one record, and <code>revise</code> keeps writing to that same one round ' +
+      'after round, linking an archived bundle rather than editing it. ' +
       'And no command commits or pushes unless you ask.',
   },
 
@@ -712,7 +714,7 @@ export const howItWorks = {
       'when the workflow is small or unusual enough that owning the policy is cheaper than ' +
       'adopting a framework.',
     ctaInstall: 'Install Prorab →',
-    ctaCommands: 'All ten commands',
+    ctaCommands: 'All eleven commands',
   },
 };
 
