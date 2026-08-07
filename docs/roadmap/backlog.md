@@ -16,23 +16,27 @@ Do not add statuses here; the roadmap is the only status owner.
 - **Measure English-execution benefit.** Revisit only if language choice becomes a meaningful
   optimization lever again.
 
-## Deterministic execution and safety
+## Architecture extensions
 
-- **Move more mechanical work from prompts to deterministic utilities.** Examples: compact test/build
-  output runner, manifest/version checks, artifact validation and enumerable repository facts.
-- **Executable hooks/guardrails where they add real safety.** Keep mutation isolation and destructive
-  operation protection machine-enforced when prompt rules are insufficient.
-- **Formal artifact schema and freshness validation.** Revisit when multiple executable consumers need
-  a stable machine contract; do not introduce schema ceremony only for prose-to-prose handoff.
+ARCH-001 establishes the basic Skill/subagent/reference/executable boundaries. These extensions remain
+outside the active plan until ordinary work justifies them:
 
-## Prompt and agent architecture
+- **Shared `prorab-core` plugin.** Split common runtime into a third dependency only when both product
+  and tech plugins have substantial executable infrastructure that benefits from independent
+  versioning/lifecycle. Shared prose is not enough.
+- **Additional specialized agents.** MODEL-001/ARCH-001 may introduce the few roles needed for routing
+  or isolation. Add more fixed agents only when repeated work shows a stable reusable contract.
+- **Executable hooks/guardrails.** Add hooks when a concrete invariant cannot be protected reliably by
+  the current workflow and deterministic checks.
+- **Formal artifact schema.** Introduce a stable machine schema when multiple executable consumers need
+  it; do not add schema ceremony only for prose-to-prose handoff.
 
-- **Modularize command bodies further.** Heavy command-specific prose and repetitive negative rules
-  remain a prompt-size target. Prefer conditionally loaded Skills/references when that is genuinely
-  cheaper than the current command body.
-- **Specialized subagents beyond routing needs.** MODEL-001 may introduce narrowly defined workers to
-  control model/effort. Add more fixed roles only when repeated real work shows a stable reusable
-  contract; do not build an agent catalog for its own sake.
+## Deterministic utilities
+
+ARCH-001 makes `bin/` the home for deterministic mechanics but does not require speculative utilities.
+Promote individual helpers when an active feature consumes them. Candidates include compact test/build
+output, manifest/version checks and artifact validation. Navigation-specific inventory, hashes and
+RepoMap operations belong to the active navigation initiative rather than this backlog.
 
 ## Developer experience
 

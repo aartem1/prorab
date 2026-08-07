@@ -10,40 +10,47 @@ history, not in an ever-growing checklist here.
 
 Reduce Claude Code limit consumption and task latency **without reducing implementation quality**.
 
-Prorab should optimize three different costs, in this order:
+Prorab should optimize four things together:
 
 1. **Cost per model context** — do not spend Opus/xhigh reasoning on work Sonnet or Haiku can do safely.
-2. **Number of model contexts and tool calls** — reuse fresh evidence and avoid broad repeated recon.
-3. **Size of each context** — read and return only the source ranges and evidence a task needs.
+2. **Prompt loaded per invocation** — keep entrypoints small and load detailed instructions only when a
+   branch of the workflow actually needs them.
+3. **Number of model contexts and tool calls** — reuse fresh evidence and avoid broad repeated recon.
+4. **Size of task context** — read and return only the source ranges and evidence a task needs.
 
-The first active initiative is therefore model/effort routing: it is cheap to implement, reversible,
-and can reduce consumption immediately without waiting for new indexing infrastructure. Project
-navigation follows next and attacks the other large source of waste: cold-start code reconnaissance.
+The active sequence therefore starts with model/effort routing, then modernizes the plugin's prompt
+architecture before navigation work changes the heavy workflows. This avoids optimizing large legacy
+command bodies and then restructuring them immediately afterwards.
 
 See:
 
 - [`docs/roadmap/model-routing.md`](docs/roadmap/model-routing.md)
+- [`docs/roadmap/architecture.md`](docs/roadmap/architecture.md)
 - [`docs/roadmap/project-navigation.md`](docs/roadmap/project-navigation.md)
 
 ## Development rules
 
 - **Quality is a hard floor.** Tests, contract checks, independent verification and existing safety
-  requirements do not get weaker because a cheaper model is used.
-- **Cheapest sufficient capability, then escalate.** Start each kind of work on the least expensive
-  model/effort that should reliably handle it; move upward only on a concrete complexity, uncertainty
-  or failure signal.
-- **Escalate the narrow problem, not the whole run.** A hard design decision may need Opus; that does
-  not mean file discovery, routine edits and every verifier do too.
-- **Prorab owns orchestration.** Ultracode/dynamic workflows are not the Prorab default because they
-  add a second orchestration layer and can multiply model work.
+  requirements do not get weaker because an optimization is cheaper.
+- **Preserve the user API.** `refine → build → revise → verify`, `quick`, `announce`, `ask` and the
+  tech-track commands remain the product surface unless a separate product reason justifies change.
+- **Cheapest sufficient capability, then escalate.** Start each kind of model work on the least
+  expensive model/effort that should reliably handle it; move upward only on a concrete complexity,
+  uncertainty or failure signal.
+- **Progressive disclosure.** A Skill entrypoint owns the workflow; detailed phase, stack or risk
+  instructions are supporting files loaded only when needed.
+- **Use each Claude Code primitive for one job.** Skills orchestrate; subagents isolate bounded
+  reasoning roles; plugin executables handle deterministic mechanics; Workflows are reserved for real
+  large fan-out rather than ordinary execution.
+- **Do not create architecture for its own sake.** No agent catalog, core plugin, hook layer or MCP
+  surface without a concrete consumer.
 - **Reuse before rediscovery.** Fresh task evidence wins over new reconnaissance.
 - **Cheap deterministic signals before model exploration.** Exact paths, identifiers, lexical
-  matches, symbols and dependency edges are preferred to broad `Explore` work.
+  matches, symbols and dependency edges are preferred to broad model exploration.
 - **Current source remains evidence.** Maps and caches accelerate discovery; material behavior and
   contract claims are still checked in the current worktree before editing.
 - **Tune from real use, not a benchmark project.** We will not block progress on replaying historical
-  tasks or maintaining a large eval suite. If normal work exposes repeated under-routing,
-  over-routing or navigation misses, adjust the policy then.
+  tasks or maintaining a large eval suite. Repeated real-task behavior is the normal feedback loop.
 - **Progressive complexity.** Embeddings, vector databases, remote indexes and large new tool surfaces
   require a recurring real-world problem before entering the active plan.
 - **One owner for status.** Initiative documents explain work; only this file owns execution order
@@ -57,7 +64,8 @@ appears in real use, `DONE` = remove after the release is recorded in `CHANGELOG
 | ID | Status | Priority | Milestone | Depends on |
 |---|---|---:|---|---|
 | MODEL-001 | `NEXT` | P0 | Automatic model & effort routing with bounded escalation | — |
-| NAV-001 | `TODO` | P0 | Task-aware reconnaissance contract | MODEL-001 |
+| ARCH-001 | `TODO` | P0 | Canonical Skills + progressive-disclosure plugin architecture | MODEL-001 |
+| NAV-001 | `TODO` | P0 | Task-aware reconnaissance contract | ARCH-001 |
 | NAV-002 | `TODO` | P0 | Lightweight incremental RepoMap | NAV-001 |
 | NAV-003 | `TODO` | P0 | Product-track navigation integration: `refine → build` | NAV-002 |
 | NAV-004 | `TODO` | P1 | Tech-track navigation integration | NAV-003 |
@@ -67,17 +75,19 @@ appears in real use, `DONE` = remove after the release is recorded in `CHANGELOG
 
 ## Continuous tuning
 
-There is deliberately no separate historical-task benchmark milestone. The initial policies are based
-on task complexity, model capability and bounded fallback. Then normal Prorab usage is the feedback
+There is deliberately no separate historical-task benchmark milestone. Initial policies use current
+Claude Code capabilities, task complexity and bounded fallback. Normal Prorab usage is the feedback
 loop:
 
-- a route that repeatedly needs escalation should start one level higher;
+- a model route that repeatedly escalates should start one level higher;
 - a route that reliably succeeds without escalation stays where it is;
-- expensive work that repeatedly adds no useful finding should move down or become deterministic;
+- supporting instructions repeatedly loaded together may be consolidated;
+- instructions rarely needed should move out of the Skill entrypoint;
+- repeated deterministic model work is a candidate for `bin/`;
 - one exceptional task does not rewrite the global policy.
 
-Only add persistent telemetry or an eval suite later if real tuning decisions cannot be made from
-ordinary runs.
+Only add persistent telemetry or a dedicated eval suite later if real tuning decisions cannot be made
+from ordinary runs.
 
 ## Promotion rule
 
