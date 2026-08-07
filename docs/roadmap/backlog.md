@@ -7,16 +7,14 @@ Do not add statuses here; the roadmap is the only status owner.
 
 ## Budget and observability
 
-- **Framework-wide usage measurements.** Extend the XL context ledger idea to ordinary S/M/L runs if
-  real optimization decisions need it. Prefer exact provider/tool usage when available; otherwise use
-  deterministic proxies such as input bytes, turns and delegated-context count.
+- **Lightweight routing/recon counters.** Add persistent counts for model family, effort, escalation,
+  delegated contexts and recon calls only if ordinary task outcomes stop being enough to tune the
+  active policies. Do not build telemetry pre-emptively.
 - **Pre-dispatch context sizing.** Estimate an executor brief before dispatch and choose `fits`, split
-  by a coherent seam, or return to refinement. Do this only after measurements provide a useful
-  threshold; XL already handles deliberate segmentation at idea level.
-- **General framework eval suite.** Broader than the focused navigation eval: quality, cost and drift
-  across command types. Useful, but too expensive to block the current navigation work.
-- **Measure English-execution benefit.** Replace the historical token-density estimate with real
-  measurements if language choice becomes an optimization decision again.
+  by a coherent seam, or return to refinement. Promote only if real S/M/L runs repeatedly approach
+  their context limits; XL already handles deliberate segmentation at idea level.
+- **Measure English-execution benefit.** Revisit only if language choice becomes a meaningful
+  optimization lever again.
 
 ## Deterministic execution and safety
 
@@ -29,11 +27,12 @@ Do not add statuses here; the roadmap is the only status owner.
 
 ## Prompt and agent architecture
 
-- **Modularize command bodies further.** Heavy command-specific Phase 0.5 prose and repetitive negative
-  rules remain a prompt-size target. Prefer conditionally loaded Skills/references over a larger
-  always-loaded command body when Claude Code's current plugin model makes that genuinely cheaper.
-- **Specialized subagents.** Consider fixed roles only where repeated prompts and stable contracts show
-  a measurable quality/cost advantage over short task-specific briefs.
+- **Modularize command bodies further.** Heavy command-specific prose and repetitive negative rules
+  remain a prompt-size target. Prefer conditionally loaded Skills/references when that is genuinely
+  cheaper than the current command body.
+- **Specialized subagents beyond routing needs.** MODEL-001 may introduce narrowly defined workers to
+  control model/effort. Add more fixed roles only when repeated real work shows a stable reusable
+  contract; do not build an agent catalog for its own sake.
 
 ## Developer experience
 
@@ -55,7 +54,7 @@ Do not add statuses here; the roadmap is the only status owner.
 
 A backlog item should enter `ROADMAP.md` when at least one is true:
 
-1. it removes a measured cost or recurring failure;
+1. it removes a recurring cost or failure observed in normal work;
 2. it is required by an active milestone;
 3. it closes a demonstrated quality/safety gap;
 4. maintaining the current manual process costs more than the proposed automation.
