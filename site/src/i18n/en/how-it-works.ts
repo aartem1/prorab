@@ -28,6 +28,7 @@ export const howItWorks = {
     blind: 'blind verification',
     preserve: 'the inverted proof',
     cost: 'cost',
+    routing: 'model routing',
     handoffs: 'handoffs',
     docs: 'documentation sync',
     memory: 'project memory',
@@ -302,7 +303,7 @@ export const howItWorks = {
 
   cost: {
     rail: 'cost',
-    heading: 'Two limits control cost: context count and context size.',
+    heading: 'Two of the three limits on cost: context count and context size.',
     lede:
       'Before delegating, the heavy commands estimate size, affected area, novelty, reversibility, ' +
       'and uncertainty, then select a context tier.',
@@ -463,6 +464,147 @@ export const howItWorks = {
       '<code>balanced</code> (one per critical cluster, the default), <code>thorough</code> (one ' +
       'per substantial boundary). Tiering cuts how many lenses look at the code; it never cuts the ' +
       'evidence.',
+  },
+
+  routing: {
+    rail: 'model routing',
+    heading: 'The third axis: how expensive each context is.',
+    lede:
+      'Tiers bound how many contexts a command opens, occupancy bounds how full each one gets. ' +
+      'What neither of them bounded was <strong>cost per context</strong>: until this axis existed, ' +
+      'invoking <code>/prorab:build</code> from an Opus session at <code>xhigh</code> made all of ' +
+      'its up-to-16 contexts Opus at <code>xhigh</code> — including the ones that were only ' +
+      'extracting a file list into a schema.',
+
+    table: {
+      head: ['Role in the run', 'Model', 'Effort', 'Escalates when'],
+      rows: [
+        [
+          'Enumerable fact — hashes, git status, counts, test parsing',
+          '<em>no model at all</em>',
+          '—',
+          'only if the answer genuinely needs interpreting',
+        ],
+        [
+          'Lookup, inventory, first-pass recon, extraction into a schema',
+          '<code>haiku</code>',
+          '<em>not settable</em>',
+          'candidates stay ambiguous, or scope turns on a judgement',
+        ],
+        [
+          'Command entrypoint, routine implementation, tests, fixes',
+          '<code>sonnet</code>',
+          '<code>high</code>',
+          'a defined signal fires — see below',
+        ],
+        [
+          'Routine independent verifier',
+          '<code>sonnet</code>',
+          '<code>high</code>',
+          'evidence conflicts, or the verdict cannot be grounded',
+        ],
+        [
+          'Judgement — judge panel, DoD skeptic, adversarial verification, drift search, ' +
+            'sabotage design',
+          '<code>opus</code>',
+          '<code>high</code>',
+          'exceptional cases only',
+        ],
+        [
+          'Recovery from failed cheaper reasoning; security or business-critical ambiguity',
+          '<code>opus</code>',
+          '<code>xhigh</code>',
+          '<code>max</code> only on an explicit exceptional need',
+        ],
+      ],
+    } as Table,
+
+    tableNote:
+      'Two things this table would misrepresent if left unsaid. <strong>The effort column mostly ' +
+      'protects rather than saves</strong> — <code>high</code> is already the default on every ' +
+      'model that supports levels, so writing it down changes nothing on a default session and ' +
+      'everything on an <code>xhigh</code> one. And <strong>Haiku 4.5 has no effort levels at ' +
+      'all</strong>: an unsupported level collapses to the nearest supported one, which is a ' +
+      'graceful fallback, not a control.',
+
+    sessionHeading: 'What the framework pins, and what stays yours',
+    sessionLede:
+      'Recommended session mode: <strong>Opus, Ultracode off</strong>. <code>xhigh</code> is fine ' +
+      'and costs Prorab nothing. You should not have to switch models before a command, or ' +
+      'remember to switch back after it.',
+
+    cards: [
+      {
+        num: 'pinned',
+        title: 'Ten of eleven commands set their own model',
+        body:
+          '<code>build</code>, <code>quick</code>, <code>revise</code>, <code>verify</code>, ' +
+          '<code>ask</code>, <code>audit</code>, <code>refactor</code>, <code>lint-audit</code> ' +
+          'and <code>lint-fix</code> at <strong>Sonnet / high</strong>; <code>announce</code> at ' +
+          '<strong>Sonnet / medium</strong>. A pin holds for that turn only — your session model ' +
+          'returns on your next message, which is exactly why it can be automatic. Inside the run ' +
+          'both ends are named explicitly rather than inherited: map extraction, diff ' +
+          'classification and analyzer runs on <strong>Haiku</strong>, the judgement stages on ' +
+          '<strong>Opus</strong>.',
+      },
+      {
+        num: 'refine',
+        title: 'One command deliberately left alone',
+        body:
+          '<code>refine</code> runs on your session model. It is a many-round dialogue, and a ' +
+          'frontmatter override lasts a single turn — so pinning it would make the conversation ' +
+          'alternate between two models round after round, and because a prompt cache is scoped ' +
+          'to one model, every alternation would rewrite the whole prefix cold. That costs more ' +
+          'than the cheaper model saves. Refinement is also where the product decisions get made, ' +
+          'which is the right place for a strong model. Its delegated recon is still cheapened ' +
+          'per call.',
+      },
+      {
+        num: 'escalation',
+        title: 'A node escalates, not the run',
+        body:
+          'When a cheap context reports it cannot reach a grounded conclusion, or two readings of ' +
+          'a requirement remain and the choice changes scope, or reviewers disagree on a material ' +
+          'correctness question — the evidence already collected is kept, only the unresolved ' +
+          'question goes to the stronger model, and the rest of the run continues where it was. ' +
+          'Restarting the whole command on Opus because one node needed Opus is the failure mode ' +
+          'the rule exists to prevent.',
+      },
+      {
+        num: 'degradation',
+        title: 'An unavailable model is not an error',
+        body:
+          'A model or effort level that is unavailable, unsupported, or overridden by the ' +
+          'environment collapses to the nearest available setting and <strong>the command ' +
+          'continues</strong>. Prorab never fails, stalls or asks you a question because a ' +
+          'preferred capability was not granted. If a routing preference was visibly not ' +
+          'honoured, the report says so — the run is still valid, and the quality floor is what ' +
+          'decides whether its result is.',
+      },
+    ] as Card[],
+
+    ledger:
+      '<strong>What was spent is recorded.</strong> Every <code>used/cap</code> line carries the ' +
+      'model and effort that context actually ran on, and the run’s artifact carries the same as ' +
+      'one routing line, together with any escalation and its reason. Without it, “this role keeps ' +
+      'escalating” would stay an impression instead of becoming a fact — and there would be ' +
+      'nothing to raise or lower later.',
+
+    unknown:
+      '<strong>Why Ultracode is off, stated precisely.</strong> Prorab already owns orchestration, ' +
+      'context budgets and review cycles, so stacking a second automatic orchestrator on top makes ' +
+      'spend hard to predict. There is also an open unknown, and it is named here rather than ' +
+      'assumed away: <strong>it is not documented whether a command’s frontmatter ' +
+      '<code>effort</code> also switches off Ultracode’s automatic workflow orchestration for that ' +
+      'turn</strong>, or only its effort level. Until that is established, a plain Opus session ' +
+      'with Ultracode off is the safe recommendation.',
+
+    savings:
+      'The honest size of the saving: the per-token multipliers are modest — Opus to Sonnet is ' +
+      'about 1.67× at list price, Sonnet to Haiku about 3× — and Haiku’s 200K context window is a ' +
+      'real constraint on what may be routed there. The effect that matters is <strong>not being ' +
+      'dragged into an expensive session in the first place</strong>. Starting from a Sonnet ' +
+      'session, this axis changes almost nothing for you, and that is the accurate way to say it.',
   },
 
   handoffs: {

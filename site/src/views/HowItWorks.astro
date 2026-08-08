@@ -21,6 +21,7 @@ const sections = [
   { id: 'blind', label: h.toc.blind },
   { id: 'preserve', label: h.toc.preserve },
   { id: 'cost', label: h.toc.cost },
+  { id: 'routing', label: h.toc.routing },
   { id: 'handoffs', label: h.toc.handoffs },
   { id: 'docs', label: h.toc.docs },
   { id: 'memory', label: h.toc.memory },
@@ -160,7 +161,27 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <Note text={h.cost.floor} tone="warn" style="margin-top:1.2rem" />
   </section>
 
-  <!-- ============ 06 handoffs ============ -->
+  <!-- ============ 06 model routing ============ -->
+  <section class="wrap" id="routing" data-rail-label={h.routing.rail} data-reveal>
+    <p class="eyebrow">{number('routing')}</p>
+    <h2>{h.routing.heading}</h2>
+    <p class="dim measure" set:html={h.routing.lede} />
+    <DataTable table={h.routing.table} style="margin:1.3rem 0" />
+    <p class="small" set:html={h.routing.tableNote} />
+
+    <h3 style="margin-top:2.2rem">{h.routing.sessionHeading}</h3>
+    <p class="dim measure" style="margin-bottom:1.3rem" set:html={h.routing.sessionLede} />
+
+    <Cards cards={h.routing.cards} />
+
+    <p class="dim measure" style="margin-top:1.4rem" set:html={h.routing.ledger} />
+
+    <Note text={h.routing.unknown} tone="warn" style="margin-top:1.2rem" />
+
+    <p class="small" style="margin-top:1rem" set:html={h.routing.savings} />
+  </section>
+
+  <!-- ============ 07 handoffs ============ -->
   <section class="wrap" id="handoffs" data-rail-label={h.handoffs.rail} data-reveal>
     <p class="eyebrow">{number('handoffs')}</p>
     <h2>{h.handoffs.heading}</h2>
@@ -169,7 +190,7 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <p class="small" style="margin-top:1rem" set:html={h.handoffs.bounds} />
   </section>
 
-  <!-- ============ 07 docs ============ -->
+  <!-- ============ 08 docs ============ -->
   <section class="wrap" id="docs" data-rail-label={h.docs.rail} data-reveal>
     <p class="eyebrow">{number('docs')}</p>
     <h2>{h.docs.heading}</h2>
@@ -179,7 +200,7 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <p class="small" set:html={h.docs.verifyNote} />
   </section>
 
-  <!-- ============ 08 memory ============ -->
+  <!-- ============ 09 memory ============ -->
   <section class="wrap" id="memory" data-rail-label={h.memory.rail} data-reveal>
     <p class="eyebrow">{number('memory')}</p>
     <h2>{h.memory.heading}</h2>
@@ -191,7 +212,7 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <p class="small" set:html={h.memory.captured} />
   </section>
 
-  <!-- ============ 09 artifacts ============ -->
+  <!-- ============ 10 artifacts ============ -->
   <section class="wrap" id="artifacts" data-rail-label={h.artifacts.rail} data-reveal>
     <p class="eyebrow">{number('artifacts')}</p>
     <h2>{h.artifacts.heading}</h2>
@@ -201,7 +222,7 @@ const number = (id: string) => String(sections.findIndex((s) => s.id === id) + 1
     <p class="dim measure" set:html={h.artifacts.lookup} />
   </section>
 
-  <!-- ============ 10 compare ============ -->
+  <!-- ============ 11 compare ============ -->
   <section class="wrap" id="compare" data-rail-label={h.compare.rail} data-reveal>
     <p class="eyebrow">{number('compare')}</p>
     <h2>{h.compare.heading}</h2>

@@ -614,6 +614,14 @@ the symbol names, the paths, the framework, the ORM`,
       'output is reduced to a short digest, and delegated work returns concise findings with ' +
       '<code>path:line</code> references. A summary may shorten a failure, but it may not hide one.',
 
+    routing:
+      '<strong>A third limit sets how expensive each context is.</strong> Ten of the eleven ' +
+      'commands pin themselves to Sonnet in frontmatter, so running one from an Opus session no ' +
+      'longer makes every context in the run Opus; inside the run, lookup goes to Haiku and the ' +
+      'judgement stages are named explicitly as Opus. <code>refine</code> is the deliberate ' +
+      'exception and stays on your session model. Ultracode is not required — and is not ' +
+      'recommended.',
+
     floor:
       '<strong>The minimum checks do not change with the tier.</strong> The budget controls how ' +
       'many independent reviews are used, not whether required evidence is collected.',

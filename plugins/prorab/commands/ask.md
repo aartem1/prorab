@@ -1,6 +1,8 @@
 ---
 description: "Answers a question about the current project from current code, docs, task history and bounded memory; verifies claims and cites sources."
 argument-hint: "question about architecture, behavior, history, consumers, ownership, or verification"
+model: sonnet
+effort: high
 ---
 
 Input: **$ARGUMENTS**

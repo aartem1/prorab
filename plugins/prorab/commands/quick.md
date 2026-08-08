@@ -1,6 +1,8 @@
 ---
 description: "A small everyday change in one pass, at 2 contexts: checkable DoD, red-first test, targeted run, one independent verifier, doc sync, one QUICK record. Escalates when the task isn't small."
 argument-hint: a concrete small change (1–2 files, one layer, no external contract touched)
+model: sonnet
+effort: high
 ---
 
 Input: **$ARGUMENTS**
@@ -15,7 +17,7 @@ Your other job is to **recognise when the task is not small** and hand it over i
 
 **One compact artifact.** You leave exactly one task document behind: `tasks/quick/QUICK-<slug>.md`, a short record of what changed and how it was checked (template at the end). Still no `IDEA-*`, no `IMPL-*`, no audit file, and nothing is archived. It exists so the project's written history doesn't skip small changes, and costs one `Write` in your own context rather than a new one. If it needs more than about a screen to state honestly, the task wasn't small: see the gate.
 
-**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall), `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (run output discipline) and `${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md` — correcting the documents your change falsifies is a mandatory step here, not a nicety. Read `${CLAUDE_PLUGIN_ROOT}/references/web-probing.md` **only if** the change touches a browser surface: at this tier that means one headless run over the changed behavior and its negative, never an interactive visual session. Recall exact paths/symbols/terms only, and verify any material recalled claim against current source. Capture at most **one** entry at the end, and only if it clears the durable bar (a recurring gotcha, a verified command); usually capture nothing. Missing memory is never a blocker. The `QUICK-<slug>.md` artifact is a project document like any other, so it follows the task's language.
+**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall), `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (capability routing, run output discipline) and `${CLAUDE_PLUGIN_ROOT}/references/documentation-sync.md` — correcting the documents your change falsifies is a mandatory step here, not a nicety. Read `${CLAUDE_PLUGIN_ROOT}/references/web-probing.md` **only if** the change touches a browser surface: at this tier that means one headless run over the changed behavior and its negative, never an interactive visual session. Recall exact paths/symbols/terms only, and verify any material recalled claim against current source. Capture at most **one** entry at the end, and only if it clears the durable bar (a recurring gotcha, a verified command); usually capture nothing. Missing memory is never a blocker. The `QUICK-<slug>.md` artifact is a project document like any other, so it follows the task's language.
 
 ---
 
@@ -99,4 +101,7 @@ paths:
 
 ## Verification
 <verifier verdict; confirmed findings and how each was resolved; anything left open>
+
+## Routing
+- main `sonnet`/`high` · verifier `<model the delegated context ran on>` — <escalation and its reason, or "none">
 ```

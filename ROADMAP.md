@@ -18,9 +18,9 @@ Prorab should optimize four things together:
 3. **Number of model contexts and tool calls** — reuse fresh evidence and avoid broad repeated recon.
 4. **Size of task context** — read and return only the source ranges and evidence a task needs.
 
-The active sequence therefore starts with model/effort routing, then modernizes the plugin's prompt
-architecture before navigation work changes the heavy workflows. This avoids optimizing large legacy
-command bodies and then restructuring them immediately afterwards.
+The active sequence started with model/effort routing, which has now shipped, and continues by
+modernizing the plugin's prompt architecture before navigation work changes the heavy workflows. This
+avoids optimizing large legacy command bodies and then restructuring them immediately afterwards.
 
 See:
 
@@ -63,8 +63,8 @@ appears in real use, `DONE` = remove after the release is recorded in `CHANGELOG
 
 | ID | Status | Priority | Milestone | Depends on |
 |---|---|---:|---|---|
-| MODEL-001 | `NEXT` | P0 | Automatic model & effort routing with bounded escalation | — |
-| ARCH-001 | `TODO` | P0 | Canonical Skills + progressive-disclosure plugin architecture | MODEL-001 |
+| MODEL-001 | `DONE` | P0 | Automatic model & effort routing with bounded escalation | — |
+| ARCH-001 | `NEXT` | P0 | Canonical Skills + progressive-disclosure plugin architecture | MODEL-001 |
 | NAV-001 | `TODO` | P0 | Task-aware reconnaissance contract | ARCH-001 |
 | NAV-002 | `TODO` | P0 | Lightweight incremental RepoMap | NAV-001 |
 | NAV-003 | `TODO` | P0 | Product-track navigation integration: `refine → build` | NAV-002 |
@@ -72,6 +72,12 @@ appears in real use, `DONE` = remove after the release is recorded in `CHANGELOG
 | NAV-005 | `TODO` | P1 | Freshness and cache hardening | NAV-003 |
 | NAV-006 | `GATED` | P2 | Semantic retrieval / embeddings | repeated real tasks show lexical+symbol retrieval is insufficient |
 | NAV-007 | `GATED` | P2 | Shared/remote index or Sourcegraph adapter | repeated real projects show local cold-start or cross-repo limits matter |
+
+MODEL-001 stays listed rather than being removed, because one of its Definition-of-Done items is not
+closed by shipping: the routing is applied everywhere it was meant to be, but the parity check — one
+real `build` run on the new defaults reaching the same verdict the old defaults reached on the same
+task — has not been run yet. That is closed by ordinary use, not by another milestone, and the row
+comes out once it is.
 
 ## Continuous tuning
 

@@ -107,7 +107,7 @@ flat no matter how many segments run.
 - after level 1 (S01–S03): `<full recipe command>` — exit=0, <counters>
 
 ## Context ledger
-- S01 executor — 14 turns · S01 verifier — 5 turns
+- S01 executor — `sonnet`/`high` · 14 turns · S01 verifier — `sonnet` · 5 turns
 ```
 
 `status` ∈ `pending` · `running` · `done` · `blocked` · `drifted`. A segment's own record —

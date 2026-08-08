@@ -6,6 +6,64 @@ The marketplace has **two plugins** with independent versions: `prorab` (the pro
 `plugins/<plugin>/.claude-plugin/plugin.json` and is duplicated in `.claude-plugin/marketplace.json`.
 The entries below are tagged with the plugin they concern.
 
+## prorab 0.18.0 · prorab-tech 0.13.0
+
+**A context now has a price, not just a count.** Prorab already bounded how many model contexts a
+command may open and how full each one may get. It never bounded the third thing: **how expensive
+each one is**. So the answer was whatever session you happened to be in — invoking `/prorab:build`
+from an Opus session at `xhigh` made all of its up-to-16 contexts Opus at `xhigh`, including the ones
+that were only extracting a file list into a schema. This release adds that axis (MODEL-001), without
+touching a single context cap, turn limit, quality floor or verification rule.
+
+- **Ten of the eleven commands pin their own model.** `build`, `quick`, `revise`, `verify`, `ask`,
+  `audit`, `refactor`, `lint-audit` and `lint-fix` run at **Sonnet / high**; `announce` at
+  **Sonnet / medium**. The pin lives in command frontmatter and holds for that turn only — your
+  session model returns on your next message, which is exactly why it can be automatic rather than
+  something you have to remember to set and unset.
+- **The strong side is named before the cheap side is pinned, and that order is the whole trick.**
+  A `Workflow` agent inherits the main loop unless told otherwise, so pinning entrypoints first would
+  have quietly demoted the judge panel, the DoD skeptic and every adversarial verifier to Sonnet —
+  and no Definition-of-Done item would have noticed. So the judgement stages now name `opus`
+  explicitly, as a string that can actually be passed, where they previously said "a strong model" in
+  prose. Recon is cheapened symmetrically and **per call**: built-in `Explore` inherits the main
+  conversation and a plugin cannot redefine it, so every recon launch passes its own model.
+- **`refine` is deliberately not pinned, and the reason is recorded in `refine.md` itself.** It is a
+  many-round dialogue, and a frontmatter override lasts one turn — so pinning it would make the
+  conversation alternate between two models round after round, and because a prompt cache is scoped
+  to one model, each alternation would rewrite the whole prefix cold. That costs more than the
+  cheaper model saves. Refinement is also where the product decisions are made, which is the right
+  place for a strong model. Its delegated recon is still cheapened per call.
+- **A new shared contract, `Capability routing`,** in both `references/execution.md` files: the
+  default role table, the escalation signals, and the rule that **a node escalates, not a run** —
+  keep the evidence already collected, send only the unresolved question to the stronger model, take
+  back a compact capsule, and continue the rest of the run where it was. It also states the
+  degradation rule plainly: a model or effort level that is unavailable, unsupported, or overridden
+  by `CLAUDE_CODE_SUBAGENT_MODEL` **collapses to the nearest available setting and the command
+  continues** — never a failure, never a question to the user.
+- **What was spent is written down.** Every `used/cap` line now carries the model and effort that
+  context actually ran on, and `IMPL-*`, `QUICK-*`, `VERIFY-*` and the `REVISION` history line carry
+  the same as one routing entry with any escalation and its reason. Without it, "this role keeps
+  escalating" stays an impression and there is nothing to tune from later.
+- **"Ultracode" is gone as a description of Prorab's own mode.** Six command bodies and both plugin
+  READMEs used to call the framework's orchestration ultracode while the policy said ultracode is not
+  required — a contradiction. Prorab owns the orchestration, the budgets and the review cycles
+  itself, and now says so.
+
+**The honest size of this.** The per-token multipliers are modest — Opus→Sonnet about 1.67× at list
+price, Sonnet→Haiku about 3×, and Haiku's 200K window limits what may be routed there at all. The
+effect that matters is **not being dragged into an expensive session in the first place**. If you
+already work on Sonnet, this release changes almost nothing for you.
+
+**Recommended session mode: Opus, Ultracode off.** `xhigh` is fine and costs Prorab nothing. Ultracode
+is off because Prorab already owns orchestration — and because it is **not documented** whether a
+command's frontmatter `effort` also switches off Ultracode's automatic workflow orchestration for
+that turn. That is stated as an open unknown in the docs and on the site, not assumed away.
+
+One item of MODEL-001's Definition of Done is deliberately still open, and `ROADMAP.md` says so: the
+parity check — one real `build` run on the new defaults reaching the same verdict the old defaults
+reached on the same task. It is closed by ordinary use, not by another milestone. A minor bump of
+both plugins: new behavior, no breaking change to commands, arguments or artifact classes.
+
 ## prorab 0.17.0 · prorab-tech 0.12.0
 
 **The round after the first one now has a lane.** `build` could finish a feature; it could not

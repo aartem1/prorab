@@ -1,6 +1,8 @@
 ---
 description: Multi-agent structural audit — finds tech debt, ranks it by value×safety×size×confidence and specs the best candidate for a safe refactoring. Touches no code.
 argument-hint: empty = the whole project; or a focus — a path/subsystem/problem class (e.g. "duplication in services", "complexity in billing", a folder path)
+model: sonnet
+effort: high
 ---
 
 Input: **$ARGUMENTS**
@@ -11,9 +13,9 @@ This is the first step of the tech-quality track: **audit → AUDIT file → `/p
 
 This is **not a product command.** You look for engineering problems (structure, readability, reliability, performance), not product features or business-logic changes. A smell that is actually a deliberate business decision is not a finding.
 
-**Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded fan-out where the selected tier allows it, grouping scanners by complementary directions rather than spawning one per smell. Spend the budget **according to the scope** (focus vs the whole project) and repo size. The sweep width is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **diagnosis floor (verification of the recommended candidate + honesty about coverage) is non-negotiable at any tier**; diagnosis accuracy and its safety are the constraint; within it, don't run lenses blind to the task's focus.
+**Stance and mandate (adaptive budget, Prorab's own orchestration):** Prorab owns the orchestration, the context budget and the verification cycle itself, so it neither needs nor assumes Claude Code's automatic dynamic-workflow mode — use `Workflow` for bounded fan-out where the selected tier allows it, grouping scanners by complementary directions rather than spawning one per smell. Spend the budget **according to the scope** (focus vs the whole project) and repo size. The sweep width is set by **Phase 0.5 — Budget triage** (below). Quality is the hard constraint: the **diagnosis floor (verification of the recommended candidate + honesty about coverage) is non-negotiable at any tier**; diagnosis accuracy and its safety are the constraint; within it, don't run lenses blind to the task's focus.
 
-**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps). Memory may guide where to inspect, but never counts as evidence for a finding. The report you write (`tasks/audits/AUDIT-*.md`) is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (capability routing, the two remaining context-occupancy limits, deterministic steps). Memory may guide where to inspect, but never counts as evidence for a finding. The report you write (`tasks/audits/AUDIT-*.md`) is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -57,9 +59,9 @@ The sweep width follows the **scope** (focus vs the whole project) and repo size
 | churn×complexity | over the relevant path | over the subsystem | over the whole repo |
 | Candidate verification (Ph4) | #1 only | #1; runner-up only on near tie | #1; runners-up only on near tie or #1 failure |
 | completeness/cuts | brief self-check | main-agent check | one bounded critic if budget remains |
-| model/effort | cheap on deterministic scanners | mixed | strong on verification |
+| model/effort | `haiku` on deterministic scanners | mixed | `opus` on verification |
 
-**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed contract/security/business-critical risk or explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` and reserve the context needed to verify candidate #1.
+**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed contract/security/business-critical risk or explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` **with the model/effort that context will run on** and reserve the context needed to verify candidate #1.
 
 Every delegated context must set a turn limit: `max_turns` for a direct `Agent`, `maxTurns` in Workflow agent options/agent definitions; at most **6** for S, **8** for M, and **12** for L. The three scan directions are: **structure**; **reliability/security**; **performance/maintainability**. Assign several catalog classes to each bounded scanner instead of one agent per class. Deterministic churn/complexity data should be collected directly or by an already allocated scanner.
 
@@ -73,7 +75,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **Risk-proportional verification:** a candidate with wide blast/a touched contract → escalate the tier and use the next evidence level, up to three lenses within the hard cap; if S is user-pinned, the one verifier covers all three questions and an unresolved conflict disqualifies the candidate. An isolated low-risk candidate → 1 independent check suffices even in L. Default: reject on doubt.
 
-**Model/effort tiering:** give deterministic scanners (running linter/typecheck/coverage, git churn, extracting metrics into `schema`) a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial candidate verification and clustering/scoring a strong model.
+**Model/effort tiering (the `Capability routing` contract, applied here).** This command is pinned to Sonnet/high at its entrypoint, and a `Workflow` agent inherits the main loop unless told otherwise — so **both** ends of this axis are named explicitly, never left to whatever session the user was in. Deterministic scanners: `opts.model: 'haiku'` (or `'sonnet'` where 200K context is too small) + `opts.effort: 'low'` — running linter/typecheck/coverage, git churn, extracting metrics into `schema`. Recon agents are cheapened **per call** (`agentType: 'Explore'` still inherits the main loop, so pass `opts.model` every time). Judgment stages: `opts.model: 'opus'` + `opts.effort: 'high'` — adversarial candidate verification, and clustering/scoring. A direct `Agent` takes `model` per call but has **no** `effort` parameter, so pass `model: 'opus'` there and let effort stand. Escalation names one node, not the run: the rest continues on the pinned default.
 
 **Cheap-first escalation:** a narrow scan surfaced that the smell drags a wide blast/adjacent subsystems → widen the scope and log it.
 

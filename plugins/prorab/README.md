@@ -9,7 +9,7 @@ Seven agentic-development commands for Claude Code:
   An idea too big for one run also carries a `Segment plan`: the cut into independently checkable
   segments, each leaving the repository green.
 - **`/prorab:build`** (`commands/build.md`) — turnkey implementation of a refined idea via
-  a multi-agent ultracode Workflow. Reuses the IDEA's `Code map` when the recorded hashes still
+  a multi-agent `Workflow` Prorab orchestrates itself. Reuses the IDEA's `Code map` when the recorded hashes still
   match, so recon isn't paid for twice. It derives the project's verification recipe from repository
   guidance, CI, task runners/package scripts, and test conventions instead of assuming a stack.
   On a segmented idea it runs the segments one at a time, each in a fresh context, keeping the run's
@@ -117,6 +117,19 @@ caps how full each one gets. Run output is captured outside the working tree and
 main loop holds the plan and the ledger while the reading happens elsewhere — at tier S it *is* the
 executor and reads directly. Compaction never hides a result: exit codes and failure counts are
 always reported in full. More detail — in the [root README](../../README.md).
+
+**Bounded cost per context — the third axis.** How many contexts and how full each one is are two
+questions; how *expensive* each one is, is a third. `build`, `quick`, `revise`, `verify` and `ask` pin
+themselves to **Sonnet / high** in frontmatter and `announce` to **Sonnet / medium**, so a command
+invoked from an Opus/`xhigh` session no longer makes every one of its contexts Opus/`xhigh`; the pin
+lasts that turn only, and the session model returns on your next message. Inside a run both ends are
+named explicitly rather than inherited — map extraction, diff classification and inventory on
+**Haiku**, the judge panel, the DoD skeptic and adversarial verification on **Opus**. `refine` is the
+one command deliberately left on the session model, because it is a many-round dialogue and a
+per-turn pin would hop models between rounds and rewrite the prompt cache cold each time. Escalation
+sends only the unresolved question to the stronger model and leaves the rest of the run where it was;
+an unavailable model or effort level collapses to the nearest available one instead of failing the
+command. The `Capability routing` contract in `references/execution.md` holds the rules.
 
 **Risk-based verification.** `build` prefers executable/static evidence before reviewers and uses
 one independent verifier by default. Mutation intensity is separate from S/M/L: `economy` performs

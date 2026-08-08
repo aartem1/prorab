@@ -390,8 +390,9 @@ Shortening *what* failed is allowed; concealing *that* something failed is a fal
 
 The same principle applies to the commands' own text. The shared rules live in five contracts, and a
 command loads only the ones it can act on: `project-knowledge.md` (language, source-of-truth order,
-memory, delegated-return capsules, archive) is read by all eleven; `execution.md` (run output and
-main-loop discipline, deterministic steps) only by the eight that run checks or analyzers;
+memory, delegated-return capsules, archive) is read by all eleven; `execution.md` (capability routing,
+run output and main-loop discipline, deterministic steps) only by the eight that run checks or
+analyzers;
 `documentation-sync.md` only by the five that change product code; `web-probing.md` (the headless
 instrument ladder, the locator rule, the runner) only by `build`, `quick`, `revise` and `verify`, and only when
 the scope in front of them actually has a browser surface; and `segmented-run.md` (seam discipline, the
@@ -499,6 +500,55 @@ the **exact invocations and the gate entrypoint** instead, and `lint-fix` reads 
 from the last completed batch artifact rather than rediscovering it.
 
 </details>
+
+## Which model runs what
+
+The tiers above bound how many contexts a command opens, and the occupancy limits bound how full each
+one gets. There is a third axis: **how expensive each context is.**
+
+Before this existed, the answer was "whatever session you happened to be in". Invoking `/prorab:build`
+from an Opus session at `xhigh` made all of its up-to-16 contexts Opus at `xhigh` — including the ones
+that were only extracting a file list into a schema.
+
+**Recommended session mode: Opus, Ultracode off.** `xhigh` is fine and costs Prorab nothing. You don't
+have to switch models before running a command, and you shouldn't have to remember to switch back.
+
+**What the framework pins for you.** Ten of the eleven commands set their own `model`/`effort` in
+frontmatter: `build`, `quick`, `revise`, `verify`, `ask`, `audit`, `refactor`, `lint-audit` and
+`lint-fix` at **Sonnet / high**, `announce` at **Sonnet / medium**. The pin holds for that turn only —
+your session model is back on your next message, which is exactly why it can be automatic. Inside a
+run, the cheap and the strong side are both named explicitly, never inherited: map extraction,
+inventory, diff classification and analyzer runs go to **Haiku**, while the judgment stages — the
+judge panel, the DoD skeptic, adversarial verification of a finding, drift search, designing a
+sabotage mutation — go to **Opus**.
+
+**What still runs on your session model: `refine`.** That is deliberate. `refine` is a many-round
+dialogue, and a frontmatter override lasts one turn — so pinning it would make the conversation
+alternate between two models round after round, and because a prompt cache is scoped to one model,
+each alternation rewrites the whole prefix cold. It would cost more than it saves. Refinement is also
+where the product decisions get made, which is the right place for a strong model. Its delegated
+recon is still cheapened per call.
+
+**Escalation names a node, not a run.** When a cheap context reports it can't reach a grounded
+conclusion, or two readings of a requirement remain and the choice changes scope, or reviewers
+disagree on a material correctness question — the evidence already collected is kept, only the
+unresolved question goes to the stronger model, and the rest of the run continues where it was.
+Restarting the whole command on Opus because one node needed Opus is the failure mode the rule exists
+to prevent. What was spent on each context is written into the run's artifact, so "this role keeps
+escalating" can become a fact rather than an impression.
+
+**Nothing here is an acceptance criterion.** The Definition of Done, right-reason red, the
+independent verifier, the contract checks and the project's own commands do not get weaker because a
+context got cheaper. And a model or effort level that isn't available collapses to the nearest one
+that is — the command continues rather than failing.
+
+**Two honest notes.** First, the biggest saving is *not walking into an expensive session*, not the
+per-token multiplier: Opus→Sonnet is about 1.67× at list price and Sonnet→Haiku about 3×, so if you
+already work on Sonnet, this changes almost nothing for you. Second, Ultracode is off in the
+recommendation because Prorab already owns orchestration, budgets and review cycles, and stacking a
+second automatic orchestrator on top makes spend unpredictable — **and because it is not documented
+whether a command's frontmatter `effort` also switches off Ultracode's auto-orchestration for that
+turn.** That is an open unknown, stated here as one rather than assumed away.
 
 ## Project memory
 

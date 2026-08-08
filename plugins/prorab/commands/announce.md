@@ -1,6 +1,8 @@
 ---
 description: A concise, fact-checked announcement of shipped work — what's new/changed and how it's computed, dense enough to forward in a messenger.
 argument-hint: feature slug / path to IMPL or IDEA / commit(s) / free "what we shipped"; empty = latest work
+model: sonnet
+effort: medium
 ---
 
 Input: **$ARGUMENTS**

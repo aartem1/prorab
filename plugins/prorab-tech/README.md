@@ -17,7 +17,7 @@ different natures of debt:
   and produces the **optimal candidate**. Touches no code. Result —
   `tasks/audits/AUDIT-<slug>.md` (backlog + the full #1 spec).
 - **`/prorab-tech:refactor`** (`commands/refactor.md`) — a turnkey safe fix via a
-  multi-agent ultracode Workflow. **Prime directive — behavior preservation:** a net of
+  multi-agent `Workflow` Prorab orchestrates itself. **Prime directive — behavior preservation:** a net of
   characterization tests on the old code, small steps, adversarial drift search,
   a differential old-vs-new run, a measured quality improvement. Both modes:
   `refactor <id>` fixes the chosen candidate, `refactor` with no argument — auto-picks #1 from
@@ -101,6 +101,18 @@ compared input set, the divergence count and one line per divergence. A delegate
 gate-state table and the ledger while the runs happen elsewhere. Compaction never hides a result:
 exit codes and violation counts are always reported in full. More detail — in
 the [root README](../../README.md).
+
+**Bounded cost per context — the third axis.** How many contexts and how full each one is are two
+questions; how *expensive* each one is, is a third. All four commands pin themselves to
+**Sonnet / high** in frontmatter, so running one from an Opus/`xhigh` session no longer makes every
+one of its contexts Opus/`xhigh`; the pin lasts that turn only, and the session model returns on your
+next message. Inside a run both ends are named explicitly rather than inherited — analyzer runs,
+metric extraction and churn on **Haiku**, the judgment stages on **Opus**: adversarial candidate
+verification, clustering and scoring, drift search on code removal, the scope-creep skeptic, and
+designing a gate's sabotage violation. Escalation sends only the unresolved question to the stronger
+model and leaves the rest of the run where it was; an unavailable model or effort level collapses to
+the nearest available one instead of failing the command. The `Capability routing` contract in
+`references/execution.md` holds the rules.
 
 **Handoff between the pairs, shaped by what each actually wastes.** `audit` stamps the #1 candidate
 with its commit and `git hash-object` hashes of the target files, the tests its net status rests on,

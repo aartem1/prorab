@@ -1,6 +1,8 @@
 ---
 description: Tooling inventory plus a read-only run of every available static analyzer → an ordered ratchet plan of safe single-pass batches. Touches no code.
 argument-hint: empty = the whole project; or a focus — a tool (mypy/eslint/ruff), a subsystem (backend/frontend/path) or a rule class
+model: sonnet
+effort: high
 ---
 
 Input: **$ARGUMENTS**
@@ -13,9 +15,9 @@ This is the first step of the tooling-quality sub-track: **lint-audit → LINT f
 
 **The core idea — ratchet with an explicit gate lifecycle.** Unlike structural refactoring, static debt can move monotonically once a pre-commit/CI gate exists. Before that point, early A/B batches are **preparatory**: they make tools green but must not claim the level is locked. A dedicated C batch creates the first relevant gate and proves it. After C, every A/B/D batch that changes the enforced bar must expand or tighten the existing gate and prove the new coverage. The audit's goal is an ordered sequence that gets safely to the locked state and then raises it monotonically.
 
-**Stance and mandate (ultracode, adaptive budget):** use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
+**Stance and mandate (adaptive budget, Prorab's own orchestration):** Prorab owns the orchestration, the context budget and the verification cycle itself, so it neither needs nor assumes Claude Code's automatic dynamic-workflow mode — use `Workflow` for bounded analyzer fan-out only where the selected tier allows it. Spend the budget **according to the scope** (focus vs the whole tooling), available analyzers, and the hard caps in **Phase 0.5 — Budget triage**. Quality is the hard constraint: the **plan-correctness floor (verification of the executable batch + honesty about coverage) is non-negotiable at any tier**; pass safety and plan correctness are the constraint; within it, don't run analyzers unrelated to the focus.
 
-**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (the two remaining context-occupancy limits, deterministic steps). Re-check tool availability and gate state in the current environment; memory is not executable evidence. The plan you write (`tasks/audits/LINT-*.md`) is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
+**Contracts.** At the start read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth, bounded recall/capture, freshness) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (capability routing, the two remaining context-occupancy limits, deterministic steps). Re-check tool availability and gate state in the current environment; memory is not executable evidence. The plan you write (`tasks/audits/LINT-*.md`) is a project doc a human reads, so it follows the task's language. This main-context work does not consume an extra delegated context.
 
 ---
 
@@ -59,9 +61,9 @@ The number of runners follows the **scope** (focus vs the whole tooling) and the
 | Runners (Ph1) | named tool/class, direct | 1–2 grouped runners | 2–4 grouped runners by stack/tool family |
 | Batch verification (Ph3) | executable batch #1 | batch #1; runner-up only on dependency ambiguity | batch #1; runners-up only on near tie/dependency ambiguity |
 | completeness/cuts | brief self-check | main-agent check | one bounded check if budget remains |
-| model/effort | cheap on tool runs | mixed | strong on plan verification |
+| model/effort | `haiku` on tool runs | mixed | `opus` on plan verification |
 
-**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed security/contract/business-critical risk or explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` and reserve the context needed to verify the first executable batch.
+**Hard orchestration caps (cumulative for the whole command):** count the main agent, every direct `Agent`, and every `Workflow` node; retries/restarts count again. **S = at most 2 model contexts total** (main + one independent verifier), with no `Workflow`. **M = at most 6 total** (main + at most five delegated contexts). **L = at most 12 total** by default, expandable to the absolute cap of **16** only after a confirmed security/contract/business-critical risk or explicit `--thorough`. An override never removes the 16-context ceiling. Before delegating, log `used/cap` **with the model/effort that context will run on** and reserve the context needed to verify the first executable batch.
 
 Every delegated context must set a turn limit: `max_turns` for a direct `Agent`, `maxTurns` in Workflow agent options/agent definitions; at most **6** for S, **8** for M, and **12** for L. Group analyzers by stack and tool family (for example Python lint/type/security; frontend lint/type/format; dependency/gate inventory) instead of allocating one context per analyzer. A runner may execute several deterministic read-only commands and return one structured summary.
 
@@ -75,7 +77,7 @@ Every delegated context must set a turn limit: `max_turns` for a direct `Agent`,
 
 **Risk-proportional verification:** a batch with a non-mechanical fix (removing seemingly-dead code, annotations that shift runtime) → a full behavior-preserving check; pure formatter/autofix → lightened. Add a verifier only after deterministic evidence leaves a real question; add a second only on conflict/high blast radius. Default: reject/demote on doubt.
 
-**Model/effort tiering:** give available read-only analyzer runs, manual backlog estimation, and extracting findings into `schema` a cheap model (`opts.model: 'haiku'`/`'sonnet'`) + `opts.effort: 'low'`; give adversarial batch verification and ladder/gate planning a strong model.
+**Model/effort tiering (the `Capability routing` contract, applied here).** This command is pinned to Sonnet/high at its entrypoint, and a `Workflow` agent inherits the main loop unless told otherwise — so **both** ends of this axis are named explicitly, never left to whatever session the user was in. Mechanical stages: `opts.model: 'haiku'` (or `'sonnet'` where 200K context is too small) + `opts.effort: 'low'` — available read-only analyzer runs, manual backlog estimation, extracting findings into `schema`. Recon agents are cheapened **per call** (`agentType: 'Explore'` still inherits the main loop, so pass `opts.model` every time). Judgment stages: `opts.model: 'opus'` + `opts.effort: 'high'` — adversarial batch verification, and ladder/gate planning. A direct `Agent` takes `model` per call but has **no** `effort` parameter, so pass `model: 'opus'` there and let effort stand. Escalation names one node, not the run: the rest continues on the pinned default.
 
 **Cheap-first escalation:** a narrow scan showed a batch drags a behavior change / wider scope → widen the scope / mark it route, log it.
 

@@ -1,6 +1,8 @@
 ---
 description: "Critical black-box check that shipped functionality really works for the user: a blind prober that never reads the implementation, requirement-derived oracles, evidence per behavior, then proof that a test fails when it breaks."
 argument-hint: "what to verify — slug, IMPL/QUICK path, branch or base ref, commit range, `uncommitted`, or a free description; empty = derive the scope"
+model: sonnet
+effort: high
 ---
 
 Input: **$ARGUMENTS**
@@ -11,7 +13,7 @@ You establish whether **implemented functionality actually works for the people 
 
 **Mandate.** You change **no product code and fix nothing**. You produce two things: a per-behavior verdict backed by evidence a sceptic could re-run, and — for what you verified — project tests that actually fail when that behavior breaks. **The only code you write is test code.** A confirmed defect is reported and routed to the command that owns fixes, with its reproduction recorded so that command starts red.
 
-**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall, delegated-return capsules, active-vs-archive lookup) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (run output discipline, main-loop discipline, deterministic steps). Read `${CLAUDE_PLUGIN_ROOT}/references/web-probing.md` **only if** Phase 1 finds a browser surface in scope — a screen, a route, a form, a client-side interaction; it carries the instrument ladder, the locator rule and the runner, and a change with no such surface never pays for it. You do **not** load the documentation-sync contract: you change no behavior, so nothing you do falsifies a document — and a document that contradicts what you observed is a **finding you report**, never a document you quietly rewrite. `tasks/verify/VERIFY-<slug>.md` is a project document a human reads, so it follows the task's language.
+**Contracts.** Read `${CLAUDE_PLUGIN_ROOT}/references/project-knowledge.md` (language, source-of-truth order, bounded recall, delegated-return capsules, active-vs-archive lookup) and `${CLAUDE_PLUGIN_ROOT}/references/execution.md` (capability routing, run output discipline, main-loop discipline, deterministic steps). Read `${CLAUDE_PLUGIN_ROOT}/references/web-probing.md` **only if** Phase 1 finds a browser surface in scope — a screen, a route, a form, a client-side interaction; it carries the instrument ladder, the locator rule and the runner, and a change with no such surface never pays for it. You do **not** load the documentation-sync contract: you change no behavior, so nothing you do falsifies a document — and a document that contradicts what you observed is a **finding you report**, never a document you quietly rewrite. `tasks/verify/VERIFY-<slug>.md` is a project document a human reads, so it follows the task's language.
 
 ---
 
@@ -50,13 +52,13 @@ You establish whether **implemented functionality actually works for the people 
 | Re-probe of a doubtful item | no | 1 | up to 2 |
 | `max_turns` | 6 | 8 | 12 |
 
-**Hard orchestration caps (cumulative for the whole command):** count every model context — the main agent, every direct `Agent`, every `Workflow` node; retries count again. **S = at most 2 contexts total** (main + one blind prober), so do not launch `Workflow`. **M = at most 6 total** (main + at most five delegated). **L = at most 12 total** by default, expandable to the absolute cap of **16** only on confirmed contract/security/business-critical risk or an explicit `--thorough`. An override never removes the 16-context ceiling. Before every delegation log `used/cap`, and reserve the contexts a re-probe of a doubtful item would need.
+**Hard orchestration caps (cumulative for the whole command):** count every model context — the main agent, every direct `Agent`, every `Workflow` node; retries count again. **S = at most 2 contexts total** (main + one blind prober), so do not launch `Workflow`. **M = at most 6 total** (main + at most five delegated). **L = at most 12 total** by default, expandable to the absolute cap of **16** only on confirmed contract/security/business-critical risk or an explicit `--thorough`. An override never removes the 16-context ceiling. Before every delegation log `used/cap` **with the model/effort that context will run on**, and reserve the contexts a re-probe of a doubtful item would need.
 
 **Never one prober per assertion.** Group the charter into as few probes as a coherent consumer session allows: one prober can walk several surfaces of the same flow with one instrument. Fan out on instrument boundaries (browser / API / data), not on item boundaries.
 
 **Context occupancy (a second axis).** The `Context hygiene` contract binds how full each context gets: raw run output goes to a file outside the working tree and comes back as a ~40-line digest; a delegated context returns a capsule of claims and pointers, never the material. Evidence files — response bodies, logs, screenshots, query results — are written to one run directory outside the working tree and cited by path, so they can neither bloat a context nor be committed. Above tier S the main loop holds the charter, the verdict table, the capsules and the ledger; at S it is the executor for the code-aware half (scope, surfaces, coverage) while the blind half is still delegated.
 
-**Verification profile (orthogonal to the tier):** `economy` — no mutation, coverage judged from the test's own assertions and a targeted run; `balanced` (default) — at most one mutation per critical behavior cluster; `thorough` — a mutation per substantial verified behavior. `--fast`/`--thorough`/`--tier=S|M|L`/`--verification=economy|balanced|thorough` or a natural-language request pins the choice. Log the tier, the profile, `used/cap`, mutation `used/cap`, and anything consciously skipped.
+**Verification profile (orthogonal to the tier):** `economy` — no mutation, coverage judged from the test's own assertions and a targeted run; `balanced` (default) — at most one mutation per critical behavior cluster; `thorough` — a mutation per substantial verified behavior. `--fast`/`--thorough`/`--tier=S|M|L`/`--verification=economy|balanced|thorough` or a natural-language request pins the choice. Log the tier, the profile, `used/cap` with the model/effort per context, mutation `used/cap`, and anything consciously skipped.
 
 ## Phase 1 — Charter and instruments (solo, code-aware)
 
@@ -124,7 +126,7 @@ Runs only for behaviors you actually verified — this is coverage of what was c
 
 ## Phase 5 — Report and record
 
-1. **Report, compactly**, in this order: the scope as adopted (one line); a verdict table — behavior → verdict → grade → level → evidence pointer; the defects with their reproductions and where each is routed; a coverage table — behavior → `covered`/`weak`/`absent` → the test that closes it → how it was proven; tests added or updated; check results as they are, including any digest you reused instead of re-running; what coverage evidence was reused rather than re-proved (`coverage evidence reused: <n> fresh, <m> stale or absent`); for a browser surface, the runner used and `web recon reused: <n> fresh, <m> stale` plus any L3 escalation with its trigger; what was `unverifiable` and what is missing to close it; the tier, profile and `used/cap`. No wall of output: pointers, not payloads.
+1. **Report, compactly**, in this order: the scope as adopted (one line); a verdict table — behavior → verdict → grade → level → evidence pointer; the defects with their reproductions and where each is routed; a coverage table — behavior → `covered`/`weak`/`absent` → the test that closes it → how it was proven; tests added or updated; check results as they are, including any digest you reused instead of re-running; what coverage evidence was reused rather than re-proved (`coverage evidence reused: <n> fresh, <m> stale or absent`); for a browser surface, the runner used and `web recon reused: <n> fresh, <m> stale` plus any L3 escalation with its trigger; what was `unverifiable` and what is missing to close it; the tier, profile, `used/cap` and the routing each context ran on. No wall of output: pointers, not payloads.
 2. **Write one record**, after the verdicts and the coverage work so it states the real outcome: `tasks/verify/VERIFY-<slug>.md` (template below), creating `tasks/verify/` if absent. Derive `<slug>` from the verified functionality; on a collision use the first free deterministic suffix (`-2`, `-3`, …) and never overwrite. When the scope's task bundle is already archived, write the record into that archive directory instead and link it there — as `announce` does — rather than re-creating active artifacts. Archive nothing yourself.
 3. **Capture at most one memory entry**, and only if it clears the durable bar — a verified way to reach and check this surface, or a recurring gotcha in the environment. Usually capture nothing.
 4. **Commit/push only on request.** Tests you wrote stay in the working tree; if you are on `main`/`master` and the user asks to commit, create a branch first.
@@ -157,6 +159,7 @@ scope: <uncommitted | branch <name> vs <base> | <commit range> | task <slug>>
 verdict: works | defects | partial
 tier: S | M | L
 profile: economy | balanced | thorough
+routing: main <model>/<effort> · <role> <model>, … · escalated: <node + reason, or none>
 links:
   - <tasks/IMPL-*.md or tasks/quick/QUICK-*.md, when one exists>
 ---
